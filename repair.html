@@ -1,0 +1,311 @@
+﻿﻿﻿﻿<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SM Dynamics Electronics Â· Mobile Repair Management</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="shop/styles.css">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0b1120">
+  <meta name="application-name" content="SM Dynamics Electronics">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="SM Dynamics Electronics">
+  <link rel="apple-touch-icon" href="shop/brand logo.png">
+  <script src="shop/pwa.js" defer></script>
+  <style>
+    /* Repair-specific styles moved to shop/styles.css for performance */
+    #spareGrid { display:none; }
+    .track-panel { display:grid; gap:1rem; }
+  </style>
+</head>
+<body>
+  <header class="nav" id="nav">
+    <div class="nav-inner">
+      <a href="index.html" class="brand" aria-label="SM Dynamics home">
+        <span class="brand-mark"></span>
+        <span class="brand-name">SM Dynamics</span>
+      </a>
+      <nav class="nav-links" aria-label="Primary navigation">
+        <a href="index.html">Home</a>
+        <a href="index.html#categories">Shop</a>
+        <a href="repair.html">Repair Services</a>
+        <a href="index.html#featured">Featured</a>
+        <a href="contact.html">Contact</a>
+        <a href="management.html">Management</a>
+      </nav>
+      <div class="nav-tools">
+        <button class="icon-btn" id="cartBtn" aria-label="Cart">
+          <svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+          <span class="badge" id="cartCount">0</span>
+        </button>
+        <button class="account-btn" id="accountBtn">Login</button>
+        <button class="icon-btn menu-toggle" id="menuToggle" aria-label="Toggle menu"><span></span><span></span><span></span></button>
+      </div>
+    </div>
+  </header>
+
+  <div class="overlay" id="overlay"></div>
+
+  <aside class="cart-side" id="cartSide" aria-hidden="true">
+    <header class="cart-head">
+      <h3>Shopping Cart</h3>
+      <button class="icon-btn" id="cartClose" aria-label="Close cart">✕</button>
+    </header>
+    <div class="cart-body" id="cartItems">
+      <div class="cart-empty"><p class="muted">Loading cart...</p></div>
+    </div>
+    <div class="cart-foot">
+      <div class="cart-total">Total: <b id="cartTotal">Kshs 0</b></div>
+      <a href="index.html#cart" class="btn primary block">Go to Checkout</a>
+    </div>
+  </aside>
+
+  <div class="modal" id="authModal">
+    <div class="modal-card auth-card">
+      <button class="modal-close" id="authClose">✕</button>
+      <div class="auth-grid">
+        <div class="auth-side">
+          <h2>Welcome back.</h2>
+          <p>Login to track your repairs and view order history across SM Dynamics.</p>
+        </div>
+        <div class="auth-panel">
+          <form class="auth-form" id="loginForm">
+            <input name="email" type="email" placeholder="Email address" required>
+            <input name="password" type="password" placeholder="Password" required>
+            <button class="btn primary block" type="submit">Login</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+
+  <aside class="mobile-menu" id="mobileMenu" aria-hidden="true">
+    <a href="index.html">Home</a>
+    <a href="index.html#categories">Shop</a>
+    <a href="repair.html">Repair Services</a>
+    <a href="index.html#featured">Featured</a>
+    <a href="contact.html">Contact</a>
+    <a href="management.html">Management</a>
+  </aside>
+
+  <main>
+    <section class="hero">
+      <canvas id="particles"></canvas>
+      <div class="hero-grid">
+        <div>
+          <span class="eyebrow"><span class="dot"></span> Mobile Repair Management for SM Dynamics</span>
+          <h1 class="display">Book repairs and manage mobile service requests instantly.</h1>
+          <p class="lede">Search repair services, order genuine spare parts, submit booking requests, and track repair progress from your browser.</p>
+          <div class="hero-cta">
+            <a class="btn primary" href="#services">Browse Services</a>
+            <a class="btn ghost" href="#tracking">Track Repair</a>
+          </div>
+          <div class="hero-stats">
+            <div><b>5,200+</b><span>Completed repairs</span></div>
+            <div><b>97%</b><span>Happy customers</span></div>
+            <div><b>Same-day</b><span>Diagnostics available</span></div>
+          </div>
+        </div>
+        <div class="hero-slider">
+          <img src="shop/hero-phone.jpg" alt="Phone repair service" loading="eager">
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="services">
+      <div class="container">
+        <header class="section-head reveal">
+          <span class="eyebrow"><span class="dot"></span> Repair Services</span>
+          <h2>Search repair services or spare parts to get started.</h2>
+          <p>Use the filters below to find your device model, compare repair pricing, and schedule service with pickup or drop-off options.</p>
+        </header>
+
+        <div class="repair-filters-grid reveal">
+          <div class="search-card">
+            <label for="searchMode">Browse</label>
+            <select id="searchMode" aria-label="Search mode">
+              <option value="repairs">Repair services</option>
+              <option value="spares">Spare parts</option>
+            </select>
+          </div>
+          <div class="search-card">
+            <label for="searchText">Quick search</label>
+            <input id="searchText" type="search" placeholder="Search model, brand, or repair" autocomplete="off" />
+          </div>
+          <div class="search-card" id="repairFilterBar">
+            <label for="availabilityFilter">Availability</label>
+            <select id="availabilityFilter" aria-label="Filter availability">
+              <option value="">All availability</option>
+              <option value="1">Available now</option>
+              <option value="0">Temporarily unavailable</option>
+            </select>
+          </div>
+          <div class="search-card" id="spareFilterBar" style="display:none">
+            <label for="spareBrand">Spare part brand</label>
+            <select id="spareBrand" aria-label="Spare part brand"></select>
+            <label for="spareSearch">Search parts</label>
+            <input id="spareSearch" type="search" placeholder="Search spare parts" autocomplete="off" />
+          </div>
+        </div>
+
+        <div class="chips reveal filter-row">
+          <div class="brand-chips" id="brandChips"></div>
+          <div class="category-chips" id="categoryChips"></div>
+        </div>
+
+        <div class="repair-grid reveal" id="repairGrid"></div>
+        <div class="repair-grid reveal" id="spareGrid"></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container repair-panel">
+        <div class="booking-card reveal">
+          <article class="card">
+            <div>
+              <span class="eyebrow"><span class="dot"></span> Fast booking</span>
+              <h2>Submit a repair request</h2>
+              <p>Select a service, enter your details, and upload a damaged phone image. Weâ€™ll confirm the booking and send your service ID.</p>
+            </div>
+            <form id="bookingForm" class="form-grid" enctype="multipart/form-data">
+              <input type="hidden" id="serviceId" name="serviceId">
+              <div class="full">
+                <label for="serviceTitle">Selected repair service</label>
+                <input id="serviceTitle" name="serviceTitle" readonly placeholder="Choose a repair service from the list" />
+              </div>
+              <input id="name" name="name" type="text" placeholder="Full name" required>
+              <input id="email" name="email" type="email" placeholder="Email address" required>
+              <input id="phone" name="phone" type="tel" placeholder="Phone number" required>
+              <select id="deviceBrand" name="brand" required>
+                <option value="">Select device brand</option>
+                <option>Samsung</option>
+                <option>Apple</option>
+                <option>Xiaomi</option>
+                <option>Oppo</option>
+                <option>Huawei</option>
+                <option>Tecno</option>
+                <option>Infinix</option>
+              </select>
+              <div class="full" style="position:relative;">
+                <label for="deviceModel">Device model</label>
+                <input id="deviceModel" name="model" type="text" placeholder="Enter device model" autocomplete="off" required>
+                <ul id="modelSuggest" class="model-suggest" aria-hidden="true"></ul>
+              </div>
+              <select id="repairTypeSelect" name="repairType" required>
+                <option value="">Select repair type</option>
+              </select>
+              <input id="preferredAt" name="preferredAt" type="datetime-local" required>
+              <div class="full">
+                <label for="pickupDropoff">Pickup or drop-off</label>
+                <select id="pickupDropoff" name="pickupDropoff" required>
+                  <option value="Pickup">Pickup</option>
+                  <option value="Drop-off">Drop-off</option>
+                  <option value="In-store">In-store appointment</option>
+                </select>
+              </div>
+              <textarea id="description" name="description" placeholder="Describe the issue" required></textarea>
+              <div class="full">
+                <label for="deviceImage">Upload damaged phone image</label>
+                <input id="deviceImage" name="image" type="file" accept="image/png,image/jpeg,image/webp" required>
+              </div>
+              <div class="full">
+                <button class="btn primary block" type="submit">Submit booking</button>
+              </div>
+            </form>
+            <div id="bookingMessage" class="muted" style="padding-top:1rem;"></div>
+          </article>
+        </div>
+
+        <div class="booking-card reveal" id="tracking">
+          <article class="card">
+            <div>
+              <span class="eyebrow"><span class="dot"></span> Track repair</span>
+              <h2>Track your booking</h2>
+              <p>Track status by entering your Booking ID and email address. See your repair progress with live status updates.</p>
+            </div>
+            <form id="trackForm" class="form-grid">
+              <input name="bookingId" type="text" placeholder="Booking ID" required>
+              <input name="email" type="email" placeholder="Booking email" required>
+              <div class="full">
+                <button class="btn ghost block" type="submit">Track repair</button>
+              </div>
+            </form>
+            <div id="trackMessage"></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <header class="section-head reveal">
+          <span class="eyebrow"><span class="dot"></span> Why choose us</span>
+          <h2>Reliable mobile repair support across Kenya.</h2>
+          <p>From diagnostics to delivery, SM Dynamics keeps repair communication transparent, fast, and affordable.</p>
+        </header>
+        <div class="review-grid reveal">
+          <article class="review-card">
+            <div class="stars">â˜…â˜…â˜…â˜…â˜…</div>
+            <q>Quick booking and excellent follow-up. The technician repaired my cracked screen in under 24 hours.</q>
+            <div class="rv-who"><span class="rv-avatar">A</span><div><b>Aisha K.</b><small>Samsung Galaxy S22</small></div></div>
+          </article>
+          <article class="review-card">
+            <div class="stars">â˜…â˜…â˜…â˜…â˜…</div>
+            <q>They helped me order the right part and schedule the repair without any hassle. Very professional service.</q>
+            <div class="rv-who"><span class="rv-avatar">B</span><div><b>Brian O.</b><small>iPhone 14</small></div></div>
+          </article>
+          <article class="review-card">
+            <div class="stars">â˜…â˜…â˜…â˜…â˜…</div>
+            <q>Great experience. The booking ID tracking worked perfectly, and I knew exactly when to collect my phone.</q>
+            <div class="rv-who"><span class="rv-avatar">C</span><div><b>Cathy W.</b><small>Note 12</small></div></div>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer" style="padding-block:3rem;">
+    <div class="container foot-grid">
+      <div>
+        <a href="index.html" class="brand"><span class="brand-mark"></span><span class="brand-name">SM Dynamics Electronics</span></a>
+        <p class="muted">Mobile repair, replacement and support across Kenya.</p>
+        <div class="socials">
+          <a href="https://facebook.com" aria-label="Facebook">f</a>
+          <a href="https://x.com" aria-label="X">ð•</a>
+          <a href="https://www.tiktok.com/@smdynamics" aria-label="TikTok">TT</a>
+          <a href="https://wa.me/254717043977" aria-label="WhatsApp">WA</a>
+        </div>
+      </div>
+      <div><h4>Shop</h4><a href="index.html#categories">Phones</a><a href="index.html#categories">Audio</a><a href="index.html#categories">Laptops</a><a href="index.html#categories">Gaming</a></div>
+      <div><h4>Support</h4><a href="contact.html">Help Center</a><a href="contact.html">Shipping</a><a href="contact.html">Returns</a><a href="contact.html">Warranty</a></div>
+      <div><h4>Company</h4><a href="contact.html">About</a><a href="contact.html">Terms and Conditions</a><a href="contact.html">Founder</a><a href="contact.html">Contact</a><a href="management.html">Management</a></div>
+    </div>
+    <div class="foot-bot container" style="margin-top:2rem;">
+      <span>Â© 2026 SM Dynamics Electronics. All rights reserved.</span>
+      <span>Built for Kenya Â· Trusted nationwide.</span>
+    </div>
+  </footer>
+
+  <script src="shop/app.js" defer></script>
+  <script src="shop/repair.js" defer></script>
+  <script src="shop/pwa.js" defer></script>
+  <script>
+    const menuBtn = document.getElementById('menuToggle');
+    const mobileMenu = document.getElementById('mobileMenu');
+    menuBtn.addEventListener('click', () => {
+      menuBtn.classList.toggle('open');
+      mobileMenu.classList.toggle('open');
+    });
+    mobileMenu.querySelectorAll('a').forEach(anchor => anchor.addEventListener('click', () => {
+      menuBtn.classList.remove('open');
+      mobileMenu.classList.remove('open');
+    }));
+  </script>
+</body>
+</html>

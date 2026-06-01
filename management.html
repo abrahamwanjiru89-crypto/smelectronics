@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>S.M Dynamics Management</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shop/styles.css">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0b1120">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="SM Dynamics Electronics">
+<meta name="application-name" content="SM Dynamics Electronics">
+<link rel="apple-touch-icon" href="shop/brand logo.png">
+<script src="shop/pwa.js" defer></script>
+</head>
+<body class="management-body">
+  <main class="management-shell">
+    <section class="management-login" id="managerLogin">
+      <a class="brand" href="index.html" aria-label="Back to shop">
+        <span class="brand-mark"></span>
+        <span class="brand-name">S.M Dynamics Electronics</span>
+      </a>
+    <div class="manager-card reveal">
+        <span class="eyebrow"><span class="dot"></span> Staff Area</span>
+        <h1>Admin & Staff Portal</h1>
+        <form class="auth-form" id="managerLoginForm">
+          <input name="email" type="email" placeholder="Admin or staff email" autocomplete="email" required>
+          <input name="password" type="password" placeholder="Password" autocomplete="current-password" required>
+          <button class="btn primary block" type="submit">Login</button>
+        </form>
+        <!-- <p class="auth-hint">Admin: admin@smdynamics.com / admin123<br>Staff: staff@smdynamics.com / staff123</p> -->
+      </div>
+    </section>
+
+    <section class="management-orders" id="managerOrders" hidden>
+      <header class="manager-top">
+        <div>
+          <span class="eyebrow"><span class="dot"></span><span id="managerRole">Management</span></span>
+          <h1 id="managerTitle">Admin and Staff Portal</h1>
+        </div>
+        <div class="manager-actions">
+          <a class="btn ghost" href="index.html">Shop</a>
+          <button class="btn ghost" id="managerLogout" type="button">Logout</button>
+        </div>
+      </header>
+    <div class="dash-panel wide reveal">
+      <h3>Customer Orders</h3>
+        <div id="placedOrders"></div>
+      </div>
+    <div class="dash-panel wide reveal">
+        <h3>Repair Bookings</h3>
+        <div id="repairBookings"></div>
+      </div>
+    <div class="admin-sections" id="adminSections" hidden>
+      <section class="dash-panel reveal">
+          <h3>Business Performance</h3>
+          <canvas id="performanceChart" width="900" height="320" aria-label="Business performance graph"></canvas>
+          <div class="metrics" id="metrics"></div>
+        </section>
+      <section class="dash-panel reveal">
+          <h3>Staff Accounts</h3>
+          <form class="dash-form" id="staffForm">
+            <input name="name" placeholder="Staff name" required>
+            <input name="email" type="email" placeholder="Staff email" required>
+            <input name="password" type="password" placeholder="Password" minlength="4" required>
+            <button class="btn primary block" type="submit">Create Staff</button>
+          </form>
+          <div class="staff-list" id="staffList"></div>
+        </section>
+      <section class="dash-panel wide reveal">
+          <h3>Products</h3>
+          <div class="product-admin" id="productAdmin"></div>
+        </section>
+      <section class="dash-panel wide reveal">
+          <h3>Add Product</h3>
+          <form class="dash-form product-add" id="productForm">
+            <input name="name" placeholder="Product name" required>
+            <select name="cat" required>
+              <option value="phones">Phones</option>
+              <option value="audio">Audio</option>
+              <option value="laptops">Laptops</option>
+              <option value="wearables">Wearables</option>
+              <option value="gaming">Gaming</option>
+              <option value="home">Smart Home</option>
+              <option value="repair">Repairs</option>
+            </select>
+            <input name="price" type="number" min="0" placeholder="Price" required>
+            <input name="img" type="file" accept="image/*" required>
+            <textarea name="desc" placeholder="Description" required></textarea>
+            <button class="btn primary block" type="submit">Add Product</button>
+          </form>
+        </section>
+      <section class="dash-panel reveal">
+          <h3>Repair Technicians</h3>
+          <form class="dash-form" id="technicianForm">
+            <input name="name" placeholder="Technician name" required>
+            <input name="email" type="email" placeholder="Technician email" required>
+            <button class="btn primary block" type="submit">Add Technician</button>
+          </form>
+          <div class="staff-list" id="technicianList"></div>
+        </section>
+      <section class="dash-panel wide reveal">
+          <h3>Repair Services</h3>
+          <div class="product-admin" id="repairServiceAdmin"></div>
+        </section>
+      <section class="dash-panel wide reveal">
+          <h3>Spare Parts Inventory</h3>
+          <div class="product-admin" id="sparePartAdmin"></div>
+      </section>
+      <section class="dash-panel wide reveal">
+          <h3>Add Spare Part</h3>
+          <form class="dash-form product-add" id="sparePartForm" enctype="multipart/form-data">
+            <div class="product-add" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+              <input name="name" placeholder="Part name (e.g. iPhone 14 LCD)" required>
+              <input name="brand" placeholder="Brand (e.g. Apple)" required>
+              <input name="category" placeholder="Category (e.g. Screen)" required>
+              <input name="price" type="number" min="0" placeholder="Price" required>
+              <input name="stock" type="number" min="0" placeholder="Stock quantity" required>
+              <input name="image" type="file" accept="image/*" required>
+              <textarea name="description" placeholder="Part description" style="grid-column: span 2;" required></textarea>
+            </div>
+            <button class="btn primary block" type="submit">Add Spare Part</button>
+          </form>
+      </section>
+      <section class="dash-panel wide reveal">
+          <h3>Add Repair Service</h3>
+          <form class="dash-form" id="repairServiceForm" enctype="multipart/form-data">
+            <input name="title" placeholder="Service title" required>
+            <input name="brand" placeholder="Brand (e.g. Samsung)" required>
+            <input name="repairType" placeholder="Repair type (e.g. Screen replacement)" required>
+            <input name="price" type="number" min="0" placeholder="Price" required>
+            <input name="duration" placeholder="Duration (e.g. 1-2 days)" required>
+            <input name="warranty" placeholder="Warranty (e.g. 3 months)" required>
+            <select name="categoryId" id="repairCategorySelect" required>
+              <option value="">Select category</option>
+            </select>
+            <select name="available" required>
+              <option value="1">Available</option>
+              <option value="0">Unavailable</option>
+            </select>
+            <input name="image" type="file" accept="image/*" required>
+            <textarea name="description" placeholder="Service description" required></textarea>
+            <button class="btn primary block" type="submit">Add Repair Service</button>
+          </form>
+        </section>
+      </div>
+    </section>
+  </main>
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+  <script src="shop/management.js" defer></script>
+</body>
+</html>

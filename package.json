@@ -1,0 +1,11 @@
+{
+  "name": "sm-dynamics-shop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "S.M Dynamics electronics shop with SQLite, authentication, product management, and orders.",
+  "main": "server.py",
+  "scripts": {
+    "start": "python server.py",
+    "dev": "python server.py"
+  }
+}

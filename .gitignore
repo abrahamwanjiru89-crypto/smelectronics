@@ -1,0 +1,17 @@
+node_modules/
+uploads/
+.env
+.vscode/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.log
+npm-debug.log*
+.DS_Store
+dist/
+build/
+coverage/
+/.history/
+*.sqlite3
+*.db
