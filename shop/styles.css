@@ -280,15 +280,15 @@ html[data-theme="light"] #themeBtn .i-moon { display:none; }
 .section-head h2 { font-family:var(--font-display); font-weight:700; font-size: clamp(2rem,4vw,3rem); line-height:1.1; margin:.8rem 0; letter-spacing:-.02em; }
 .section-head p { color:var(--muted); }
 
-/* reveal */
-/* .reveal { opacity:0; transform: translateY(30px); transition: opacity .8s ease, transform .8s ease; } */
+/* reveal */ 
+.reveal { opacity:0; transform: translateY(30px); transition: opacity .8s ease, transform .8s ease; }
 .reveal.in { opacity:1; transform: none; }
 .reveal {
   opacity: 1;
   transform: none;
 }
 
-/* Repair-Specific Layouts */
+ /* Repair-Specific Layouts */
 .repair-filters-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1rem; margin-top:1.5rem; }
 .search-card { background:rgba(9,14,24,.96); border:1px solid rgba(255,255,255,.08); border-radius:20px; padding:1.25rem; }
 .search-card label { display:block; margin-bottom:.6rem; color:var(--muted); font-size:.88rem; font-weight: 500; }
