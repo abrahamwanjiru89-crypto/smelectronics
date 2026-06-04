@@ -53,10 +53,12 @@ const LOADING = {
 
 async function api(path, options = {}) {
   const response = await fetch(path, {
-    credentials: 'include',
-    headers: options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' },
-    ...options
-  });
+  credentials: 'include',
+  headers: options.body instanceof FormData
+    ? {}
+    : { 'Content-Type': 'application/json' },
+  ...options
+});
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
     throw new Error(payload.error || 'Server request failed');
