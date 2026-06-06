@@ -3,11 +3,10 @@ const notifyBtn = document.getElementById('notifyBtn');
 let deferredPrompt = null;
 
 function showInstallButton() {
-  if (!installBtn) return;
-  function showInstallButton() {
   if (!pwaInstallBtn) return;
   pwaInstallBtn.style.display = 'inline-flex';
   pwaInstallBtn.addEventListener('click', async () => {
+    if (!deferredPrompt) return;
     deferredPrompt.prompt();
     const choiceResult = await deferredPrompt.userChoice;
     if (choiceResult.outcome === 'accepted') {
@@ -16,7 +15,7 @@ function showInstallButton() {
       toast('Installation dismissed. You can install it later from the browser menu.', 'info');
     }
     deferredPrompt = null;
-    installBtn.style.display = 'none';
+    pwaInstallBtn.style.display = 'none';
   });
 }
 
