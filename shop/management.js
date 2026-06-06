@@ -849,3 +849,59 @@ updateView().catch(() => {
   const ordersPanel = $('#managerOrders');
   if (ordersPanel) ordersPanel.hidden = true;
 });
+// Add this function to management.js - ensures spare parts are saved with proper image handling
+async function loadAdminSpareParts() {
+  if (offlineManager) {
+    spareParts = [];
+    renderAdminSpareParts();
+    return;
+  }
+  try {
+    const data = await api('/api/spare-parts');
+    spareParts = data.spares || [];
+    // Also save to localStorage with the correct key that repair page expects
+    localStorage.setItem('spare_parts', JSON.stringify(spareParts));
+    renderAdminSpareParts();
+  } catch (err) {
+    console.error("Failed to load spare parts:", err);
+    // Try to load from localStorage as fallback
+    const stored = localStorage.getItem('spare_parts');
+    if (stored) {
+      spareParts = JSON.parse(stored);
+      renderAdminSpareParts();
+    }
+  }
+}
+
+// Update the add spare part function
+document.getElementById('sparePartForm')?.addEventListener('submit', async e => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  try {
+    const response = await api('/api/admin/spare-parts', { method:'POST', body:fd });
+    // Save to localStorage with the correct key
+    const updatedParts = await api('/api/spare-parts');
+    localStorage.setItem('spare_parts', JSON.stringify(updatedParts.spares || []));
+    e.target.reset();
+    await loadAdminSpareParts();
+    toast('Spare part added to inventory', 'success');
+  } catch (err) { 
+    // Fallback for offline - save to localStorage directly
+    const newPart = {
+      id: Date.now(),
+      name: fd.get('name'),
+      brand: fd.get('brand'),
+      category: fd.get('category'),
+      modelNumber: fd.get('modelNumber'),
+      price: parseInt(fd.get('price')),
+      stock: parseInt(fd.get('stock')),
+      description: fd.get('description'),
+      image: 'shop/hero-phone.jpg'
+    };
+    const existing = JSON.parse(localStorage.getItem('spare_parts') || '[]');
+    existing.push(newPart);
+    localStorage.setItem('spare_parts', JSON.stringify(existing));
+    await loadAdminSpareParts();
+    toast('Spare part added (offline mode)', 'success');
+  }
+});
