@@ -252,11 +252,11 @@
         spareParts = JSON.parse(stored);
       } else {
         spareParts = [
-          { id: 1, name: "iPhone 13 Screen", brand: "Apple", modelNumber: "iPhone 13", price: 4500, stock: 15, image: "shop/hero-phone.jpg" },
-          { id: 2, name: "Samsung S22 Screen", brand: "Samsung", modelNumber: "Galaxy S22", price: 4200, stock: 8, image: "shop/hero-phone.jpg" },
-          { id: 3, name: "Tecno Camon 19 Screen", brand: "Tecno", modelNumber: "Camon 19", price: 3500, stock: 10, image: "shop/hero-phone.jpg" },
-          { id: 4, name: "Infinix Hot 11 Screen", brand: "Infinix", modelNumber: "Hot 11", price: 2300, stock: 9, image: "shop/hero-phone.jpg" },
-          { id: 5, name: "Oneplus Ace 2V Screen", brand: "Oneplus", modelNumber: "Ace 2V", price: 5000, stock: 1, image: "shop/hero-phone.jpg" }
+          { id: 101, name: "iPhone 13 Screen", brand: "Apple", modelNumber: "iPhone 13", price: 4500, stock: 15, image: "shop/hero-phone.jpg" },
+          { id: 102, name: "Samsung S22 Screen", brand: "Samsung", modelNumber: "Galaxy S22", price: 4200, stock: 8, image: "shop/hero-phone.jpg" },
+          { id: 103, name: "Tecno Camon 19 Screen", brand: "Tecno", modelNumber: "Camon 19", price: 3500, stock: 10, image: "shop/hero-phone.jpg" },
+          { id: 104, name: "Infinix Hot 11 Screen", brand: "Infinix", modelNumber: "Hot 11", price: 2300, stock: 9, image: "shop/hero-phone.jpg" },
+          { id: 105, name: "Oneplus Ace 2V Screen", brand: "Oneplus", modelNumber: "Ace 2V", price: 5000, stock: 1, image: "shop/hero-phone.jpg" }
         ];
         localStorage.setItem('spare_parts', JSON.stringify(spareParts));
       }
@@ -337,7 +337,7 @@
     }
 
     // ============================================
-    // ADD TO CART - Uses SAME system as main page (nova_cart)
+    // ADD TO CART - Saves to nova_cart with spare part details
     // ============================================
     
     function updateCartBadge() {
@@ -347,7 +347,7 @@
       if (cartCount) cartCount.innerText = totalItems;
     }
     
-    // THIS IS THE KEY FUNCTION - Same format as main page's addCart
+    // Main add to cart function for spare parts
     window.addToCartSpare = function(id) {
       console.log("Adding spare part to cart - ID:", id);
       
@@ -362,19 +362,28 @@
         return;
       }
       
-      // Get existing cart (same key as main page uses)
+      // Save spare part details for main page to display
+      const sparePartsMap = JSON.parse(localStorage.getItem('spare_parts_map') || '{}');
+      sparePartsMap[id] = {
+        name: item.name,
+        price: item.price,
+        image: item.image || 'shop/hero-phone.jpg',
+        brand: item.brand,
+        stock: item.stock
+      };
+      localStorage.setItem('spare_parts_map', JSON.stringify(sparePartsMap));
+      
+      // Get existing cart
       let cart = JSON.parse(localStorage.getItem('nova_cart') || '[]');
       
-      // Check if item already exists (using same structure as main page)
+      // Check if item already exists
       const existingIndex = cart.findIndex(cartItem => cartItem.id == id);
       
       if (existingIndex !== -1) {
-        // Increment quantity (using qty like main page)
         cart[existingIndex].qty = (cart[existingIndex].qty || 1) + 1;
       } else {
-        // Add new item (using same format as main page)
         cart.push({
-          id: item.id,
+          id: id,
           qty: 1
         });
       }
@@ -388,7 +397,7 @@
       // Show success message
       toast(`${item.name} added to cart!`, 'success');
       
-      // Optional: Show cart sidebar briefly
+      // Open cart sidebar
       const cartSide = document.getElementById('cartSide');
       const overlay = document.getElementById('overlay');
       if (cartSide && overlay) {
@@ -397,7 +406,7 @@
         setTimeout(() => {
           cartSide.classList.remove('open');
           overlay.classList.remove('show');
-        }, 2000);
+        }, 3000);
       }
     };
     
@@ -451,8 +460,7 @@
     renderServices();
     updateCartBadge();
     
-    // Make sure the main page's cart sidebar is accessible
-    console.log("Repair page loaded - Add to Cart uses nova_cart system");
+    console.log("Repair page loaded - Add to Cart ready");
   </script>
 
   <aside class="mobile-menu" id="mobileMenu">
