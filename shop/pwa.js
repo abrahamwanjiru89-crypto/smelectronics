@@ -1,4 +1,4 @@
-const installBtn = document.getElementById('installBtn');
+const pwaInstallBtn = document.getElementById('installBtn');
 const notifyBtn = document.getElementById('notifyBtn');
 let deferredPrompt = null;
 
