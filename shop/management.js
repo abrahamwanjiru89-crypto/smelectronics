@@ -82,450 +82,191 @@ function toast(msg, type='info') {
   setTimeout(() => t.remove(), 3300);
 }
 
-function getImageFilenameFromPath(imagePath) {
-  if (!imagePath) return null;
-  const parts = imagePath.split('/');
-  return parts[parts.length - 1];
-}
-
-async function deleteImageFile(imagePath) {
-  if (!imagePath) return true;
-  const defaultImages = ['hero-phone.jpg', 'headphones.jpg', 'laptop.jpg', 'watch.jpg', 'vr.jpg', 'earbuds.jpg', 'camera.jpg', 'console.jpg', 'tablet.jpg', 'speaker.jpg', 'drone.jpg', 'hub.jpg', 'keyboard.jpg', 'brand logo.png'];
-  const filename = getImageFilenameFromPath(imagePath);
-  if (defaultImages.includes(filename)) {
-    return true;
-  }
-  try {
-    const response = await fetch('/api/admin/delete-image', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ imagePath: imagePath })
-    });
-    const result = await response.json();
-    return result.ok;
-  } catch (err) {
-    console.error('Failed to delete image file:', err);
-    return false;
-  }
-}
-
 // ============================================
-// PRODUCTS CRUD - Blue Edit & Red Delete
+// PRODUCTS CRUD
 // ============================================
-
-window.deleteProduct = async function(id) {
-  if (!confirm('⚠️ Delete this product permanently? This action cannot be undone.')) return;
-  
-  const product = products.find(p => p.id == id);
-  const imagePath = product?.img;
-  
-  try {
-    if (imagePath && !imagePath.includes('/shop/')) {
-      await deleteImageFile(imagePath);
-    }
-    await api(`/api/admin/products/${id}`, { method: 'DELETE' });
-    products = products.filter(p => p.id !== id);
-    localStorage.setItem('management_products', JSON.stringify(products));
-    renderProducts();
-    toast('Product deleted successfully!', 'success');
-  } catch (err) {
-    toast('Failed to delete: ' + err.message, 'error');
-  }
-};
-
-window.editProduct = function(id) {
-  const product = products.find(p => p.id === id);
-  if (!product) {
-    toast('Product not found', 'error');
-    return;
-  }
-  
-  const modal = document.createElement('div');
-  modal.id = 'editProductModal';
-  modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:10001; display:flex; align-items:center; justify-content:center;';
-  
-  modal.innerHTML = `
-    <div style="background:#1a1a2e; border-radius:1.5rem; padding:2rem; max-width:550px; width:90%; max-height:90vh; overflow-y:auto;">
-      <h3 style="margin-bottom:1.5rem; color:#00e5ff;">✏️ Edit Product</h3>
-      <form id="editProductForm" enctype="multipart/form-data">
-        <input type="hidden" name="id" value="${product.id}">
-        <input type="hidden" name="oldImage" value="${product.img || ''}">
-        <div style="margin-bottom:1rem;">
-          <label style="display:block; margin-bottom:0.5rem; color:#888;">Product Name</label>
-          <input name="name" value="${esc(product.name)}" required style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;">
-        </div>
-        <div style="margin-bottom:1rem;">
-          <label style="display:block; margin-bottom:0.5rem; color:#888;">Category</label>
-          <select name="cat" style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;">
-            <option value="phones" ${product.cat === 'phones' ? 'selected' : ''}>Phones</option>
-            <option value="audio" ${product.cat === 'audio' ? 'selected' : ''}>Audio</option>
-            <option value="laptops" ${product.cat === 'laptops' ? 'selected' : ''}>Laptops</option>
-            <option value="wearables" ${product.cat === 'wearables' ? 'selected' : ''}>Wearables</option>
-            <option value="gaming" ${product.cat === 'gaming' ? 'selected' : ''}>Gaming</option>
-            <option value="home" ${product.cat === 'home' ? 'selected' : ''}>Smart Home</option>
-          </select>
-        </div>
-        <div style="margin-bottom:1rem;">
-          <label style="display:block; margin-bottom:0.5rem; color:#888;">Price (Kshs)</label>
-          <input name="price" type="number" value="${product.price}" required style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;">
-        </div>
-        <div style="margin-bottom:1rem;">
-          <label style="display:block; margin-bottom:0.5rem; color:#888;">In Stock</label>
-          <select name="inStock" style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;">
-            <option value="true" ${product.inStock !== false ? 'selected' : ''}>In Stock</option>
-            <option value="false" ${product.inStock === false ? 'selected' : ''}>Out of Stock</option>
-          </select>
-        </div>
-        <div style="margin-bottom:1rem;">
-          <label style="display:block; margin-bottom:0.5rem; color:#888;">New Image (optional)</label>
-          <input name="image" type="file" accept="image/*" style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;">
-          <small style="color:#888;">Current: ${product.img || 'No image'}</small>
-        </div>
-        <div style="margin-bottom:1rem;">
-          <label style="display:block; margin-bottom:0.5rem; color:#888;">Description</label>
-          <textarea name="desc" rows="4" style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;">${esc(product.desc || '')}</textarea>
-        </div>
-        <div style="display:flex; gap:1rem; margin-top:1rem;">
-          <button type="submit" class="btn primary" style="flex:1; padding:0.75rem;">💾 Save Changes</button>
-          <button type="button" class="btn ghost" onclick="document.getElementById('editProductModal').remove()" style="flex:1; padding:0.75rem;">Cancel</button>
-        </div>
-      </form>
-    </div>
-  `;
-  document.body.appendChild(modal);
-  
-  document.getElementById('editProductForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    const id = formData.get('id');
-    const oldImage = formData.get('oldImage');
-    const newImage = formData.get('image');
-    
-    try {
-      if (newImage && newImage.size > 0 && oldImage && !oldImage.includes('/shop/')) {
-        await deleteImageFile(oldImage);
-      }
-      const response = await fetch(`/api/admin/products/${id}`, { method: 'PUT', body: formData });
-      if (response.ok) {
-        await loadAdminData();
-        modal.remove();
-        toast('Product updated successfully!', 'success');
-      } else {
-        throw new Error('Update failed');
-      }
-    } catch (err) {
-      toast(err.message, 'error');
-    }
-  });
-};
 
 function renderProducts() {
   const el = $('#productAdmin');
   if (!el) return;
   if (!products || products.length === 0) {
-    el.innerHTML = '<div class="dash-empty">No products yet. Click "Add Product" to get started.</div>';
+    el.innerHTML = '<div class="dash-empty">No products yet.</div>';
     return;
   }
   el.innerHTML = products.map(product => `
-    <div style="background: #1a1a2e; border-radius: 1rem; padding: 1rem; margin-bottom: 1rem; border: 1px solid rgba(255,255,255,0.1);">
-      <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
-        <img src="${product.img || 'shop/hero-phone.jpg'}" alt="${esc(product.name)}" style="width: 70px; height: 70px; object-fit: cover; border-radius: 0.5rem;">
-        <div style="flex: 1;">
-          <h4 style="margin-bottom: 0.25rem;">${esc(product.name)}</h4>
-          <div style="display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.875rem;">
-            <span style="color: #00e5ff;">${esc(product.cat)}</span>
-            <span style="color: #00e5ff;">${fmt(product.price)}</span>
-            <span style="${product.inStock !== false ? 'color:#00c853' : 'color:#ff3b30'}">${product.inStock !== false ? '✅ In Stock' : '❌ Out of Stock'}</span>
+    <div class="product-item" data-id="${product.id}" style="background:#1a1a2e; border-radius:1rem; padding:1rem; margin-bottom:1rem; border:1px solid rgba(255,255,255,0.1);">
+      <div style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap;">
+        <img src="${product.img || 'shop/hero-phone.jpg'}" style="width:60px; height:60px; object-fit:cover; border-radius:0.5rem;">
+        <div style="flex:1;">
+          <h4>${esc(product.name)}</h4>
+          <div style="display:flex; gap:1rem; flex-wrap:wrap; font-size:0.875rem;">
+            <span style="color:#00e5ff;">${esc(product.cat)}</span>
+            <span style="color:#00e5ff;">${fmt(product.price)}</span>
+            <span style="${product.inStock !== false ? 'color:#00c853' : 'color:#ff3b30'}">${product.inStock !== false ? 'In Stock' : 'Out of Stock'}</span>
           </div>
-          ${product.desc ? `<p style="font-size: 0.75rem; color: #888; margin-top: 0.25rem;">${esc(product.desc.substring(0, 100))}</p>` : ''}
         </div>
-        <div style="display: flex; gap: 0.5rem;">
-          <button onclick="editProduct(${product.id})" style="background: #00e5ff; color: #000; border: none; padding: 0.6rem 1.2rem; border-radius: 0.5rem; cursor: pointer; font-weight: 600;">✏️ Edit</button>
-          <button onclick="deleteProduct(${product.id})" style="background: #ff3b30; color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 0.5rem; cursor: pointer; font-weight: 600;">🗑️ Delete</button>
+        <div>
+          <button class="edit-product" data-id="${product.id}" style="background:#00e5ff; color:#000; border:none; padding:0.5rem 1rem; border-radius:0.5rem; cursor:pointer; margin-right:0.5rem;">✏️ Edit</button>
+          <button class="delete-product" data-id="${product.id}" style="background:#ff3b30; color:#fff; border:none; padding:0.5rem 1rem; border-radius:0.5rem; cursor:pointer;">🗑️ Delete</button>
         </div>
       </div>
     </div>
   `).join('');
+  
+  // Attach event listeners
+  $$('.edit-product').forEach(btn => btn.addEventListener('click', () => editProduct(btn.dataset.id)));
+  $$('.delete-product').forEach(btn => btn.addEventListener('click', () => deleteProduct(btn.dataset.id)));
+}
+
+function editProduct(id) {
+  const product = products.find(p => p.id == id);
+  if (!product) { toast('Product not found', 'error'); return; }
+  
+  const newName = prompt('Edit product name:', product.name);
+  if (newName && newName.trim()) {
+    const newPrice = prompt('Edit price (Kshs):', product.price);
+    if (newPrice) {
+      product.name = newName.trim();
+      product.price = parseFloat(newPrice);
+      localStorage.setItem('management_products', JSON.stringify(products));
+      renderProducts();
+      toast('Product updated locally', 'success');
+    }
+  }
+}
+
+function deleteProduct(id) {
+  if (!confirm('Delete this product?')) return;
+  products = products.filter(p => p.id != id);
+  localStorage.setItem('management_products', JSON.stringify(products));
+  renderProducts();
+  toast('Product deleted', 'success');
 }
 
 // ============================================
-// SPARE PARTS CRUD - Blue Edit & Red Delete
+// SPARE PARTS CRUD
 // ============================================
-
-window.editSparePart = function(id) {
-  const part = spareParts.find(p => p.id == id);
-  if (!part) {
-    toast('Spare part not found', 'error');
-    return;
-  }
-  
-  const modal = document.createElement('div');
-  modal.id = 'editSpareModal';
-  modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:10001; display:flex; align-items:center; justify-content:center;';
-  
-  modal.innerHTML = `
-    <div style="background:#1a1a2e; border-radius:1.5rem; padding:2rem; max-width:550px; width:90%; max-height:90vh; overflow-y:auto;">
-      <h3 style="margin-bottom:1.5rem; color:#00e5ff;">✏️ Edit Spare Part</h3>
-      <form id="editSpareForm" enctype="multipart/form-data">
-        <input type="hidden" name="id" value="${part.id}">
-        <input type="hidden" name="oldImage" value="${part.image || ''}">
-        <div style="margin-bottom:1rem;">
-          <label style="display:block; margin-bottom:0.5rem; color:#888;">Part Name</label>
-          <input name="name" value="${esc(part.name)}" required style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;">
-        </div>
-        <div style="margin-bottom:1rem;">
-          <label style="display:block; margin-bottom:0.5rem; color:#888;">Brand</label>
-          <input name="brand" value="${esc(part.brand)}" required style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;">
-        </div>
-        <div style="margin-bottom:1rem;">
-          <label style="display:block; margin-bottom:0.5rem; color:#888;">Category</label>
-          <input name="category" value="${esc(part.category || '')}" style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;">
-        </div>
-        <div style="margin-bottom:1rem;">
-          <label style="display:block; margin-bottom:0.5rem; color:#888;">Model Number</label>
-          <input name="modelNumber" value="${esc(part.modelNumber || '')}" style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;">
-        </div>
-        <div style="margin-bottom:1rem;">
-          <label style="display:block; margin-bottom:0.5rem; color:#888;">Price (Kshs)</label>
-          <input name="price" type="number" value="${part.price}" required style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;">
-        </div>
-        <div style="margin-bottom:1rem;">
-          <label style="display:block; margin-bottom:0.5rem; color:#888;">Stock Quantity</label>
-          <input name="stock" type="number" value="${part.stock}" required style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;">
-        </div>
-        <div style="margin-bottom:1rem;">
-          <label style="display:block; margin-bottom:0.5rem; color:#888;">New Image (optional)</label>
-          <input name="image" type="file" accept="image/*" style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;">
-          <small style="color:#888;">Current: ${part.image || 'No image'}</small>
-        </div>
-        <div style="margin-bottom:1rem;">
-          <label style="display:block; margin-bottom:0.5rem; color:#888;">Description</label>
-          <textarea name="description" rows="3" style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;">${esc(part.description || '')}</textarea>
-        </div>
-        <div style="display:flex; gap:1rem; margin-top:1rem;">
-          <button type="submit" class="btn primary" style="flex:1;">💾 Save Changes</button>
-          <button type="button" class="btn ghost" onclick="document.getElementById('editSpareModal').remove()" style="flex:1;">Cancel</button>
-        </div>
-      </form>
-    </div>
-  `;
-  document.body.appendChild(modal);
-  
-  document.getElementById('editSpareForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    const id = formData.get('id');
-    const oldImage = formData.get('oldImage');
-    const newImage = formData.get('image');
-    
-    try {
-      if (newImage && newImage.size > 0 && oldImage) {
-        await deleteImageFile(oldImage);
-      }
-      const response = await fetch(`/api/admin/spare-parts/${id}`, { method: 'PUT', body: formData });
-      if (response.ok) {
-        await loadAdminSpareParts();
-        modal.remove();
-        toast('Spare part updated successfully!', 'success');
-      } else {
-        throw new Error('Update failed');
-      }
-    } catch (err) {
-      toast(err.message, 'error');
-    }
-  });
-};
-
-window.deleteSparePart = async function(id) {
-  if (!confirm('⚠️ Delete this spare part permanently? This will also delete its image.')) return;
-  
-  const part = spareParts.find(p => p.id == id);
-  const imagePath = part?.image;
-  
-  try {
-    if (imagePath) await deleteImageFile(imagePath);
-    await api(`/api/admin/spare-parts/${id}`, { method: 'DELETE' });
-    spareParts = spareParts.filter(p => p.id !== id);
-    localStorage.setItem('spare_parts', JSON.stringify(spareParts));
-    renderAdminSpareParts();
-    toast('Spare part deleted successfully!', 'success');
-  } catch (err) {
-    toast('Failed to delete: ' + err.message, 'error');
-  }
-};
 
 function renderAdminSpareParts() {
   const el = $('#sparePartAdmin');
   if (!el) return;
   if (!spareParts || spareParts.length === 0) {
-    el.innerHTML = '<div class="dash-empty">No spare parts in inventory. Click "Add Spare Part" to get started.</div>';
+    el.innerHTML = '<div class="dash-empty">No spare parts yet.</div>';
     return;
   }
   el.innerHTML = spareParts.map(part => `
-    <div style="background: #1a1a2e; border-radius: 1rem; padding: 1rem; margin-bottom: 1rem; border: 1px solid rgba(255,255,255,0.1);">
-      <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
-        <img src="${part.image || 'shop/hero-phone.jpg'}" alt="${esc(part.name)}" style="width: 70px; height: 70px; object-fit: cover; border-radius: 0.5rem;">
-        <div style="flex: 1;">
-          <h4 style="margin-bottom: 0.25rem;">${esc(part.name)}</h4>
-          <div style="display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.875rem;">
-            <span style="color: #00e5ff;">${esc(part.brand)}</span>
-            <span style="color: #888;">${esc(part.category || 'Uncategorized')}</span>
-            ${part.modelNumber ? `<span style="color: #888;">Model: ${esc(part.modelNumber)}</span>` : ''}
-            <span style="color: #00e5ff;">${fmt(part.price)}</span>
+    <div class="spare-item" data-id="${part.id}" style="background:#1a1a2e; border-radius:1rem; padding:1rem; margin-bottom:1rem; border:1px solid rgba(255,255,255,0.1);">
+      <div style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap;">
+        <img src="${part.image || 'shop/hero-phone.jpg'}" style="width:60px; height:60px; object-fit:cover; border-radius:0.5rem;">
+        <div style="flex:1;">
+          <h4>${esc(part.name)}</h4>
+          <div style="display:flex; gap:1rem; flex-wrap:wrap; font-size:0.875rem;">
+            <span style="color:#00e5ff;">${esc(part.brand)}</span>
+            <span style="color:#888;">${esc(part.category || 'Uncategorized')}</span>
+            ${part.modelNumber ? `<span style="color:#888;">Model: ${esc(part.modelNumber)}</span>` : ''}
+            <span style="color:#00e5ff;">${fmt(part.price)}</span>
             <span style="${part.stock > 0 ? 'color:#00c853' : 'color:#ff3b30'}">Stock: ${part.stock}</span>
           </div>
-          ${part.description ? `<p style="font-size: 0.75rem; color: #888; margin-top: 0.25rem;">${esc(part.description.substring(0, 100))}</p>` : ''}
         </div>
-        <div style="display: flex; gap: 0.5rem;">
-          <button onclick="editSparePart(${part.id})" style="background: #00e5ff; color: #000; border: none; padding: 0.6rem 1.2rem; border-radius: 0.5rem; cursor: pointer; font-weight: 600;">✏️ Edit</button>
-          <button onclick="deleteSparePart(${part.id})" style="background: #ff3b30; color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 0.5rem; cursor: pointer; font-weight: 600;">🗑️ Delete</button>
+        <div>
+          <button class="edit-spare" data-id="${part.id}" style="background:#00e5ff; color:#000; border:none; padding:0.5rem 1rem; border-radius:0.5rem; cursor:pointer; margin-right:0.5rem;">✏️ Edit</button>
+          <button class="delete-spare" data-id="${part.id}" style="background:#ff3b30; color:#fff; border:none; padding:0.5rem 1rem; border-radius:0.5rem; cursor:pointer;">🗑️ Delete</button>
         </div>
       </div>
     </div>
   `).join('');
+  
+  $$('.edit-spare').forEach(btn => btn.addEventListener('click', () => editSparePart(btn.dataset.id)));
+  $$('.delete-spare').forEach(btn => btn.addEventListener('click', () => deleteSparePart(btn.dataset.id)));
+}
+
+function editSparePart(id) {
+  const part = spareParts.find(p => p.id == id);
+  if (!part) { toast('Spare part not found', 'error'); return; }
+  
+  const newName = prompt('Edit part name:', part.name);
+  if (newName && newName.trim()) {
+    const newPrice = prompt('Edit price (Kshs):', part.price);
+    if (newPrice) {
+      const newStock = prompt('Edit stock quantity:', part.stock);
+      if (newStock !== null) {
+        part.name = newName.trim();
+        part.price = parseFloat(newPrice);
+        part.stock = parseInt(newStock);
+        localStorage.setItem('spare_parts', JSON.stringify(spareParts));
+        renderAdminSpareParts();
+        toast('Spare part updated', 'success');
+      }
+    }
+  }
+}
+
+function deleteSparePart(id) {
+  if (!confirm('Delete this spare part?')) return;
+  spareParts = spareParts.filter(p => p.id != id);
+  localStorage.setItem('spare_parts', JSON.stringify(spareParts));
+  renderAdminSpareParts();
+  toast('Spare part deleted', 'success');
 }
 
 // ============================================
-// REPAIR SERVICES CRUD - Blue Edit & Red Delete
+// REPAIR SERVICES CRUD
 // ============================================
-
-window.editRepairService = function(id) {
-  const service = repairServices.find(s => s.id == id);
-  if (!service) {
-    toast('Repair service not found', 'error');
-    return;
-  }
-  
-  const modal = document.createElement('div');
-  modal.id = 'editServiceModal';
-  modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:10001; display:flex; align-items:center; justify-content:center;';
-  
-  modal.innerHTML = `
-    <div style="background:#1a1a2e; border-radius:1.5rem; padding:2rem; max-width:550px; width:90%;">
-      <h3 style="margin-bottom:1.5rem; color:#00e5ff;">✏️ Edit Repair Service</h3>
-      <form id="editServiceForm" enctype="multipart/form-data">
-        <input type="hidden" name="id" value="${service.id}">
-        <input type="hidden" name="oldImage" value="${service.image || ''}">
-        <div style="margin-bottom:1rem;">
-          <label style="display:block; margin-bottom:0.5rem; color:#888;">Service Title</label>
-          <input name="title" value="${esc(service.title)}" required style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;">
-        </div>
-        <div style="margin-bottom:1rem;">
-          <label style="display:block; margin-bottom:0.5rem; color:#888;">Brand</label>
-          <input name="brand" value="${esc(service.brand)}" required style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;">
-        </div>
-        <div style="margin-bottom:1rem;">
-          <label style="display:block; margin-bottom:0.5rem; color:#888;">Repair Type</label>
-          <input name="repairType" value="${esc(service.repairType)}" required style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;">
-        </div>
-        <div style="margin-bottom:1rem;">
-          <label style="display:block; margin-bottom:0.5rem; color:#888;">Price (Kshs)</label>
-          <input name="price" type="number" value="${service.price}" required style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;">
-        </div>
-        <div style="margin-bottom:1rem;">
-          <label style="display:block; margin-bottom:0.5rem; color:#888;">Duration</label>
-          <input name="duration" value="${esc(service.duration || '')}" style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;">
-        </div>
-        <div style="margin-bottom:1rem;">
-          <label style="display:block; margin-bottom:0.5rem; color:#888;">Warranty</label>
-          <input name="warranty" value="${esc(service.warranty || '')}" style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;">
-        </div>
-        <div style="margin-bottom:1rem;">
-          <label style="display:block; margin-bottom:0.5rem; color:#888;">Availability</label>
-          <select name="available" style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;">
-            <option value="1" ${service.available ? 'selected' : ''}>Available</option>
-            <option value="0" ${!service.available ? 'selected' : ''}>Unavailable</option>
-          </select>
-        </div>
-        <div style="margin-bottom:1rem;">
-          <label style="display:block; margin-bottom:0.5rem; color:#888;">New Image (optional)</label>
-          <input name="image" type="file" accept="image/*" style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;">
-          <small style="color:#888;">Current: ${service.image || 'No image'}</small>
-        </div>
-        <div style="margin-bottom:1rem;">
-          <label style="display:block; margin-bottom:0.5rem; color:#888;">Description</label>
-          <textarea name="description" rows="3" style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;">${esc(service.description || '')}</textarea>
-        </div>
-        <div style="display:flex; gap:1rem; margin-top:1rem;">
-          <button type="submit" class="btn primary" style="flex:1;">💾 Save Changes</button>
-          <button type="button" class="btn ghost" onclick="document.getElementById('editServiceModal').remove()" style="flex:1;">Cancel</button>
-        </div>
-      </form>
-    </div>
-  `;
-  document.body.appendChild(modal);
-  
-  document.getElementById('editServiceForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    const id = formData.get('id');
-    const oldImage = formData.get('oldImage');
-    const newImage = formData.get('image');
-    
-    try {
-      if (newImage && newImage.size > 0 && oldImage && !oldImage.includes('/shop/')) {
-        await deleteImageFile(oldImage);
-      }
-      const response = await fetch(`/api/management/repair-services/${id}`, { method: 'PUT', body: formData });
-      if (response.ok) {
-        await loadRepairServices();
-        modal.remove();
-        toast('Repair service updated successfully!', 'success');
-      } else {
-        throw new Error('Update failed');
-      }
-    } catch (err) {
-      toast(err.message, 'error');
-    }
-  });
-};
-
-window.deleteRepairService = async function(id) {
-  if (!confirm('⚠️ Delete this repair service permanently?')) return;
-  
-  const service = repairServices.find(s => s.id == id);
-  const imagePath = service?.image;
-  
-  try {
-    if (imagePath && !imagePath.includes('/shop/')) await deleteImageFile(imagePath);
-    await api(`/api/management/repair-services/${id}`, { method: 'DELETE' });
-    repairServices = repairServices.filter(s => s.id !== id);
-    localStorage.setItem('repair_services', JSON.stringify(repairServices));
-    renderRepairServices();
-    toast('Repair service deleted successfully!', 'success');
-  } catch (err) {
-    toast('Failed to delete: ' + err.message, 'error');
-  }
-};
 
 function renderRepairServices() {
   const el = $('#repairServiceAdmin');
   if (!el) return;
   if (!repairServices || repairServices.length === 0) {
-    el.innerHTML = '<div class="dash-empty">No repair services available. Click "Add Repair Service" to get started.</div>';
+    el.innerHTML = '<div class="dash-empty">No repair services yet.</div>';
     return;
   }
   el.innerHTML = repairServices.map(service => `
-    <div style="background: #1a1a2e; border-radius: 1rem; padding: 1rem; margin-bottom: 1rem; border: 1px solid rgba(255,255,255,0.1);">
-      <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
-        ${service.image ? `<img src="${service.image}" alt="${esc(service.title)}" style="width: 70px; height: 70px; object-fit: cover; border-radius: 0.5rem;">` : ''}
-        <div style="flex: 1;">
-          <h4 style="margin-bottom: 0.25rem;">${esc(service.title)}</h4>
-          <div style="display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.875rem;">
-            <span style="color: #00e5ff;">${esc(service.brand)}</span>
-            <span style="color: #888;">${esc(service.repairType)}</span>
-            <span style="color: #00e5ff;">${fmt(service.price)}</span>
-            <span style="${service.available ? 'color:#00c853' : 'color:#ff3b30'}">${service.available ? '✅ Available' : '❌ Unavailable'}</span>
+    <div class="service-item" data-id="${service.id}" style="background:#1a1a2e; border-radius:1rem; padding:1rem; margin-bottom:1rem; border:1px solid rgba(255,255,255,0.1);">
+      <div style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap;">
+        <div style="flex:1;">
+          <h4>${esc(service.title)}</h4>
+          <div style="display:flex; gap:1rem; flex-wrap:wrap; font-size:0.875rem;">
+            <span style="color:#00e5ff;">${esc(service.brand)}</span>
+            <span style="color:#888;">${esc(service.repairType)}</span>
+            <span style="color:#00e5ff;">${fmt(service.price)}</span>
+            <span style="${service.available ? 'color:#00c853' : 'color:#ff3b30'}">${service.available ? 'Available' : 'Unavailable'}</span>
           </div>
-          ${service.description ? `<p style="font-size: 0.75rem; color: #888; margin-top: 0.25rem;">${esc(service.description.substring(0, 100))}</p>` : ''}
         </div>
-        <div style="display: flex; gap: 0.5rem;">
-          <button onclick="editRepairService(${service.id})" style="background: #00e5ff; color: #000; border: none; padding: 0.6rem 1.2rem; border-radius: 0.5rem; cursor: pointer; font-weight: 600;">✏️ Edit</button>
-          <button onclick="deleteRepairService(${service.id})" style="background: #ff3b30; color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 0.5rem; cursor: pointer; font-weight: 600;">🗑️ Delete</button>
+        <div>
+          <button class="edit-service" data-id="${service.id}" style="background:#00e5ff; color:#000; border:none; padding:0.5rem 1rem; border-radius:0.5rem; cursor:pointer; margin-right:0.5rem;">✏️ Edit</button>
+          <button class="delete-service" data-id="${service.id}" style="background:#ff3b30; color:#fff; border:none; padding:0.5rem 1rem; border-radius:0.5rem; cursor:pointer;">🗑️ Delete</button>
         </div>
       </div>
     </div>
   `).join('');
+  
+  $$('.edit-service').forEach(btn => btn.addEventListener('click', () => editRepairService(btn.dataset.id)));
+  $$('.delete-service').forEach(btn => btn.addEventListener('click', () => deleteRepairService(btn.dataset.id)));
+}
+
+function editRepairService(id) {
+  const service = repairServices.find(s => s.id == id);
+  if (!service) { toast('Service not found', 'error'); return; }
+  
+  const newTitle = prompt('Edit service title:', service.title);
+  if (newTitle && newTitle.trim()) {
+    const newPrice = prompt('Edit price (Kshs):', service.price);
+    if (newPrice) {
+      service.title = newTitle.trim();
+      service.price = parseFloat(newPrice);
+      localStorage.setItem('repair_services', JSON.stringify(repairServices));
+      renderRepairServices();
+      toast('Repair service updated', 'success');
+    }
+  }
+}
+
+function deleteRepairService(id) {
+  if (!confirm('Delete this repair service?')) return;
+  repairServices = repairServices.filter(s => s.id != id);
+  localStorage.setItem('repair_services', JSON.stringify(repairServices));
+  renderRepairServices();
+  toast('Repair service deleted', 'success');
 }
 
 // ============================================
@@ -855,7 +596,7 @@ $('#sparePartForm')?.addEventListener('submit', async e => {
     await api('/api/admin/spare-parts', { method:'POST', body:fd });
     await loadAdminSpareParts();
     e.target.reset();
-    toast('Spare part added successfully!', 'success');
+    toast('Spare part added', 'success');
   } catch (err) {
     const newPart = {
       id: Date.now(),
@@ -873,7 +614,7 @@ $('#sparePartForm')?.addEventListener('submit', async e => {
     localStorage.setItem('spare_parts', JSON.stringify(existing));
     await loadAdminSpareParts();
     e.target.reset();
-    toast('Spare part added (offline mode)', 'success');
+    toast('Spare part added (offline)', 'success');
   }
 });
 
@@ -916,7 +657,7 @@ $('#repairServiceForm')?.addEventListener('submit', async e => {
     await api('/api/management/repair-services', { method: 'POST', body: fd });
     await loadRepairServices();
     e.target.reset();
-    toast('Repair service added successfully!', 'success');
+    toast('Repair service added', 'success');
   } catch (err) {
     toast(err.message, 'error');
   }
@@ -947,7 +688,7 @@ $('#productForm')?.addEventListener('submit', async e => {
     await api('/api/admin/products', { method:'POST', body:fd });
     e.target.reset();
     await loadAdminData();
-    toast('Product added successfully!', 'success');
+    toast('Product added', 'success');
   } catch (err) {
     toast(err.message, 'error');
   }
