@@ -13,112 +13,280 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <link rel="apple-touch-icon" href="shop/brand logo.png">
   <style>
-    /* Additional styles that work with your existing CSS */
-    .search-filters {
-      display: flex;
-      gap: 1rem;
-      margin-bottom: 2rem;
-      flex-wrap: wrap;
-    }
-    .search-filters input, .search-filters select {
-      flex: 1;
-      min-width: 200px;
-      padding: 0.75rem 1rem;
-      border-radius: 0.75rem;
-      border: 1px solid rgba(255,255,255,0.1);
-      background: var(--input-bg, #0f0f1a);
-      color: white;
-    }
+    /* Fix for card images */
     .repair-grid, .spare-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
       gap: 1.5rem;
       margin-top: 2rem;
     }
+    
     .service-card, .spare-card {
-      background: var(--card-bg, #1a1a2e);
-      border-radius: 1.5rem;
+      background: #1a1a2e;
+      border-radius: 1rem;
       overflow: hidden;
-      transition: transform 0.3s;
+      transition: transform 0.3s, box-shadow 0.3s;
       border: 1px solid rgba(255,255,255,0.1);
+      display: flex;
+      flex-direction: column;
     }
+    
     .service-card:hover, .spare-card:hover {
       transform: translateY(-5px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
     }
+    
+    .card-image {
+      width: 100%;
+      height: 180px;
+      background: #0f0f1a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    
+    .card-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s;
+    }
+    
+    .service-card:hover .card-image img,
+    .spare-card:hover .card-image img {
+      transform: scale(1.05);
+    }
+    
     .service-icon {
       font-size: 3rem;
       text-align: center;
       padding: 2rem;
       background: linear-gradient(135deg, rgba(0,229,255,0.1), rgba(124,77,255,0.1));
     }
+    
     .service-info, .spare-info {
-      padding: 1.5rem;
+      padding: 1.25rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
     }
+    
+    .service-info h3, .spare-info h3 {
+      font-size: 1.1rem;
+      margin-bottom: 0.5rem;
+      line-height: 1.4;
+    }
+    
     .service-price, .spare-price {
-      font-size: 1.5rem;
+      font-size: 1.25rem;
       font-weight: 700;
-      color: var(--primary, #00e5ff);
+      color: #00e5ff;
       margin: 0.5rem 0;
     }
-    .badge-instock {
-      background: #00c853;
-      color: white;
-      padding: 0.25rem 0.75rem;
-      border-radius: 2rem;
+    
+    .service-duration, .service-warranty {
       font-size: 0.75rem;
+      color: #888;
+      margin: 0.25rem 0;
     }
-    .badge-outstock {
-      background: #ff3b30;
-      color: white;
-      padding: 0.25rem 0.75rem;
-      border-radius: 2rem;
-      font-size: 0.75rem;
+    
+    .search-filters {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
     }
-    .spare-card img {
-      width: 100%;
-      height: 180px;
-      object-fit: cover;
+    
+    .search-filters input, .search-filters select {
+      flex: 1;
+      min-width: 200px;
+      padding: 0.75rem 1rem;
+      border-radius: 0.75rem;
+      border: 1px solid rgba(255,255,255,0.1);
       background: #0f0f1a;
+      color: white;
     }
+    
     .section-tabs {
       display: flex;
       gap: 1rem;
       margin-bottom: 2rem;
       border-bottom: 1px solid rgba(255,255,255,0.1);
       padding-bottom: 1rem;
+      flex-wrap: wrap;
     }
+    
     .section-tab {
       padding: 0.75rem 1.5rem;
       background: none;
       border: none;
-      color: var(--muted, #888);
+      color: #888;
       cursor: pointer;
       font-weight: 500;
       transition: all 0.3s;
     }
+    
     .section-tab.active {
-      color: var(--primary, #00e5ff);
-      border-bottom: 2px solid var(--primary, #00e5ff);
+      color: #00e5ff;
+      border-bottom: 2px solid #00e5ff;
     }
+    
+    .badge-instock {
+      background: #00c853;
+      color: white;
+      padding: 0.25rem 0.75rem;
+      border-radius: 2rem;
+      font-size: 0.7rem;
+      display: inline-block;
+    }
+    
+    .badge-outstock {
+      background: #ff3b30;
+      color: white;
+      padding: 0.25rem 0.75rem;
+      border-radius: 2rem;
+      font-size: 0.7rem;
+      display: inline-block;
+    }
+    
     .booking-form {
-      background: var(--card-bg, #1a1a2e);
+      background: #1a1a2e;
       border-radius: 1.5rem;
       padding: 2rem;
       margin-top: 2rem;
+      margin-bottom: 2rem;
     }
+    
     .booking-form input, .booking-form select, .booking-form textarea {
       width: 100%;
       padding: 0.75rem;
       border-radius: 0.75rem;
       border: 1px solid rgba(255,255,255,0.1);
-      background: var(--input-bg, #0f0f1a);
+      background: #0f0f1a;
       color: white;
       margin-bottom: 1rem;
     }
+    
     .search-stats {
       text-align: center;
       padding: 1rem;
       color: #888;
+      font-size: 0.875rem;
+    }
+    
+    .btn-add {
+      background: #00e5ff;
+      color: #000;
+      border: none;
+      padding: 0.6rem 1rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-weight: 600;
+      margin-top: 0.75rem;
+      width: 100%;
+      transition: opacity 0.3s;
+    }
+    
+    .btn-add:hover {
+      opacity: 0.9;
+    }
+    
+    .btn-add:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .brand-badge {
+      display: inline-block;
+      background: rgba(0,229,255,0.2);
+      color: #00e5ff;
+      padding: 0.2rem 0.6rem;
+      border-radius: 1rem;
+      font-size: 0.7rem;
+      font-weight: 500;
+    }
+    
+    /* Footer Styles matching your site */
+    .footer {
+      background: #0a0a0f;
+      padding: 3rem 0 2rem;
+      margin-top: 3rem;
+      border-top: 1px solid rgba(255,255,255,0.05);
+    }
+    
+    .foot-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 2rem;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 2rem;
+    }
+    
+    .foot-grid h4 {
+      color: #00e5ff;
+      margin-bottom: 1rem;
+      font-size: 1rem;
+    }
+    
+    .foot-grid a {
+      display: block;
+      color: #888;
+      text-decoration: none;
+      margin-bottom: 0.5rem;
+      font-size: 0.875rem;
+      transition: color 0.3s;
+    }
+    
+    .foot-grid a:hover {
+      color: #00e5ff;
+    }
+    
+    .socials {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    
+    .socials a {
+      width: 36px;
+      height: 36px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      text-decoration: none;
+      transition: all 0.3s;
+    }
+    
+    .socials a:hover {
+      background: #00e5ff;
+      color: #000;
+    }
+    
+    .foot-bot {
+      text-align: center;
+      padding-top: 2rem;
+      margin-top: 2rem;
+      border-top: 1px solid rgba(255,255,255,0.05);
+      color: #666;
+      font-size: 0.75rem;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 1.5rem 2rem 0;
+    }
+    
+    .brand-logo-sm {
+      height: 30px;
+      width: auto;
+    }
+    
+    .muted {
+      color: #666;
+      font-size: 0.875rem;
     }
   </style>
 </head>
@@ -131,13 +299,13 @@
       </a>
       <nav class="nav-links">
         <a href="index.html">Home</a>
-        <a href="repair.html">Repair</a>
+        <a href="repair.html" class="active">Repair</a>
         <a href="contact.html">Contact</a>
         <a href="management.html">Management</a>
       </nav>
       <div class="nav-tools">
         <button class="icon-btn" id="cartBtn" aria-label="Cart">
-          <svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+          <svg viewBox="0 0 24 24" width="20" height="20"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
           <span class="badge" id="cartCount">0</span>
         </button>
         <button class="account-btn" id="accountBtn">Login</button>
@@ -157,14 +325,9 @@
             <a href="#services" class="btn primary">View Services</a>
             <a href="#spares" class="btn ghost">Browse Parts</a>
           </div>
-          <div class="hero-stats">
-            <div><b>6 months</b><span>Warranty</span></div>
-            <div><b>Same-day</b><span>Service</span></div>
-            <div><b>Certified</b><span>Technicians</span></div>
-          </div>
         </div>
         <div>
-          <img src="shop/hero-phone.jpg" alt="Phone Repair" style="border-radius: 2rem; width: 100%;">
+          <img src="shop/hero-phone.jpg" alt="Phone Repair" style="border-radius: 2rem; width: 100%;" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%231a1a2e%22/><text x=%2250%22 y=%2250%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23888%22>Phone Repair</text></svg>'">
         </div>
       </div>
     </section>
@@ -182,12 +345,6 @@
       <div class="container">
         <div class="search-filters">
           <input type="text" id="serviceSearch" placeholder="🔍 Search repair services...">
-          <select id="serviceBrandFilter">
-            <option value="">All Brands</option>
-            <option>Apple</option><option>Samsung</option><option>Xiaomi</option>
-            <option>Tecno</option><option>Infinix</option><option>Huawei</option>
-            <option>Oppo</option><option>Vivo</option>
-          </select>
         </div>
         <div class="repair-grid" id="serviceGrid"></div>
       </div>
@@ -197,7 +354,7 @@
     <section class="section" id="sparesSection" style="display: none;">
       <div class="container">
         <div class="search-filters">
-          <input type="text" id="spareSearch" placeholder="🔍 Search by brand (Apple, Samsung, Tecno, Infinix)...">
+          <input type="text" id="spareSearch" placeholder="🔍 Search by brand or part name...">
           <select id="spareBrandFilter"><option value="">All Brands</option></select>
           <input type="text" id="modelNumberSearch" placeholder="📱 Search by model number...">
         </div>
@@ -254,16 +411,67 @@
 
   <div class="toasts" id="toasts"></div>
 
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="foot-grid">
+      <div>
+        <a href="index.html" class="brand">
+          <img src="shop/brand logo.png" alt="SM Dynamics" class="brand-logo-sm" style="height: 40px;">
+          <span class="brand-name">SM Dynamics Electronics</span>
+        </a>
+        <p class="muted">Premium electronics and repair services across Kenya.</p>
+        <div class="socials">
+          <a href="https://www.facebook.com/Smatelectronics/" aria-label="Facebook">f</a>
+          <a href="https://x.com" aria-label="X">𝕏</a>
+          <a href="https://tiktok.com" aria-label="TikTok">♪</a>
+          <a href="https://wa.me/254717043977" aria-label="WhatsApp">💬</a>
+        </div>
+      </div>
+      <div>
+        <h4>Shop</h4>
+        <a href="index.html#categories">Phones</a>
+        <a href="index.html#categories">Audio</a>
+        <a href="index.html#categories">Laptops</a>
+        <a href="index.html#categories">Gaming</a>
+      </div>
+      <div>
+        <h4>Support</h4>
+        <a href="contact.html">Help Center</a>
+        <a href="contact.html">Shipping</a>
+        <a href="contact.html">Returns</a>
+        <a href="contact.html">Warranty</a>
+      </div>
+      <div>
+        <h4>Contact</h4>
+        <a href="https://wa.me/254717043977" target="_blank" rel="noopener">💬 WhatsApp: +254 717 043 977</a>
+        <a href="mailto:info@smdynamics.com">📧 info@smdynamics.com</a>
+        <a href="https://www.tiktok.com/@smdynamics" target="_blank">🎵 TikTok</a>
+        <a href="https://maps.google.com/maps?q=S.M+Dynamics+Electronics+Kenya" target="_blank">📍 Location</a>
+      </div>
+      <div>
+        <h4>Company</h4>
+        <a href="contact.html">About</a>
+        <a href="contact.html">Terms and Conditions</a>
+        <a href="contact.html">Founder</a>
+        <a href="management.html">Management</a>
+      </div>
+    </div>
+    <div class="foot-bot">
+      <span>© 2026 S.M Dynamics Electronics. All rights reserved.</span>
+      <span>Designed for Kenya · Built for Earth.</span>
+    </div>
+  </footer>
+
   <script>
     // Repair Services
     const repairServices = [
-      { id: 1, name: "Screen Replacement", icon: "📱", price: 2500, duration: "1-2 hours", warranty: "3 months" },
-      { id: 2, name: "Battery Replacement", icon: "🔋", price: 1800, duration: "1 hour", warranty: "6 months" },
-      { id: 3, name: "Water Damage Repair", icon: "💧", price: 3500, duration: "2-3 days", warranty: "1 month" },
-      { id: 4, name: "Charging Port Repair", icon: "⚡", price: 1500, duration: "1-2 hours", warranty: "3 months" },
-      { id: 5, name: "Earpiece Replacement", icon: "👂", price: 1200, duration: "1 hour", warranty: "3 months" },
-      { id: 6, name: "Mouthpiece Replacement", icon: "🎤", price: 1200, duration: "1 hour", warranty: "3 months" },
-      { id: 7, name: "Speaker Replacement", icon: "🔊", price: 1400, duration: "1 hour", warranty: "3 months" }
+      { id: 1, name: "Screen Replacement", price: 2500, duration: "1-2 hours", warranty: "3 months" },
+      { id: 2, name: "Battery Replacement", price: 1800, duration: "1 hour", warranty: "6 months" },
+      { id: 3, name: "Water Damage Repair", price: 3500, duration: "2-3 days", warranty: "1 month" },
+      { id: 4, name: "Charging Port Repair", price: 1500, duration: "1-2 hours", warranty: "3 months" },
+      { id: 5, name: "Earpiece Replacement", price: 1200, duration: "1 hour", warranty: "3 months" },
+      { id: 6, name: "Mouthpiece Replacement", price: 1200, duration: "1 hour", warranty: "3 months" },
+      { id: 7, name: "Speaker Replacement", price: 1400, duration: "1 hour", warranty: "3 months" }
     ];
 
     // Load spare parts from localStorage
@@ -276,13 +484,19 @@
       } else {
         spareParts = [
           { id: 1, name: "iPhone 13 Screen", brand: "Apple", modelNumber: "iPhone 13", price: 4500, stock: 15, image: "shop/hero-phone.jpg" },
-          { id: 2, name: "Samsung S22 Screen", brand: "Samsung", modelNumber: "Galaxy S22", price: 4200, stock: 8, image: "shop/hero-phone.jpg" },
-          { id: 3, name: "Tecno Camon 19 Screen", brand: "Tecno", modelNumber: "Camon 19", price: 3500, stock: 10, image: "shop/hero-phone.jpg" },
-          { id: 4, name: "Infinix Hot 11 Screen", brand: "Infinix", modelNumber: "Hot 11", price: 2300, stock: 9, image: "shop/hero-phone.jpg" }
+          { id: 2, name: "iPhone 13 Battery", brand: "Apple", modelNumber: "iPhone 13", price: 2500, stock: 20, image: "shop/hero-phone.jpg" },
+          { id: 3, name: "Samsung S22 Screen", brand: "Samsung", modelNumber: "Galaxy S22", price: 4200, stock: 8, image: "shop/hero-phone.jpg" },
+          { id: 4, name: "Samsung S22 Battery", brand: "Samsung", modelNumber: "Galaxy S22", price: 2200, stock: 12, image: "shop/hero-phone.jpg" },
+          { id: 5, name: "Tecno Camon 19 Screen", brand: "Tecno", modelNumber: "Camon 19", price: 3500, stock: 10, image: "shop/hero-phone.jpg" },
+          { id: 6, name: "Tecno Camon 19 Battery", brand: "Tecno", modelNumber: "Camon 19", price: 1800, stock: 15, image: "shop/hero-phone.jpg" },
+          { id: 7, name: "Infinix Hot 11 Screen", brand: "Infinix", modelNumber: "Hot 11", price: 2300, stock: 9, image: "shop/hero-phone.jpg" },
+          { id: 8, name: "Infinix Charging Port", brand: "Infinix", modelNumber: "Hot 11", price: 150, stock: 10, image: "shop/hero-phone.jpg" },
+          { id: 9, name: "Samsung Charging Port", brand: "Samsung", modelNumber: "Galaxy A12", price: 300, stock: 30, image: "shop/hero-phone.jpg" }
         ];
         localStorage.setItem('spare_parts', JSON.stringify(spareParts));
       }
       
+      // Update brand filter
       const brands = [...new Set(spareParts.map(p => p.brand))];
       const filter = document.getElementById('spareBrandFilter');
       if (filter) {
@@ -298,12 +512,15 @@
       if (grid) {
         grid.innerHTML = filtered.map(service => `
           <div class="service-card">
-            <div class="service-icon">${service.icon}</div>
+            <div class="card-image">
+              <img src="shop/hero-phone.jpg" alt="${service.name}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%231a1a2e%22/><text x=%2250%22 y=%2250%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23888%22>${service.name.substring(0,10)}</text></svg>'">
+            </div>
             <div class="service-info">
               <h3>${service.name}</h3>
               <div class="service-price">Kshs ${service.price.toLocaleString()}</div>
-              <div style="color:#888;">⏱️ ${service.duration} | 🛡️ ${service.warranty}</div>
-              <button class="btn primary" style="margin-top:1rem; width:100%;" onclick="addToCartService(${service.id})">Book Service</button>
+              <div class="service-duration">⏱️ ${service.duration}</div>
+              <div class="service-warranty">🛡️ ${service.warranty} warranty</div>
+              <button class="btn-add" onclick="addToCartService(${service.id})">Book Service</button>
             </div>
           </div>
         `).join('');
@@ -323,23 +540,25 @@
       });
       
       const stats = document.getElementById('searchStats');
-      if (stats) stats.innerHTML = `Found ${filtered.length} spare parts`;
+      if (stats) stats.innerHTML = `🔍 Found ${filtered.length} spare part${filtered.length !== 1 ? 's' : ''}`;
       
       const grid = document.getElementById('spareGrid');
       if (grid) {
         if (filtered.length === 0) {
-          grid.innerHTML = '<div class="no-results" style="text-align:center; padding:2rem;">No spare parts found. Try "Tecno", "Samsung", or "iPhone"</div>';
+          grid.innerHTML = '<div style="text-align:center; padding:2rem; color:#888;">No spare parts found. Try "Tecno", "Samsung", or "iPhone"</div>';
           return;
         }
         grid.innerHTML = filtered.map(part => `
           <div class="spare-card">
-            <img src="${part.image || 'shop/hero-phone.jpg'}" alt="${part.name}" onerror="this.src='shop/hero-phone.jpg'">
+            <div class="card-image">
+              <img src="${part.image || 'shop/hero-phone.jpg'}" alt="${part.name}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%231a1a2e%22/><text x=%2250%22 y=%2250%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23888%22>${part.brand}</text></svg>'">
+            </div>
             <div class="spare-info">
               <h3>${escapeHtml(part.name)}</h3>
-              <div><span style="color:#00e5ff">${escapeHtml(part.brand)}</span> ${part.modelNumber ? `· ${escapeHtml(part.modelNumber)}` : ''}</div>
+              <div><span class="brand-badge">${escapeHtml(part.brand)}</span> ${part.modelNumber ? `<span style="color:#888;"> · ${escapeHtml(part.modelNumber)}</span>` : ''}</div>
               <div class="spare-price">Kshs ${part.price.toLocaleString()}</div>
-              <div>${part.stock > 0 ? `<span class="badge-instock">In Stock (${part.stock})</span>` : '<span class="badge-outstock">Out of Stock</span>'}</div>
-              <button class="btn primary" style="margin-top:1rem; width:100%;" onclick="addToCartSpare(${part.id})" ${part.stock === 0 ? 'disabled' : ''}>Add to Cart</button>
+              <div>${part.stock > 0 ? `<span class="badge-instock">✅ In Stock (${part.stock})</span>` : '<span class="badge-outstock">❌ Out of Stock</span>'}</div>
+              <button class="btn-add" onclick="addToCartSpare(${part.id})" ${part.stock === 0 ? 'disabled' : ''}>Add to Cart</button>
             </div>
           </div>
         `).join('');
@@ -389,13 +608,13 @@
       
       const container = document.getElementById('cartItems');
       if (container) {
-        if (cart.length === 0) container.innerHTML = '<div class="cart-empty" style="text-align:center; padding:2rem;">Cart empty</div>';
+        if (cart.length === 0) container.innerHTML = '<div class="cart-empty" style="text-align:center; padding:2rem;">🛒 Cart empty</div>';
         else {
           container.innerHTML = cart.map(item => `
             <div style="display:flex; justify-content:space-between; padding:0.75rem; border-bottom:1px solid rgba(255,255,255,0.1);">
               <div><strong>${escapeHtml(item.name)}</strong><br><small>x${item.quantity}</small></div>
               <div>Kshs ${(item.price * item.quantity).toLocaleString()}</div>
-              <button onclick="removeFromCart('${item.id}', '${item.type}')" style="background:none; border:none; color:#ff3b30;">✕</button>
+              <button onclick="removeFromCart('${item.id}', '${item.type}')" style="background:none; border:none; color:#ff3b30; cursor:pointer;">✕</button>
             </div>
           `).join('');
         }
