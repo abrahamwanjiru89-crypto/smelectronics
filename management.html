@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>S.M Dynamics - Management Portal</title>
+<title>S.M Dynamics Management</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@600;800&display=swap" rel="stylesheet">
@@ -12,190 +12,91 @@
 <meta name="theme-color" content="#0b1120">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="SM Dynamics">
-<meta name="application-name" content="SM Dynamics">
+<meta name="apple-mobile-web-app-title" content="SM Dynamics Electronics">
+<meta name="application-name" content="SM Dynamics Electronics">
 <link rel="apple-touch-icon" href="shop/brand logo.png">
+<script src="shop/pwa.js" defer></script>
 <style>
-  /* Management Page Specific Styles */
-  .management-body {
-    background: var(--bg, #0b1120);
-    min-height: 100vh;
-  }
-  
-  .management-shell {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 2rem;
-  }
-  
-  .management-login {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 80vh;
-  }
-  
-  .manager-card {
-    max-width: 400px;
-    width: 100%;
-    background: var(--card-bg, #1a1a2e);
-    border-radius: 1.5rem;
-    padding: 2rem;
-    margin-top: 2rem;
-  }
-  
-  .manager-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-    flex-wrap: wrap;
+  /* Additional management styles */
+  .product-row {
+    display: grid;
+    grid-template-columns: 60px 1fr 150px 120px 120px 100px 100px;
     gap: 1rem;
-  }
-  
-  .manager-actions {
-    display: flex;
-    gap: 1rem;
-  }
-  
-  .dash-panel {
-    background: var(--card-bg, #1a1a2e);
-    border-radius: 1.5rem;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
-  }
-  
-  .admin-sections {
-    margin-top: 2rem;
-  }
-  
-  .product-admin {
-    overflow-x: auto;
-  }
-  
-  .product-table, .spare-table, .service-table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-  
-  .product-table th, .product-table td,
-  .spare-table th, .spare-table td,
-  .service-table th, .service-table td {
+    align-items: center;
     padding: 0.75rem;
-    text-align: left;
     border-bottom: 1px solid rgba(255,255,255,0.1);
   }
-  
-  .product-table th, .spare-table th, .service-table th {
-    background: rgba(0,229,255,0.1);
-    font-weight: 600;
-  }
-  
-  .product-table img, .spare-table img, .service-table img {
+  .product-row img {
     width: 50px;
     height: 50px;
     object-fit: cover;
     border-radius: 8px;
   }
-  
-  .btn-sm {
-    padding: 0.25rem 0.75rem;
-    font-size: 0.875rem;
-    margin: 0 0.25rem;
-    cursor: pointer;
-    border-radius: 0.5rem;
-    border: none;
-  }
-  
-  .btn-edit {
-    background: #00e5ff;
-    color: #000;
-  }
-  
-  .btn-delete {
-    background: #ff3b30;
-    color: white;
-  }
-  
-  .dash-form {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1rem;
-    margin-bottom: 1rem;
-  }
-  
-  .dash-form input, .dash-form select, .dash-form textarea {
+  .staff-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     padding: 0.75rem;
-    border-radius: 0.75rem;
-    border: 1px solid rgba(255,255,255,0.1);
-    background: var(--input-bg, #0f0f1a);
-    color: white;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
   }
-  
+  .staff-row div {
+    display: flex;
+    flex-direction: column;
+  }
+  .staff-row span {
+    font-size: 0.875rem;
+    color: #888;
+  }
+  .order-row {
+    padding: 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .order-items {
+    margin: 0.5rem 0;
+    font-size: 0.875rem;
+  }
+  .order-meta {
+    color: #888;
+    margin-top: 0.25rem;
+  }
+  .status {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 2rem;
+    font-size: 0.75rem;
+    margin-left: 0.5rem;
+  }
+  .status.pending, .status.placed { background: #ff9800; color: #000; }
+  .status.paid, .status.completed { background: #4caf50; color: #fff; }
+  .status.shipped { background: #2196f3; color: #fff; }
+  .status.delivered { background: #00c853; color: #fff; }
+  .dash-empty {
+    text-align: center;
+    padding: 2rem;
+    color: #888;
+  }
   .metrics {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 1rem;
     margin-top: 1rem;
   }
-  
-  .metric-card {
+  .metrics div {
     background: rgba(0,229,255,0.1);
     padding: 1rem;
     border-radius: 1rem;
     text-align: center;
   }
-  
-  .metric-card h4 {
+  .metrics b {
+    display: block;
     font-size: 1.5rem;
     color: #00e5ff;
-    margin-bottom: 0.5rem;
   }
-  
-  .status-badge {
-    padding: 0.25rem 0.5rem;
-    border-radius: 2rem;
-    font-size: 0.75rem;
+  .manager-order {
+    margin-bottom: 1rem;
   }
-  
-  .status-placed { background: #ff9800; color: #000; }
-  .status-paid { background: #4caf50; color: #fff; }
-  .status-pending { background: #ff9800; color: #000; }
-  .status-repairing { background: #2196f3; color: #fff; }
-  .status-completed { background: #4caf50; color: #fff; }
-  
-  .staff-list {
-    margin-top: 1rem;
-  }
-  
-  .staff-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.75rem;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-  }
-  
-  .toast {
-    position: fixed;
-    bottom: 2rem;
-    right: 2rem;
-    padding: 1rem 1.5rem;
-    border-radius: 0.75rem;
-    background: var(--card-bg, #1a1a2e);
-    color: white;
-    z-index: 1000;
-    animation: slideIn 0.3s ease;
-  }
-  
-  .toast.success { background: #00c853; }
-  .toast.error { background: #ff3b30; }
-  .toast.info { background: #2196f3; }
-  
-  @keyframes slideIn {
-    from { transform: translateX(100%); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
+  .danger-btn {
+    color: #ff3b30 !important;
   }
 </style>
 </head>
@@ -216,7 +117,8 @@
           <button class="btn primary block" type="submit">Login</button>
         </form>
         <p class="auth-hint" style="margin-top: 1rem; font-size: 0.875rem; color: #888;">
-          Demo: admin@smdynamics.com / admin123
+          Demo: admin@smdynamics.com / admin123<br>
+          Staff: staff@smdynamics.com / staff123
         </p>
       </div>
     </section>
@@ -308,9 +210,8 @@
           <form class="dash-form" id="sparePartForm" enctype="multipart/form-data">
             <input name="name" placeholder="Part name (e.g. iPhone 14 LCD)" required>
             <input name="brand" placeholder="Brand (e.g. Apple)" required>
-            <input name="modelNumber" placeholder="Model Number (e.g. iPhone 14)" required>
             <input name="category" placeholder="Category (e.g. Screen)" required>
-            <input name="price" type="number" min="0" placeholder="Price (Kshs)" required>
+            <input name="price" type="number" min="0" placeholder="Price" required>
             <input name="stock" type="number" min="0" placeholder="Stock quantity" required>
             <input name="image" type="file" accept="image/*" required>
             <textarea name="description" placeholder="Part description" rows="3" required></textarea>
@@ -331,7 +232,7 @@
             <input name="title" placeholder="Service title (e.g. Screen Replacement)" required>
             <input name="brand" placeholder="Brand (e.g. Samsung, Apple, All)" required>
             <input name="repairType" placeholder="Repair type" required>
-            <input name="price" type="number" min="0" placeholder="Price (Kshs)" required>
+            <input name="price" type="number" min="0" placeholder="Price" required>
             <input name="duration" placeholder="Duration (e.g. 1-2 hours)" required>
             <input name="warranty" placeholder="Warranty (e.g. 3 months)" required>
             <select name="available" required>
@@ -344,14 +245,18 @@
           </form>
         </section>
 
+        <!-- Repair Categories (for reference) -->
+        <section class="dash-panel reveal" hidden>
+          <h3>📁 Repair Categories</h3>
+          <select id="repairCategorySelect"></select>
+        </section>
+
         <!-- Technicians Management -->
         <section class="dash-panel reveal">
           <h3>👨‍🔧 Repair Technicians</h3>
           <form class="dash-form" id="technicianForm">
             <input name="name" placeholder="Technician name" required>
             <input name="email" type="email" placeholder="Technician email" required>
-            <input name="phone" placeholder="Phone number" required>
-            <input name="specialty" placeholder="Specialty (e.g. iPhone, Samsung)" required>
             <button class="btn primary block" type="submit">Add Technician</button>
           </form>
           <div class="staff-list" id="technicianList"></div>
@@ -362,461 +267,6 @@
   
   <div class="toasts" id="toasts" aria-live="polite"></div>
 
-  <script>
-    // ============================================
-    // MANAGEMENT SCRIPT - Complete Version
-    // ============================================
-    
-    let currentUser = null;
-    let products = JSON.parse(localStorage.getItem('management_products') || '[]');
-    let spareParts = JSON.parse(localStorage.getItem('spare_parts') || '[]');
-    let repairServices = JSON.parse(localStorage.getItem('repair_services') || '[]');
-    let staff = JSON.parse(localStorage.getItem('management_staff') || '[]');
-    let technicians = JSON.parse(localStorage.getItem('technicians') || '[]');
-    let orders = JSON.parse(localStorage.getItem('customer_orders') || '[]');
-    let repairBookings = JSON.parse(localStorage.getItem('repair_bookings') || '[]');
-
-    // Helper Functions
-    function toast(msg, type = 'info') {
-      const container = document.getElementById('toasts');
-      const toast = document.createElement('div');
-      toast.className = `toast ${type}`;
-      toast.textContent = msg;
-      container.appendChild(toast);
-      setTimeout(() => toast.remove(), 3000);
-    }
-
-    function saveData() {
-      localStorage.setItem('management_products', JSON.stringify(products));
-      localStorage.setItem('spare_parts', JSON.stringify(spareParts));
-      localStorage.setItem('repair_services', JSON.stringify(repairServices));
-      localStorage.setItem('management_staff', JSON.stringify(staff));
-      localStorage.setItem('technicians', JSON.stringify(technicians));
-      localStorage.setItem('customer_orders', JSON.stringify(orders));
-      localStorage.setItem('repair_bookings', JSON.stringify(repairBookings));
-    }
-
-    // Render Functions
-    function renderProducts() {
-      const container = document.getElementById('productAdmin');
-      if (!container) return;
-      
-      if (products.length === 0) {
-        container.innerHTML = '<p class="muted">No products added yet.</p>';
-        return;
-      }
-      
-      container.innerHTML = `
-        <table class="product-table">
-          <thead>
-            <tr><th>Image</th><th>Name</th><th>Category</th><th>Price</th><th>Actions</th></tr>
-          </thead>
-          <tbody>
-            ${products.map(product => `
-              <tr>
-                <td><img src="${product.image || 'shop/hero-phone.jpg'}" alt="${product.name}"></td>
-                <td>${product.name}</td>
-                <td>${product.category}</td>
-                <td>Kshs ${product.price.toLocaleString()}</td>
-                <td>
-                  <button class="btn-sm btn-delete" onclick="deleteProduct(${product.id})">Delete</button>
-                </td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      `;
-    }
-
-    function renderSpareParts() {
-      const container = document.getElementById('sparePartAdmin');
-      if (!container) return;
-      
-      if (spareParts.length === 0) {
-        container.innerHTML = '<p class="muted">No spare parts added yet.</p>';
-        return;
-      }
-      
-      container.innerHTML = `
-        <table class="spare-table">
-          <thead>
-            <tr><th>Image</th><th>Name</th><th>Brand</th><th>Model</th><th>Price</th><th>Stock</th><th>Actions</th></tr>
-          </thead>
-          <tbody>
-            ${spareParts.map(part => `
-              <tr>
-                <td><img src="${part.image || 'shop/hero-phone.jpg'}" alt="${part.name}"></td>
-                <td>${part.name}</td>
-                <td>${part.brand}</td>
-                <td>${part.modelNumber || '-'}</td>
-                <td>Kshs ${part.price.toLocaleString()}</td>
-                <td>${part.stock}</td>
-                <td>
-                  <button class="btn-sm btn-edit" onclick="editSparePart(${part.id})">Edit</button>
-                  <button class="btn-sm btn-delete" onclick="deleteSparePart(${part.id})">Delete</button>
-                </td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      `;
-    }
-
-    function renderRepairServices() {
-      const container = document.getElementById('repairServiceAdmin');
-      if (!container) return;
-      
-      if (repairServices.length === 0) {
-        container.innerHTML = '<p class="muted">No repair services added yet.</p>';
-        return;
-      }
-      
-      container.innerHTML = `
-        <table class="service-table">
-          <thead>
-            <tr><th>Image</th><th>Title</th><th>Brand</th><th>Type</th><th>Price</th><th>Duration</th><th>Actions</th></tr>
-          </thead>
-          <tbody>
-            ${repairServices.map(service => `
-              <tr>
-                <td><img src="${service.image || 'shop/hero-phone.jpg'}" alt="${service.title}"></td>
-                <td>${service.title}</td>
-                <td>${service.brand}</td>
-                <td>${service.repairType}</td>
-                <td>Kshs ${service.price.toLocaleString()}</td>
-                <td>${service.duration}</td>
-                <td>
-                  <button class="btn-sm btn-edit" onclick="editRepairService(${service.id})">Edit</button>
-                  <button class="btn-sm btn-delete" onclick="deleteRepairService(${service.id})">Delete</button>
-                </td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      `;
-    }
-
-    function renderOrders() {
-      const container = document.getElementById('placedOrders');
-      if (!container) return;
-      
-      if (orders.length === 0) {
-        container.innerHTML = '<p class="muted">No orders yet.</p>';
-        return;
-      }
-      
-      container.innerHTML = `
-        <table class="product-table">
-          <thead>
-            <tr><th>Order ID</th><th>Customer</th><th>Items</th><th>Total</th><th>Status</th><th>Actions</th></tr>
-          </thead>
-          <tbody>
-            ${orders.map(order => `
-              <tr>
-                <td>#${order.id}</td>
-                <td>${order.customerName || order.email}</td>
-                <td>${order.items?.length || 0} items</td>
-                <td>Kshs ${(order.total || 0).toLocaleString()}</td>
-                <td><span class="status-badge status-${order.status?.toLowerCase()}">${order.status || 'Pending'}</span></td>
-                <td>
-                  <select onchange="updateOrderStatus(${order.id}, this.value)">
-                    <option value="Pending" ${order.status === 'Pending' ? 'selected' : ''}>Pending</option>
-                    <option value="Processing" ${order.status === 'Processing' ? 'selected' : ''}>Processing</option>
-                    <option value="Shipped" ${order.status === 'Shipped' ? 'selected' : ''}>Shipped</option>
-                    <option value="Delivered" ${order.status === 'Delivered' ? 'selected' : ''}>Delivered</option>
-                  </select>
-                </td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      `;
-    }
-
-    function renderRepairBookings() {
-      const container = document.getElementById('repairBookings');
-      if (!container) return;
-      
-      if (repairBookings.length === 0) {
-        container.innerHTML = '<p class="muted">No repair bookings yet.</p>';
-        return;
-      }
-      
-      container.innerHTML = `
-        <table class="product-table">
-          <thead>
-            <tr><th>Name</th><th>Phone</th><th>Device</th><th>Service</th><th>Status</th><th>Actions</th></tr>
-          </thead>
-          <tbody>
-            ${repairBookings.map(booking => `
-              <tr>
-                <td>${booking.name}</td>
-                <td>${booking.phone}</td>
-                <td>${booking.brand} ${booking.model}</td>
-                <td>${booking.service}</td>
-                <td><span class="status-badge status-${booking.status?.toLowerCase()}">${booking.status || 'Pending'}</span></td>
-                <td>
-                  <select onchange="updateBookingStatus('${booking.id}', this.value)">
-                    <option value="Pending" ${booking.status === 'Pending' ? 'selected' : ''}>Pending</option>
-                    <option value="Diagnosing" ${booking.status === 'Diagnosing' ? 'selected' : ''}>Diagnosing</option>
-                    <option value="Repairing" ${booking.status === 'Repairing' ? 'selected' : ''}>Repairing</option>
-                    <option value="Completed" ${booking.status === 'Completed' ? 'selected' : ''}>Completed</option>
-                  </select>
-                </td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      `;
-    }
-
-    function renderStaff() {
-      const container = document.getElementById('staffList');
-      if (!container) return;
-      
-      container.innerHTML = staff.map(s => `
-        <div class="staff-item">
-          <div><strong>${s.name}</strong><br><small>${s.email}</small></div>
-          <button class="btn-sm btn-delete" onclick="deleteStaff('${s.id}')">Delete</button>
-        </div>
-      `).join('');
-    }
-
-    function renderTechnicians() {
-      const container = document.getElementById('technicianList');
-      if (!container) return;
-      
-      container.innerHTML = technicians.map(t => `
-        <div class="staff-item">
-          <div><strong>${t.name}</strong><br><small>${t.email} | ${t.specialty || 'General'}</small></div>
-          <button class="btn-sm btn-delete" onclick="deleteTechnician('${t.id}')">Delete</button>
-        </div>
-      `).join('');
-    }
-
-    // CRUD Operations
-    function deleteProduct(id) {
-      if (confirm('Delete this product?')) {
-        products = products.filter(p => p.id !== id);
-        saveData();
-        renderProducts();
-        toast('Product deleted', 'success');
-      }
-    }
-
-    function deleteSparePart(id) {
-      if (confirm('Delete this spare part?')) {
-        spareParts = spareParts.filter(p => p.id !== id);
-        saveData();
-        renderSpareParts();
-        toast('Spare part deleted', 'success');
-      }
-    }
-
-    function deleteRepairService(id) {
-      if (confirm('Delete this repair service?')) {
-        repairServices = repairServices.filter(s => s.id !== id);
-        saveData();
-        renderRepairServices();
-        toast('Repair service deleted', 'success');
-      }
-    }
-
-    function deleteStaff(id) {
-      if (confirm('Delete this staff member?')) {
-        staff = staff.filter(s => s.id !== id);
-        saveData();
-        renderStaff();
-        toast('Staff deleted', 'success');
-      }
-    }
-
-    function deleteTechnician(id) {
-      if (confirm('Delete this technician?')) {
-        technicians = technicians.filter(t => t.id !== id);
-        saveData();
-        renderTechnicians();
-        toast('Technician deleted', 'success');
-      }
-    }
-
-    function updateOrderStatus(orderId, status) {
-      const order = orders.find(o => o.id === orderId);
-      if (order) {
-        order.status = status;
-        saveData();
-        renderOrders();
-        toast(`Order #${orderId} updated to ${status}`, 'success');
-      }
-    }
-
-    function updateBookingStatus(bookingId, status) {
-      const booking = repairBookings.find(b => b.id === bookingId);
-      if (booking) {
-        booking.status = status;
-        saveData();
-        renderRepairBookings();
-        toast(`Booking ${bookingId} updated to ${status}`, 'success');
-      }
-    }
-
-    // Form Handlers
-    document.getElementById('productForm')?.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const formData = new FormData(e.target);
-      const newProduct = {
-        id: Date.now(),
-        name: formData.get('name'),
-        category: formData.get('cat'),
-        price: parseInt(formData.get('price')),
-        description: formData.get('desc'),
-        image: 'shop/hero-phone.jpg'
-      };
-      products.push(newProduct);
-      saveData();
-      renderProducts();
-      e.target.reset();
-      toast('Product added successfully!', 'success');
-    });
-
-    document.getElementById('sparePartForm')?.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const formData = new FormData(e.target);
-      const newPart = {
-        id: Date.now(),
-        name: formData.get('name'),
-        brand: formData.get('brand'),
-        modelNumber: formData.get('modelNumber'),
-        category: formData.get('category'),
-        price: parseInt(formData.get('price')),
-        stock: parseInt(formData.get('stock')),
-        description: formData.get('description'),
-        image: 'shop/hero-phone.jpg'
-      };
-      spareParts.push(newPart);
-      saveData();
-      renderSpareParts();
-      e.target.reset();
-      toast('Spare part added successfully!', 'success');
-    });
-
-    document.getElementById('repairServiceForm')?.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const formData = new FormData(e.target);
-      const newService = {
-        id: Date.now(),
-        title: formData.get('title'),
-        brand: formData.get('brand'),
-        repairType: formData.get('repairType'),
-        price: parseInt(formData.get('price')),
-        duration: formData.get('duration'),
-        warranty: formData.get('warranty'),
-        available: formData.get('available') === '1',
-        description: formData.get('description'),
-        image: 'shop/hero-phone.jpg'
-      };
-      repairServices.push(newService);
-      saveData();
-      renderRepairServices();
-      e.target.reset();
-      toast('Repair service added successfully!', 'success');
-    });
-
-    document.getElementById('staffForm')?.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const formData = new FormData(e.target);
-      const newStaff = {
-        id: Date.now(),
-        name: formData.get('name'),
-        email: formData.get('email'),
-        password: formData.get('password'),
-        role: 'staff'
-      };
-      staff.push(newStaff);
-      saveData();
-      renderStaff();
-      e.target.reset();
-      toast('Staff account created!', 'success');
-    });
-
-    document.getElementById('technicianForm')?.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const formData = new FormData(e.target);
-      const newTech = {
-        id: Date.now(),
-        name: formData.get('name'),
-        email: formData.get('email'),
-        phone: formData.get('phone'),
-        specialty: formData.get('specialty')
-      };
-      technicians.push(newTech);
-      saveData();
-      renderTechnicians();
-      e.target.reset();
-      toast('Technician added!', 'success');
-    });
-
-    // Login Handler
-    document.getElementById('managerLoginForm')?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const formData = new FormData(e.target);
-      const email = formData.get('email');
-      const password = formData.get('password');
-      
-      // Demo login
-      if (email === 'admin@smdynamics.com' && password === 'admin123') {
-        currentUser = { email, role: 'admin', name: 'Admin' };
-        document.getElementById('managerLogin').hidden = true;
-        document.getElementById('managerOrders').hidden = false;
-        document.getElementById('adminSections').hidden = false;
-        document.getElementById('managerRole').textContent = 'Administrator';
-        document.getElementById('managerTitle').textContent = 'Admin Dashboard';
-        
-        // Render all data
-        renderProducts();
-        renderSpareParts();
-        renderRepairServices();
-        renderOrders();
-        renderRepairBookings();
-        renderStaff();
-        renderTechnicians();
-        
-        toast('Welcome, Admin!', 'success');
-      } else if (email === 'staff@smdynamics.com' && password === 'staff123') {
-        currentUser = { email, role: 'staff', name: 'Staff' };
-        document.getElementById('managerLogin').hidden = true;
-        document.getElementById('managerOrders').hidden = false;
-        document.getElementById('adminSections').hidden = true;
-        document.getElementById('managerRole').textContent = 'Staff';
-        document.getElementById('managerTitle').textContent = 'Staff Dashboard';
-        
-        renderOrders();
-        renderRepairBookings();
-        
-        toast('Welcome, Staff!', 'success');
-      } else {
-        toast('Invalid credentials. Use admin@smdynamics.com / admin123', 'error');
-      }
-    });
-
-    // Logout Handler
-    document.getElementById('managerLogout')?.addEventListener('click', () => {
-      currentUser = null;
-      document.getElementById('managerLogin').hidden = false;
-      document.getElementById('managerOrders').hidden = true;
-      toast('Logged out successfully', 'info');
-    });
-
-    // Make functions global
-    window.deleteProduct = deleteProduct;
-    window.deleteSparePart = deleteSparePart;
-    window.deleteRepairService = deleteRepairService;
-    window.deleteStaff = deleteStaff;
-    window.deleteTechnician = deleteTechnician;
-    window.updateOrderStatus = updateOrderStatus;
-    window.updateBookingStatus = updateBookingStatus;
-    window.editSparePart = (id) => toast('Edit feature coming soon', 'info');
-    window.editRepairService = (id) => toast('Edit feature coming soon', 'info');
-  </script>
+  <script src="shop/management.js" defer></script>
 </body>
 </html>
