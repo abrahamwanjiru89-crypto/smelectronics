@@ -82,29 +82,19 @@ function toast(msg, type='info') {
   setTimeout(() => t.remove(), 3300);
 }
 
-// ============================================
-// HELPER: Extract filename from image path
-// ============================================
 function getImageFilenameFromPath(imagePath) {
   if (!imagePath) return null;
-  // Extract filename from paths like /uploads/filename.jpg or shop/hero-phone.jpg
   const parts = imagePath.split('/');
   return parts[parts.length - 1];
 }
 
-// ============================================
-// HELPER: Delete image file from server
-// ============================================
 async function deleteImageFile(imagePath) {
   if (!imagePath) return true;
-  // Don't delete default shop images
   const defaultImages = ['hero-phone.jpg', 'headphones.jpg', 'laptop.jpg', 'watch.jpg', 'vr.jpg', 'earbuds.jpg', 'camera.jpg', 'console.jpg', 'tablet.jpg', 'speaker.jpg', 'drone.jpg', 'hub.jpg', 'keyboard.jpg', 'brand logo.png'];
   const filename = getImageFilenameFromPath(imagePath);
   if (defaultImages.includes(filename)) {
-    console.log('Skipping deletion of default image:', filename);
     return true;
   }
-  
   try {
     const response = await fetch('/api/admin/delete-image', {
       method: 'DELETE',
@@ -120,7 +110,7 @@ async function deleteImageFile(imagePath) {
 }
 
 // ============================================
-// SPARE PARTS - FULL CRUD with image deletion
+// SPARE PARTS CRUD
 // ============================================
 
 window.editSparePart = function(id) {
@@ -140,56 +130,18 @@ window.editSparePart = function(id) {
       <form id="editSpareForm" enctype="multipart/form-data">
         <input type="hidden" name="id" value="${part.id}">
         <input type="hidden" name="oldImage" value="${part.image || ''}">
-        
-        <div style="margin-bottom:1rem;">
-          <label style="display:block; margin-bottom:0.5rem; color:#888;">Part Name</label>
-          <input name="name" value="${esc(part.name)}" required style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;">
-        </div>
-        
-        <div style="margin-bottom:1rem;">
-          <label style="display:block; margin-bottom:0.5rem; color:#888;">Brand</label>
-          <input name="brand" value="${esc(part.brand)}" required style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;">
-        </div>
-        
-        <div style="margin-bottom:1rem;">
-          <label style="display:block; margin-bottom:0.5rem; color:#888;">Category</label>
-          <input name="category" value="${esc(part.category || '')}" style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;">
-        </div>
-        
-        <div style="margin-bottom:1rem;">
-          <label style="display:block; margin-bottom:0.5rem; color:#888;">Model Number</label>
-          <input name="modelNumber" value="${esc(part.modelNumber || '')}" style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;">
-        </div>
-        
-        <div style="margin-bottom:1rem;">
-          <label style="display:block; margin-bottom:0.5rem; color:#888;">Price (Kshs)</label>
-          <input name="price" type="number" value="${part.price}" required style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;">
-        </div>
-        
-        <div style="margin-bottom:1rem;">
-          <label style="display:block; margin-bottom:0.5rem; color:#888;">Stock Quantity</label>
-          <input name="stock" type="number" value="${part.stock}" required style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;">
-        </div>
-        
-        <div style="margin-bottom:1rem;">
-          <label style="display:block; margin-bottom:0.5rem; color:#888;">New Image (optional)</label>
-          <input name="image" type="file" accept="image/*" style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;">
-          <small style="color:#888;">Current: ${part.image || 'No image'}</small>
-        </div>
-        
-        <div style="margin-bottom:1rem;">
-          <label style="display:block; margin-bottom:0.5rem; color:#888;">Description</label>
-          <textarea name="description" rows="3" style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;">${esc(part.description || '')}</textarea>
-        </div>
-        
-        <div style="display:flex; gap:1rem; margin-top:1.5rem;">
-          <button type="submit" class="btn primary" style="flex:1; padding:0.75rem;">💾 Save Changes</button>
-          <button type="button" class="btn ghost" onclick="document.getElementById('editSpareModal').remove()" style="flex:1; padding:0.75rem;">Cancel</button>
-        </div>
+        <div style="margin-bottom:1rem;"><input name="name" value="${esc(part.name)}" placeholder="Part Name" required style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;"></div>
+        <div style="margin-bottom:1rem;"><input name="brand" value="${esc(part.brand)}" placeholder="Brand" required style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;"></div>
+        <div style="margin-bottom:1rem;"><input name="category" value="${esc(part.category || '')}" placeholder="Category" style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;"></div>
+        <div style="margin-bottom:1rem;"><input name="modelNumber" value="${esc(part.modelNumber || '')}" placeholder="Model Number" style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;"></div>
+        <div style="margin-bottom:1rem;"><input name="price" type="number" value="${part.price}" placeholder="Price" required style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;"></div>
+        <div style="margin-bottom:1rem;"><input name="stock" type="number" value="${part.stock}" placeholder="Stock" required style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;"></div>
+        <div style="margin-bottom:1rem;"><input name="image" type="file" accept="image/*" style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;"><small style="color:#888;">Leave empty to keep current image</small></div>
+        <div style="margin-bottom:1rem;"><textarea name="description" rows="3" placeholder="Description" style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;">${esc(part.description || '')}</textarea></div>
+        <div style="display:flex; gap:1rem;"><button type="submit" class="btn primary" style="flex:1;">💾 Save</button><button type="button" class="btn ghost" onclick="document.getElementById('editSpareModal').remove()" style="flex:1;">Cancel</button></div>
       </form>
     </div>
   `;
-  
   document.body.appendChild(modal);
   
   document.getElementById('editSpareForm').addEventListener('submit', async (e) => {
@@ -198,22 +150,15 @@ window.editSparePart = function(id) {
     const id = formData.get('id');
     const oldImage = formData.get('oldImage');
     const newImage = formData.get('image');
-    
     try {
-      // If there's a new image, delete the old one first
       if (newImage && newImage.size > 0 && oldImage) {
         await deleteImageFile(oldImage);
       }
-      
-      const response = await fetch(`/api/admin/spare-parts/${id}`, {
-        method: 'PUT',
-        body: formData
-      });
-      
+      const response = await fetch(`/api/admin/spare-parts/${id}`, { method: 'PUT', body: formData });
       if (response.ok) {
         await loadAdminSpareParts();
         modal.remove();
-        toast('Spare part updated successfully!', 'success');
+        toast('Spare part updated!', 'success');
       } else {
         throw new Error('Update failed');
       }
@@ -224,25 +169,16 @@ window.editSparePart = function(id) {
 };
 
 window.deleteSparePart = async function(id) {
-  if (!confirm('⚠️ Are you sure you want to delete this spare part? This will also delete its image from the server.')) return;
-  
+  if (!confirm('⚠️ Delete this spare part? This will also delete its image.')) return;
   const part = spareParts.find(p => p.id == id);
   const imagePath = part?.image;
-  
   try {
-    // Delete the image file from server first
-    if (imagePath) {
-      await deleteImageFile(imagePath);
-    }
-    
-    // Delete the database record
+    if (imagePath) await deleteImageFile(imagePath);
     await api(`/api/admin/spare-parts/${id}`, { method: 'DELETE' });
-    
-    // Update local data
     spareParts = spareParts.filter(p => p.id !== id);
     localStorage.setItem('spare_parts', JSON.stringify(spareParts));
     renderAdminSpareParts();
-    toast('Spare part and image deleted successfully!', 'success');
+    toast('Spare part deleted!', 'success');
   } catch (err) {
     toast('Failed to delete: ' + err.message, 'error');
   }
@@ -251,60 +187,46 @@ window.deleteSparePart = async function(id) {
 function renderAdminSpareParts() {
   const el = $('#sparePartAdmin');
   if (!el) return;
-  
   if (!spareParts || spareParts.length === 0) {
-    el.innerHTML = '<div class="dash-empty">No spare parts in inventory. Click "Add Spare Part" to get started.</div>';
+    el.innerHTML = '<div class="dash-empty">No spare parts. Click "Add Spare Part" to get started.</div>';
     return;
   }
-  
   el.innerHTML = spareParts.map(part => `
-    <div style="background: #1a1a2e; border-radius: 1rem; padding: 1rem; margin-bottom: 1rem; border: 1px solid rgba(255,255,255,0.1);">
-      <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
-        <img src="${part.image || 'shop/hero-phone.jpg'}" alt="${esc(part.name)}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 0.5rem;">
-        <div style="flex: 1;">
-          <h4 style="margin-bottom: 0.25rem;">${esc(part.name)}</h4>
-          <div style="display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.875rem;">
-            <span style="color: #00e5ff;">${esc(part.brand)}</span>
-            <span style="color: #888;">${esc(part.category || 'Uncategorized')}</span>
-            ${part.modelNumber ? `<span style="color: #888;">Model: ${esc(part.modelNumber)}</span>` : ''}
-            <span style="color: #00e5ff;">${fmt(part.price)}</span>
+    <div style="background:#1a1a2e; border-radius:1rem; padding:1rem; margin-bottom:1rem; border:1px solid rgba(255,255,255,0.1);">
+      <div style="display:flex; gap:1rem; flex-wrap:wrap; align-items:center;">
+        <img src="${part.image || 'shop/hero-phone.jpg'}" style="width:60px; height:60px; object-fit:cover; border-radius:0.5rem;">
+        <div style="flex:1;">
+          <h4>${esc(part.name)}</h4>
+          <div style="display:flex; gap:1rem; flex-wrap:wrap; font-size:0.875rem;">
+            <span style="color:#00e5ff;">${esc(part.brand)}</span>
+            <span style="color:#888;">${esc(part.category || 'Uncategorized')}</span>
+            ${part.modelNumber ? `<span style="color:#888;">Model: ${esc(part.modelNumber)}</span>` : ''}
+            <span style="color:#00e5ff;">${fmt(part.price)}</span>
             <span style="${part.stock > 0 ? 'color:#00c853' : 'color:#ff3b30'}">Stock: ${part.stock}</span>
           </div>
-          ${part.description ? `<p style="font-size: 0.75rem; color: #888; margin-top: 0.25rem;">${esc(part.description.substring(0, 100))}</p>` : ''}
         </div>
-        <div style="display: flex; gap: 0.5rem;">
-          <button onclick="editSparePart(${part.id})" style="background: #00e5ff; color: #000; border: none; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; font-weight: 500;">✏️ Edit</button>
-          <button onclick="deleteSparePart(${part.id})" style="background: #ff3b30; color: white; border: none; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; font-weight: 500;">🗑️ Delete</button>
-        </div>
+        <div><button onclick="editSparePart(${part.id})" style="background:#00e5ff; color:#000; border:none; padding:0.5rem 1rem; border-radius:0.5rem; cursor:pointer;">✏️ Edit</button>
+        <button onclick="deleteSparePart(${part.id})" style="background:#ff3b30; color:white; border:none; padding:0.5rem 1rem; border-radius:0.5rem; cursor:pointer;">🗑️ Delete</button></div>
       </div>
     </div>
   `).join('');
 }
 
 // ============================================
-// PRODUCTS - Full CRUD with image deletion
+// PRODUCTS CRUD
 // ============================================
 
 window.deleteProduct = async function(id) {
-  if (!confirm('⚠️ Delete this product? This will also delete its image from the server.')) return;
-  
+  if (!confirm('⚠️ Delete this product?')) return;
   const product = products.find(p => p.id == id);
   const imagePath = product?.img;
-  
   try {
-    // Delete image file from server
-    if (imagePath && !imagePath.includes('shop/')) {
-      await deleteImageFile(imagePath);
-    }
-    
-    // Delete from server
+    if (imagePath && !imagePath.includes('shop/')) await deleteImageFile(imagePath);
     await api(`/api/admin/products/${id}`, { method: 'DELETE' });
-    
-    // Update local
     products = products.filter(p => p.id !== id);
     localStorage.setItem('management_products', JSON.stringify(products));
     renderProducts();
-    toast('Product and image deleted!', 'success');
+    toast('Product deleted!', 'success');
   } catch (err) {
     toast('Failed to delete: ' + err.message, 'error');
   }
@@ -313,57 +235,43 @@ window.deleteProduct = async function(id) {
 window.editProduct = function(id) {
   const product = products.find(p => p.id === id);
   if (!product) return;
-  
   const modal = document.createElement('div');
   modal.id = 'editProductModal';
   modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:10001; display:flex; align-items:center; justify-content:center;';
-  
   modal.innerHTML = `
     <div style="background:#1a1a2e; border-radius:1.5rem; padding:2rem; max-width:500px; width:90%;">
-      <h3 style="margin-bottom:1.5rem;">✏️ Edit Product</h3>
+      <h3>✏️ Edit Product</h3>
       <form id="editProductForm" enctype="multipart/form-data">
         <input type="hidden" name="id" value="${product.id}">
         <input type="hidden" name="oldImage" value="${product.img || ''}">
         <div style="margin-bottom:1rem;"><input name="name" value="${esc(product.name)}" placeholder="Product Name" required style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;"></div>
-        <div style="margin-bottom:1rem;">
-          <select name="cat" style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;">
-            <option value="phones" ${product.cat === 'phones' ? 'selected' : ''}>Phones</option>
-            <option value="audio" ${product.cat === 'audio' ? 'selected' : ''}>Audio</option>
-            <option value="laptops" ${product.cat === 'laptops' ? 'selected' : ''}>Laptops</option>
-            <option value="wearables" ${product.cat === 'wearables' ? 'selected' : ''}>Wearables</option>
-            <option value="gaming" ${product.cat === 'gaming' ? 'selected' : ''}>Gaming</option>
-            <option value="home" ${product.cat === 'home' ? 'selected' : ''}>Smart Home</option>
-          </select>
-        </div>
+        <select name="cat" style="width:100%; padding:0.75rem; margin-bottom:1rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;">
+          <option value="phones" ${product.cat === 'phones' ? 'selected' : ''}>Phones</option>
+          <option value="audio" ${product.cat === 'audio' ? 'selected' : ''}>Audio</option>
+          <option value="laptops" ${product.cat === 'laptops' ? 'selected' : ''}>Laptops</option>
+          <option value="wearables" ${product.cat === 'wearables' ? 'selected' : ''}>Wearables</option>
+          <option value="gaming" ${product.cat === 'gaming' ? 'selected' : ''}>Gaming</option>
+          <option value="home" ${product.cat === 'home' ? 'selected' : ''}>Smart Home</option>
+        </select>
         <div style="margin-bottom:1rem;"><input name="price" type="number" value="${product.price}" placeholder="Price" required style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;"></div>
-        <div style="margin-bottom:1rem;"><input name="image" type="file" accept="image/*" style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;"><small>Leave empty to keep current image</small></div>
+        <div style="margin-bottom:1rem;"><input name="image" type="file" accept="image/*" style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;"><small>Leave empty to keep current</small></div>
         <div style="margin-bottom:1rem;"><textarea name="desc" rows="3" placeholder="Description" style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;">${esc(product.desc || '')}</textarea></div>
-        <div style="display:flex; gap:1rem;">
-          <button type="submit" class="btn primary" style="flex:1;">💾 Save</button>
-          <button type="button" class="btn ghost" onclick="document.getElementById('editProductModal').remove()" style="flex:1;">Cancel</button>
-        </div>
+        <div style="display:flex; gap:1rem;"><button type="submit" class="btn primary" style="flex:1;">💾 Save</button><button type="button" class="btn ghost" onclick="document.getElementById('editProductModal').remove()" style="flex:1;">Cancel</button></div>
       </form>
     </div>
   `;
   document.body.appendChild(modal);
-  
   document.getElementById('editProductForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
     const id = formData.get('id');
     const oldImage = formData.get('oldImage');
     const newImage = formData.get('image');
-    
     try {
       if (newImage && newImage.size > 0 && oldImage && !oldImage.includes('shop/')) {
         await deleteImageFile(oldImage);
       }
-      
-      const response = await fetch(`/api/admin/products/${id}`, {
-        method: 'PUT',
-        body: formData
-      });
-      
+      const response = await fetch(`/api/admin/products/${id}`, { method: 'PUT', body: formData });
       if (response.ok) {
         await loadAdminData();
         modal.remove();
@@ -375,23 +283,97 @@ window.editProduct = function(id) {
   });
 };
 
+function renderProducts() {
+  const el = $('#productAdmin');
+  if (!el) return;
+  if (!products || products.length === 0) {
+    el.innerHTML = '<div class="dash-empty">No products. Click "Add Product" to get started.</div>';
+    return;
+  }
+  el.innerHTML = products.map(product => `
+    <div style="background:#1a1a2e; border-radius:1rem; padding:1rem; margin-bottom:1rem; border:1px solid rgba(255,255,255,0.1);">
+      <div style="display:flex; gap:1rem; flex-wrap:wrap; align-items:center;">
+        <img src="${product.img || 'shop/hero-phone.jpg'}" style="width:60px; height:60px; object-fit:cover; border-radius:0.5rem;">
+        <div style="flex:1;">
+          <h4>${esc(product.name)}</h4>
+          <div style="display:flex; gap:1rem; flex-wrap:wrap; font-size:0.875rem;">
+            <span style="color:#00e5ff;">${esc(product.cat)}</span>
+            <span style="color:#00e5ff;">${fmt(product.price)}</span>
+            <span style="${product.inStock !== false ? 'color:#00c853' : 'color:#ff3b30'}">${product.inStock !== false ? 'In Stock' : 'Out of Stock'}</span>
+          </div>
+        </div>
+        <div><button onclick="editProduct(${product.id})" style="background:#00e5ff; color:#000; border:none; padding:0.5rem 1rem; border-radius:0.5rem; cursor:pointer;">✏️ Edit</button>
+        <button onclick="deleteProduct(${product.id})" style="background:#ff3b30; color:white; border:none; padding:0.5rem 1rem; border-radius:0.5rem; cursor:pointer;">🗑️ Delete</button></div>
+      </div>
+    </div>
+  `).join('');
+}
+
 // ============================================
-// REPAIR SERVICES with image deletion
+// REPAIR SERVICES CRUD
 // ============================================
 
+window.editRepairService = function(id) {
+  const service = repairServices.find(s => s.id == id);
+  if (!service) {
+    toast('Repair service not found', 'error');
+    return;
+  }
+  const modal = document.createElement('div');
+  modal.id = 'editServiceModal';
+  modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:10001; display:flex; align-items:center; justify-content:center;';
+  modal.innerHTML = `
+    <div style="background:#1a1a2e; border-radius:1.5rem; padding:2rem; max-width:550px; width:90%;">
+      <h3 style="color:#00e5ff;">✏️ Edit Repair Service</h3>
+      <form id="editServiceForm" enctype="multipart/form-data">
+        <input type="hidden" name="id" value="${service.id}">
+        <input type="hidden" name="oldImage" value="${service.image || ''}">
+        <div style="margin-bottom:1rem;"><input name="title" value="${esc(service.title)}" placeholder="Title" required style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;"></div>
+        <div style="margin-bottom:1rem;"><input name="brand" value="${esc(service.brand)}" placeholder="Brand" required style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;"></div>
+        <div style="margin-bottom:1rem;"><input name="repairType" value="${esc(service.repairType)}" placeholder="Repair Type" required style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;"></div>
+        <div style="margin-bottom:1rem;"><input name="price" type="number" value="${service.price}" placeholder="Price" required style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;"></div>
+        <div style="margin-bottom:1rem;"><input name="duration" value="${esc(service.duration || '')}" placeholder="Duration" style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;"></div>
+        <div style="margin-bottom:1rem;"><input name="warranty" value="${esc(service.warranty || '')}" placeholder="Warranty" style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;"></div>
+        <select name="available" style="width:100%; padding:0.75rem; margin-bottom:1rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;">
+          <option value="1" ${service.available ? 'selected' : ''}>Available</option>
+          <option value="0" ${!service.available ? 'selected' : ''}>Unavailable</option>
+        </select>
+        <div style="margin-bottom:1rem;"><input name="image" type="file" accept="image/*" style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;"><small>Leave empty to keep current</small></div>
+        <div style="margin-bottom:1rem;"><textarea name="description" rows="3" placeholder="Description" style="width:100%; padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;">${esc(service.description || '')}</textarea></div>
+        <div style="display:flex; gap:1rem;"><button type="submit" class="btn primary" style="flex:1;">💾 Save</button><button type="button" class="btn ghost" onclick="document.getElementById('editServiceModal').remove()" style="flex:1;">Cancel</button></div>
+      </form>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  document.getElementById('editServiceForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const id = formData.get('id');
+    const oldImage = formData.get('oldImage');
+    const newImage = formData.get('image');
+    try {
+      if (newImage && newImage.size > 0 && oldImage && !oldImage.includes('/shop/')) {
+        await deleteImageFile(oldImage);
+      }
+      const response = await fetch(`/api/management/repair-services/${id}`, { method: 'PUT', body: formData });
+      if (response.ok) {
+        await loadRepairServices();
+        modal.remove();
+        toast('Repair service updated!', 'success');
+      }
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+  });
+};
+
 window.deleteRepairService = async function(id) {
-  if (!confirm('⚠️ Delete this repair service? This will also delete its image from the server.')) return;
-  
+  if (!confirm('⚠️ Delete this repair service?')) return;
   const service = repairServices.find(s => s.id == id);
   const imagePath = service?.image;
-  
   try {
-    if (imagePath && !imagePath.includes('shop/')) {
-      await deleteImageFile(imagePath);
-    }
-    
+    if (imagePath && !imagePath.includes('/shop/')) await deleteImageFile(imagePath);
     await api(`/api/management/repair-services/${id}`, { method: 'DELETE' });
-    
     repairServices = repairServices.filter(s => s.id !== id);
     localStorage.setItem('repair_services', JSON.stringify(repairServices));
     renderRepairServices();
@@ -401,28 +383,35 @@ window.deleteRepairService = async function(id) {
   }
 };
 
-// ============================================
-// Add this to your server.py (create this endpoint)
-// The server needs this DELETE endpoint for images
-// ============================================
-// Add this to your server.py do_DELETE method:
-/*
-if path == "/api/admin/delete-image":
-    if not self.require({"admin"}):
-        return
-    data = self.read_json()
-    image_path = data.get("imagePath")
-    if image_path:
-        filename = image_path.split('/')[-1]
-        target = UPLOAD_DIR / filename
-        if target.exists():
-            target.unlink()
-    self.send_json({"ok": True})
-    return
-*/
+function renderRepairServices() {
+  const el = $('#repairServiceAdmin');
+  if (!el) return;
+  if (!repairServices || repairServices.length === 0) {
+    el.innerHTML = '<div class="dash-empty">No repair services available.</div>';
+    return;
+  }
+  el.innerHTML = repairServices.map(service => `
+    <div style="background:#1a1a2e; border-radius:1rem; padding:1rem; margin-bottom:1rem; border:1px solid rgba(255,255,255,0.1);">
+      <div style="display:flex; gap:1rem; flex-wrap:wrap; align-items:center;">
+        ${service.image ? `<img src="${service.image}" style="width:50px; height:50px; object-fit:cover; border-radius:0.5rem;">` : ''}
+        <div style="flex:1;">
+          <h4>${esc(service.title)}</h4>
+          <div style="display:flex; gap:1rem; flex-wrap:wrap; font-size:0.875rem;">
+            <span style="color:#00e5ff;">${esc(service.brand)}</span>
+            <span style="color:#888;">${esc(service.repairType)}</span>
+            <span style="color:#00e5ff;">${fmt(service.price)}</span>
+            <span style="${service.available ? 'color:#00c853' : 'color:#ff3b30'}">${service.available ? 'Available' : 'Unavailable'}</span>
+          </div>
+        </div>
+        <div><button onclick="editRepairService(${service.id})" style="background:#00e5ff; color:#000; border:none; padding:0.5rem 1rem; border-radius:0.5rem; cursor:pointer;">✏️ Edit</button>
+        <button onclick="deleteRepairService(${service.id})" style="background:#ff3b30; color:white; border:none; padding:0.5rem 1rem; border-radius:0.5rem; cursor:pointer;">🗑️ Delete</button></div>
+      </div>
+    </div>
+  `).join('');
+}
 
 // ============================================
-// LOAD FUNCTIONS (keep existing)
+// LOAD FUNCTIONS
 // ============================================
 
 async function loadAdminSpareParts() {
@@ -467,70 +456,8 @@ async function loadRepairServices() {
   }
 }
 
-function renderRepairServices() {
-  const el = $('#repairServiceAdmin');
-  if (!el) return;
-  
-  if (!repairServices || repairServices.length === 0) {
-    el.innerHTML = '<div class="dash-empty">No repair services available.</div>';
-    return;
-  }
-  
-  el.innerHTML = repairServices.map(service => `
-    <div style="background: #1a1a2e; border-radius: 1rem; padding: 1rem; margin-bottom: 1rem; border: 1px solid rgba(255,255,255,0.1);">
-      <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
-        ${service.image ? `<img src="${service.image}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 0.5rem;">` : ''}
-        <div style="flex: 1;">
-          <h4 style="margin-bottom: 0.25rem;">${esc(service.title)}</h4>
-          <div style="display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.875rem;">
-            <span style="color: #00e5ff;">${esc(service.brand)}</span>
-            <span style="color: #888;">${esc(service.repairType)}</span>
-            <span style="color: #00e5ff;">${fmt(service.price)}</span>
-            <span style="${service.available ? 'color:#00c853' : 'color:#ff3b30'}">${service.available ? 'Available' : 'Unavailable'}</span>
-          </div>
-        </div>
-        <div style="display: flex; gap: 0.5rem;">
-          <button onclick="editRepairService(${service.id})" style="background: #00e5ff; color: #000; border: none; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer;">✏️ Edit</button>
-          <button onclick="deleteRepairService(${service.id})" style="background: #ff3b30; color: white; border: none; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer;">🗑️ Delete</button>
-        </div>
-      </div>
-    </div>
-  `).join('');
-}
-
-function renderProducts() {
-  const el = $('#productAdmin');
-  if (!el) return;
-  
-  if (!products || products.length === 0) {
-    el.innerHTML = '<div class="dash-empty">No products. Click "Add Product" to get started.</div>';
-    return;
-  }
-  
-  el.innerHTML = products.map(product => `
-    <div style="background: #1a1a2e; border-radius: 1rem; padding: 1rem; margin-bottom: 1rem; border: 1px solid rgba(255,255,255,0.1);">
-      <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
-        <img src="${product.img || 'shop/hero-phone.jpg'}" alt="${esc(product.name)}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 0.5rem;">
-        <div style="flex: 1;">
-          <h4 style="margin-bottom: 0.25rem;">${esc(product.name)}</h4>
-          <div style="display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.875rem;">
-            <span style="color: #00e5ff;">${esc(product.cat)}</span>
-            <span style="color: #00e5ff;">${fmt(product.price)}</span>
-            <span style="${product.inStock !== false ? 'color:#00c853' : 'color:#ff3b30'}">${product.inStock !== false ? 'In Stock' : 'Out of Stock'}</span>
-          </div>
-          ${product.desc ? `<p style="font-size: 0.75rem; color: #888; margin-top: 0.25rem;">${esc(product.desc.substring(0, 100))}</p>` : ''}
-        </div>
-        <div style="display: flex; gap: 0.5rem;">
-          <button onclick="editProduct(${product.id})" style="background: #00e5ff; color: #000; border: none; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer;">✏️ Edit</button>
-          <button onclick="deleteProduct(${product.id})" style="background: #ff3b30; color: white; border: none; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer;">🗑️ Delete</button>
-        </div>
-      </div>
-    </div>
-  `).join('');
-}
-
 // ============================================
-// Keep all your existing functions below unchanged
+// EXISTING FUNCTIONS
 // ============================================
 
 function renderPlacedOrders() {
@@ -567,7 +494,6 @@ function renderStaff() {
       <div><b>${esc(user.name)}</b><span>${esc(user.email)}</span></div>
       <button class="btn ghost js-delete-staff" data-id="${user.id}" type="button">Delete</button>
     </article>`).join('') : '<div class="dash-empty">No staff accounts yet.</div>';
-
   $$('.js-delete-staff').forEach(btn => btn.addEventListener('click', async () => {
     try {
       await api(`/api/admin/staff/${encodeURIComponent(btn.dataset.id)}`, { method:'DELETE' });
@@ -641,13 +567,10 @@ function renderPerformance(analytics) {
     <div><b>${analytics.totalOrders}</b><span>Total Orders</span></div>
     <div><b>${analytics.delivered}</b><span>Delivered</span></div>
     <div><b>${analytics.products}</b><span>Products</span></div>`;
-
   const canvas = $('#performanceChart');
   if (!canvas) return;
-  
   const data = analytics.days || [];
   if (!data.length) return;
-  
   const ctx = canvas.getContext('2d');
   const w = canvas.width;
   const h = canvas.height;
@@ -727,10 +650,8 @@ async function loadAdminData() {
     renderPerformance(DUMMY_ANALYTICS);
     return;
   }
-
   if ($('#staffList')) $('#staffList').innerHTML = LOADING.staff;
   if ($('#productAdmin')) $('#productAdmin').innerHTML = LOADING.products;
-
   try {
     api('/api/products').then(d => { products = d.products || []; renderProducts(); }).catch(e => console.error("Products load fail", e));
     api('/api/admin/staff').then(d => { staff = d.staff || []; renderStaff(); }).catch(e => console.error("Staff load fail", e));
@@ -739,7 +660,6 @@ async function loadAdminData() {
     console.error("Admin data load failed:", err);
     toast("Some management metrics could not be loaded", "error");
   }
-
   await Promise.all([loadRepairServices(), loadTechnicians(), loadRepairCategories(), loadAdminSpareParts()]);
 }
 
@@ -756,30 +676,23 @@ async function updateView() {
       manager = null;
     }
   }
-
   if (data?.user && ['admin', 'staff'].includes(data.user.role)) {
     manager = data.user;
     offlineManager = false;
   }
-  
   if ($('#managerLogin')) $('#managerLogin').hidden = !!manager;
   if ($('#managerOrders')) $('#managerOrders').hidden = !manager;
-
   const revObs = new IntersectionObserver(es => es.forEach(e => {
     if (e.isIntersecting) e.target.classList.add('in');
   }), { threshold: .1 });
   document.querySelectorAll('.reveal').forEach(el => revObs.observe(el));
-
   if (!manager) return;
-
   const isAdmin = manager.role === 'admin';
   if ($('#managerRole')) $('#managerRole').textContent = isAdmin ? 'Admin' : 'Staff';
   if ($('#managerTitle')) $('#managerTitle').textContent = isAdmin ? 'Admin Management' : 'Orders Placed';
   if ($('#adminSections')) $('#adminSections').hidden = !isAdmin;
-
   if ($('#placedOrders')) $('#placedOrders').innerHTML = LOADING.orders;
   if ($('#repairBookings')) $('#repairBookings').innerHTML = LOADING.bookings;
-
   return Promise.allSettled([
     loadOrders().catch(e => console.error("Orders fail:", e)),
     loadRepairBookings().catch(e => console.error("Bookings fail:", e)),
@@ -895,7 +808,7 @@ $('#repairBookings')?.addEventListener('click', async e => {
   if (!e.target.matches('.js-update-booking')) return;
   const bookingId = e.target.dataset.id;
   if (!bookingId) return;
-  const status = prompt('Enter new status for booking ' + bookingId + ' (Pending, Received, Diagnosing, Repairing, Completed, Ready for pickup):');
+  const status = prompt('Enter new status: Pending, Received, Diagnosing, Repairing, Completed, Ready for pickup');
   if (!status) return;
   try {
     await api(`/api/management/repair-bookings/${encodeURIComponent(bookingId)}`, {
