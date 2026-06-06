@@ -106,35 +106,19 @@ window.markAsFlashSale = async function(id) {
   
   let wasPrice = product.was;
   if (!wasPrice) {
-    wasPrice = prompt('Enter original price (for flash sale discount display):', product.price * 1.5);
-    if (!wasPrice) return;
-    wasPrice = parseFloat(wasPrice);
+    const input = prompt('Enter original price (for flash sale discount display):', product.price * 1.5);
+    if (!input) return;
+    wasPrice = parseFloat(input);
   }
   
   product.badge = 'sale';
   product.was = wasPrice;
   
-  try {
-    await api(`/api/admin/products/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify({
-        name: product.name,
-        price: product.price,
-        was: product.was,
-        cat: product.cat,
-        badge: 'sale',
-        inStock: product.inStock !== false,
-        desc: product.desc
-      })
-    });
-    toast(`🔥 ${product.name} marked as FLASH SALE!`, 'success');
-  } catch (err) {
-    toast(`${product.name} marked as FLASH SALE (offline)`, 'success');
-  }
-  
+  // Save to localStorage
   localStorage.setItem('management_products', JSON.stringify(products));
   renderProducts();
   updateMainPageProducts();
+  toast(`🔥 ${product.name} marked as FLASH SALE!`, 'success');
 };
 
 // Mark product as Hot
@@ -148,27 +132,10 @@ window.markAsHot = async function(id) {
   
   product.badge = 'hot';
   
-  try {
-    await api(`/api/admin/products/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify({
-        name: product.name,
-        price: product.price,
-        was: product.was,
-        cat: product.cat,
-        badge: 'hot',
-        inStock: product.inStock !== false,
-        desc: product.desc
-      })
-    });
-    toast(`⚡ ${product.name} marked as HOT!`, 'success');
-  } catch (err) {
-    toast(`${product.name} marked as HOT (offline)`, 'success');
-  }
-  
   localStorage.setItem('management_products', JSON.stringify(products));
   renderProducts();
   updateMainPageProducts();
+  toast(`⚡ ${product.name} marked as HOT!`, 'success');
 };
 
 // Mark product as New
@@ -182,27 +149,10 @@ window.markAsNew = async function(id) {
   
   product.badge = 'new';
   
-  try {
-    await api(`/api/admin/products/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify({
-        name: product.name,
-        price: product.price,
-        was: product.was,
-        cat: product.cat,
-        badge: 'new',
-        inStock: product.inStock !== false,
-        desc: product.desc
-      })
-    });
-    toast(`✨ ${product.name} marked as NEW!`, 'success');
-  } catch (err) {
-    toast(`${product.name} marked as NEW (offline)`, 'success');
-  }
-  
   localStorage.setItem('management_products', JSON.stringify(products));
   renderProducts();
   updateMainPageProducts();
+  toast(`✨ ${product.name} marked as NEW!`, 'success');
 };
 
 // Remove badge from product
@@ -216,27 +166,10 @@ window.removeBadge = async function(id) {
   
   product.badge = '';
   
-  try {
-    await api(`/api/admin/products/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify({
-        name: product.name,
-        price: product.price,
-        was: product.was,
-        cat: product.cat,
-        badge: '',
-        inStock: product.inStock !== false,
-        desc: product.desc
-      })
-    });
-    toast(`${product.name} badge removed`, 'success');
-  } catch (err) {
-    toast(`${product.name} badge removed (offline)`, 'success');
-  }
-  
   localStorage.setItem('management_products', JSON.stringify(products));
   renderProducts();
   updateMainPageProducts();
+  toast(`${product.name} badge removed`, 'success');
 };
 
 function renderProducts() {
