@@ -1,9 +1,9 @@
-﻿﻿﻿﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SM Dynamics Electronics Â· Mobile Repair Management</title>
+  <title>SM Dynamics Electronics - Mobile Repair Management</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@600;800&display=swap" rel="stylesheet">
@@ -15,18 +15,36 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="SM Dynamics Electronics">
   <link rel="apple-touch-icon" href="shop/brand logo.png">
-  <script src="shop/pwa.js" defer></script>
   <style>
-    /* Repair-specific styles moved to shop/styles.css for performance */
-    #spareGrid { display:none; }
-    .track-panel { display:grid; gap:1rem; }
+    /* Ensure images display properly */
+    .card-media img {
+      width: 100%;
+      height: auto;
+      object-fit: cover;
+      background: #1a1a2e;
+    }
+    .card-media {
+      background: #1a1a2e;
+      min-height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .hero-slider img {
+      width: 100%;
+      height: auto;
+      border-radius: 24px;
+    }
+    #spareGrid { display: none; }
+    .track-panel { display: grid; gap: 1rem; }
   </style>
 </head>
 <body>
   <header class="nav" id="nav">
     <div class="nav-inner">
       <a href="index.html" class="brand" aria-label="SM Dynamics home">
-        <span class="brand-mark"></span>
+        <img src="shop/brand logo.png" alt="SM Dynamics" style="height: 40px; width: auto;">
         <span class="brand-name">SM Dynamics</span>
       </a>
       <nav class="nav-links" aria-label="Primary navigation">
@@ -113,7 +131,7 @@
           </div>
         </div>
         <div class="hero-slider">
-          <img src="shop/hero-phone.jpg" alt="Phone repair service" loading="eager">
+          <img src="/shop/hero-phone.jpg" alt="Phone repair service" loading="eager" onerror="this.src='shop/hero-phone.jpg'">
         </div>
       </div>
     </section>
@@ -171,7 +189,7 @@
             <div>
               <span class="eyebrow"><span class="dot"></span> Fast booking</span>
               <h2>Submit a repair request</h2>
-              <p>Select a service, enter your details, and upload a damaged phone image. Weâ€™ll confirm the booking and send your service ID.</p>
+              <p>Select a service, enter your details, and upload a damaged phone image. We'll confirm the booking and send your service ID.</p>
             </div>
             <form id="bookingForm" class="form-grid" enctype="multipart/form-data">
               <input type="hidden" id="serviceId" name="serviceId">
@@ -251,17 +269,17 @@
         </header>
         <div class="review-grid reveal">
           <article class="review-card">
-            <div class="stars">â˜…â˜…â˜…â˜…â˜…</div>
+            <div class="stars">★★★★★</div>
             <q>Quick booking and excellent follow-up. The technician repaired my cracked screen in under 24 hours.</q>
             <div class="rv-who"><span class="rv-avatar">A</span><div><b>Aisha K.</b><small>Samsung Galaxy S22</small></div></div>
           </article>
           <article class="review-card">
-            <div class="stars">â˜…â˜…â˜…â˜…â˜…</div>
+            <div class="stars">★★★★★</div>
             <q>They helped me order the right part and schedule the repair without any hassle. Very professional service.</q>
             <div class="rv-who"><span class="rv-avatar">B</span><div><b>Brian O.</b><small>iPhone 14</small></div></div>
           </article>
           <article class="review-card">
-            <div class="stars">â˜…â˜…â˜…â˜…â˜…</div>
+            <div class="stars">★★★★★</div>
             <q>Great experience. The booking ID tracking worked perfectly, and I knew exactly when to collect my phone.</q>
             <div class="rv-who"><span class="rv-avatar">C</span><div><b>Cathy W.</b><small>Note 12</small></div></div>
           </article>
@@ -273,11 +291,14 @@
   <footer class="footer" style="padding-block:3rem;">
     <div class="container foot-grid">
       <div>
-        <a href="index.html" class="brand"><span class="brand-mark"></span><span class="brand-name">SM Dynamics Electronics</span></a>
+        <a href="index.html" class="brand">
+          <img src="shop/brand logo.png" alt="SM Dynamics" style="height: 40px; width: auto;">
+          <span class="brand-name">SM Dynamics Electronics</span>
+        </a>
         <p class="muted">Mobile repair, replacement and support across Kenya.</p>
         <div class="socials">
           <a href="https://facebook.com" aria-label="Facebook">f</a>
-          <a href="https://x.com" aria-label="X">ð•</a>
+          <a href="https://x.com" aria-label="X">𝕏</a>
           <a href="https://www.tiktok.com/@smdynamics" aria-label="TikTok">TT</a>
           <a href="https://wa.me/254717043977" aria-label="WhatsApp">WA</a>
         </div>
@@ -287,25 +308,67 @@
       <div><h4>Company</h4><a href="contact.html">About</a><a href="contact.html">Terms and Conditions</a><a href="contact.html">Founder</a><a href="contact.html">Contact</a><a href="management.html">Management</a></div>
     </div>
     <div class="foot-bot container" style="margin-top:2rem;">
-      <span>Â© 2026 SM Dynamics Electronics. All rights reserved.</span>
-      <span>Built for Kenya Â· Trusted nationwide.</span>
+      <span>© 2026 SM Dynamics Electronics. All rights reserved.</span>
+      <span>Built for Kenya · Trusted nationwide.</span>
     </div>
   </footer>
 
-  <script src="shop/app.js" defer></script>
+  <!-- CRITICAL: Only load repair.js, not app.js, to avoid conflicts -->
   <script src="shop/repair.js" defer></script>
   <script src="shop/pwa.js" defer></script>
   <script>
+    // Mobile menu toggle
     const menuBtn = document.getElementById('menuToggle');
     const mobileMenu = document.getElementById('mobileMenu');
-    menuBtn.addEventListener('click', () => {
-      menuBtn.classList.toggle('open');
-      mobileMenu.classList.toggle('open');
+    if (menuBtn && mobileMenu) {
+      menuBtn.addEventListener('click', () => {
+        menuBtn.classList.toggle('open');
+        mobileMenu.classList.toggle('open');
+      });
+      mobileMenu.querySelectorAll('a').forEach(anchor => anchor.addEventListener('click', () => {
+        menuBtn.classList.remove('open');
+        mobileMenu.classList.remove('open');
+      }));
+    }
+    
+    // Cart functionality for repair page
+    function updateCartBadge() {
+      try {
+        const cart = JSON.parse(localStorage.getItem('nova_cart')) || [];
+        const cartCount = document.getElementById('cartCount');
+        if (cartCount) cartCount.textContent = cart.reduce((s, c) => s + c.qty, 0);
+      } catch(e) {}
+    }
+    
+    document.getElementById('cartBtn')?.addEventListener('click', () => {
+      const cartSide = document.getElementById('cartSide');
+      const overlay = document.getElementById('overlay');
+      if (cartSide && overlay) {
+        cartSide.classList.add('open');
+        overlay.classList.add('show');
+      }
     });
-    mobileMenu.querySelectorAll('a').forEach(anchor => anchor.addEventListener('click', () => {
-      menuBtn.classList.remove('open');
-      mobileMenu.classList.remove('open');
-    }));
+    
+    document.getElementById('cartClose')?.addEventListener('click', () => {
+      const cartSide = document.getElementById('cartSide');
+      const overlay = document.getElementById('overlay');
+      if (cartSide && overlay) {
+        cartSide.classList.remove('open');
+        overlay.classList.remove('show');
+      }
+    });
+    
+    document.getElementById('overlay')?.addEventListener('click', () => {
+      const cartSide = document.getElementById('cartSide');
+      const overlay = document.getElementById('overlay');
+      if (cartSide && overlay) {
+        cartSide.classList.remove('open');
+        overlay.classList.remove('show');
+      }
+    });
+    
+    updateCartBadge();
+    window.addEventListener('storage', updateCartBadge);
   </script>
 </body>
 </html>
