@@ -32,7 +32,7 @@ const elements = {
   toasts: document.getElementById('toasts')
 };
 
-const state = {
+const repairState = {
   currentView: 'repairs',
   services: [],
   statuses: [],
