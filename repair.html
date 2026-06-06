@@ -10,9 +10,10 @@
   <link rel="stylesheet" href="shop/styles.css">
   <meta name="theme-color" content="#0b1120">
   <style>
+    /* Simple styles for repair page */
     .services-list {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
       gap: 1rem;
       margin-top: 2rem;
     }
@@ -28,6 +29,7 @@
     .service-item:hover { transform: translateY(-3px); border-color: #00e5ff; }
     .service-icon { font-size: 2rem; margin-bottom: 0.5rem; }
     .service-name { font-size: 0.9rem; font-weight: 500; }
+    
     .spare-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -64,14 +66,18 @@
     }
     .btn-add:hover { opacity: 0.8; }
     .btn-add:disabled { opacity: 0.5; cursor: not-allowed; }
+    
     .search-filters { display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap; }
     .search-filters input, .search-filters select { flex: 1; min-width: 200px; padding: 0.75rem; border-radius: 0.75rem; border: 1px solid rgba(255,255,255,0.1); background: #0f0f1a; color: white; }
+    
     .section-tabs { display: flex; gap: 1rem; margin-bottom: 2rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem; flex-wrap: wrap; }
     .section-tab { padding: 0.75rem 1.5rem; background: none; border: none; color: #888; cursor: pointer; font-weight: 500; }
     .section-tab.active { color: #00e5ff; border-bottom: 2px solid #00e5ff; }
+    
     .booking-form { background: #1a1a2e; border-radius: 1.5rem; padding: 2rem; margin-top: 2rem; margin-bottom: 2rem; }
     .booking-form input, .booking-form select, .booking-form textarea { width: 100%; padding: 0.75rem; border-radius: 0.75rem; border: 1px solid rgba(255,255,255,0.1); background: #0f0f1a; color: white; margin-bottom: 1rem; }
     .search-stats { text-align: center; padding: 1rem; color: #888; font-size: 0.875rem; }
+    
     .footer { background: #0a0a0f; padding: 3rem 0 2rem; margin-top: 3rem; border-top: 1px solid rgba(255,255,255,0.05); }
     .foot-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem; max-width: 1400px; margin: 0 auto; padding: 0 2rem; }
     .foot-grid h4 { color: #00e5ff; margin-bottom: 1rem; font-size: 1rem; }
@@ -81,12 +87,14 @@
     .socials a { width: 36px; height: 36px; background: rgba(255,255,255,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; text-decoration: none; }
     .socials a:hover { background: #00e5ff; color: #000; }
     .foot-bot { text-align: center; padding-top: 2rem; margin-top: 2rem; border-top: 1px solid rgba(255,255,255,0.05); color: #666; font-size: 0.75rem; }
+    
     .toasts { position: fixed; bottom: 20px; right: 20px; z-index: 3000; }
     .toast { padding: 0.75rem 1.25rem; border-radius: 0.5rem; margin-top: 0.5rem; animation: slideIn 0.3s ease; }
     .toast.success { background: #00c853; color: white; }
     .toast.error { background: #ff3b30; color: white; }
     .toast.info { background: #2196f3; color: white; }
     @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    
     @media (max-width: 768px) { 
       .spare-grid { grid-template-columns: 1fr; }
       .search-filters { flex-direction: column; }
@@ -113,7 +121,7 @@
         <a href="management.html">Management</a>
       </nav>
       <div class="nav-tools">
-        <a href="index.html#cart" class="icon-btn" id="cartBtn" style="position:relative; text-decoration:none;">
+        <a href="index.html#cart" class="icon-btn" style="position:relative; text-decoration:none;">
           <svg viewBox="0 0 24 24" width="20" height="20"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
           <span class="badge" id="cartCount">0</span>
         </a>
@@ -129,7 +137,7 @@
         <div>
           <span class="eyebrow"><span class="dot"></span> Professional Repair Services</span>
           <h1 class="display">Expert Mobile <span class="grad">Repair & Spare Parts</span></h1>
-          <p class="lede">Quality repairs for all mobile brands. Genuine spare parts with warranty. Same-day service available.</p>
+          <p class="lede">Quality repairs for all mobile brands. Genuine spare parts with warranty.</p>
           <div class="hero-cta">
             <a href="#services" class="btn primary">View Services</a>
             <a href="#spares" class="btn ghost">Browse Parts</a>
@@ -171,7 +179,6 @@
       <div class="container">
         <div class="booking-form">
           <h2>📝 Book Your Repair</h2>
-          <p>Fill in the form below and we'll contact you within 24 hours.</p>
           <form id="repairBookingForm">
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
               <input type="text" id="customerName" placeholder="Full Name" required>
@@ -185,7 +192,7 @@
                 <option>Infinix</option><option>Xiaomi</option><option>Huawei</option>
                 <option>Oppo</option><option>Vivo</option><option>Other</option>
               </select>
-              <input type="text" id="deviceModel" placeholder="Model (e.g., iPhone 13, Galaxy S22)" required>
+              <input type="text" id="deviceModel" placeholder="Model" required>
               <select id="serviceType" required>
                 <option value="">Select Service</option>
                 <option>Screen Replacement</option>
@@ -196,7 +203,7 @@
               </select>
             </div>
             <textarea id="issueDescription" rows="3" placeholder="Describe the issue..."></textarea>
-            <button type="submit" class="btn primary block">Submit Booking Request</button>
+            <button type="submit" class="btn primary block">Submit Booking</button>
           </form>
           <div id="bookingMessage" style="margin-top: 1rem;"></div>
         </div>
@@ -234,7 +241,7 @@
       { id: 8, name: "Software Repair", icon: "💻" }
     ];
 
-    // Load spare parts from localStorage (shared with management page)
+    // Load spare parts from localStorage
     let spareParts = [];
 
     function loadSpareParts() {
@@ -247,9 +254,7 @@
           { id: 2, name: "Samsung S22 Screen", brand: "Samsung", modelNumber: "Galaxy S22", price: 4200, stock: 8, image: "shop/hero-phone.jpg" },
           { id: 3, name: "Tecno Camon 19 Screen", brand: "Tecno", modelNumber: "Camon 19", price: 3500, stock: 10, image: "shop/hero-phone.jpg" },
           { id: 4, name: "Infinix Hot 11 Screen", brand: "Infinix", modelNumber: "Hot 11", price: 2300, stock: 9, image: "shop/hero-phone.jpg" },
-          { id: 5, name: "Oneplus Ace 2V Screen", brand: "Oneplus", modelNumber: "Ace 2V", price: 5000, stock: 1, image: "shop/hero-phone.jpg" },
-          { id: 6, name: "Tecno Spark Go 2023 LCD", brand: "Tecno", modelNumber: "Spark Go 2023", price: 2500, stock: 1, image: "shop/hero-phone.jpg" },
-          { id: 7, name: "Tecno Pop 7 LCD", brand: "Tecno", modelNumber: "Pop 7", price: 1000, stock: 5, image: "shop/hero-phone.jpg" }
+          { id: 5, name: "Oneplus Ace 2V Screen", brand: "Oneplus", modelNumber: "Ace 2V", price: 5000, stock: 1, image: "shop/hero-phone.jpg" }
         ];
         localStorage.setItem('spare_parts', JSON.stringify(spareParts));
       }
@@ -283,7 +288,7 @@
           }
         }
       }
-      toast(`${serviceName} selected! Please complete the booking form.`, 'success');
+      toast(`${serviceName} selected!`, 'success');
     }
 
     function renderSpareParts() {
@@ -304,7 +309,7 @@
       const grid = document.getElementById('spareGrid');
       if (grid) {
         if (filtered.length === 0) {
-          grid.innerHTML = '<div style="text-align:center; padding:2rem; color:#888;">No spare parts found. Try "Tecno", "Samsung", or "iPhone"</div>';
+          grid.innerHTML = '<div style="text-align:center; padding:2rem; color:#888;">No spare parts found.</div>';
           return;
         }
         grid.innerHTML = filtered.map(part => `
@@ -316,7 +321,7 @@
               <h3>${escapeHtml(part.name)}</h3>
               <div><span class="brand-badge">${escapeHtml(part.brand)}</span> ${part.modelNumber ? `<span style="color:#888;"> · ${escapeHtml(part.modelNumber)}</span>` : ''}</div>
               <div class="spare-price">Kshs ${part.price.toLocaleString()}</div>
-              <div>${part.stock > 0 ? `<span class="badge-instock">✅ In Stock (${part.stock})</span>` : '<span class="badge-outstock">❌ Out of Stock</span>'}</div>
+              <div>${part.stock > 0 ? `<span class="badge-instock">In Stock (${part.stock})</span>` : '<span class="badge-outstock">Out of Stock</span>'}</div>
               <button class="btn-add" onclick="addToCart(${part.id})" ${part.stock === 0 ? 'disabled' : ''}>Add to Cart</button>
             </div>
           </div>
@@ -330,7 +335,7 @@
     }
 
     // ============================================
-    // ADD TO CART - Uses main page's cart system (nova_cart)
+    // SIMPLE ADD TO CART - Redirects to main page
     // ============================================
     
     function updateCartBadge() {
@@ -340,10 +345,7 @@
       if (cartCount) cartCount.innerText = totalItems;
     }
     
-    // Global addToCart function
     window.addToCart = function(id) {
-      console.log("addToCart called with id:", id);
-      
       const item = spareParts.find(p => p.id == id);
       if (!item) {
         toast('Item not found', 'error');
@@ -355,10 +357,10 @@
         return;
       }
       
-      // Get existing cart from localStorage (same as main page uses)
+      // Get existing cart
       let cart = JSON.parse(localStorage.getItem('nova_cart') || '[]');
       
-      // Check if item already exists in cart
+      // Check if item exists
       const existingIndex = cart.findIndex(cartItem => cartItem.id == id);
       
       if (existingIndex !== -1) {
@@ -373,17 +375,19 @@
         });
       }
       
-      // Save back to localStorage
+      // Save to localStorage
       localStorage.setItem('nova_cart', JSON.stringify(cart));
       
-      // Update cart badge
+      // Update badge
       updateCartBadge();
       
-      // Dispatch storage event for main page to sync
-      window.dispatchEvent(new StorageEvent('storage', { key: 'nova_cart', newValue: JSON.stringify(cart) }));
+      // Show success message
+      toast(`${item.name} added to cart! Go to main page to checkout.`, 'success');
       
-      toast(`${item.name} added to cart! View in main page cart.`, 'success');
-      console.log("Cart after add:", cart);
+      // Redirect to main page cart after 1 second
+      setTimeout(() => {
+        window.location.href = 'index.html#cart';
+      }, 1000);
     };
     
     function toast(msg, type) {
@@ -413,46 +417,19 @@
     document.getElementById('spareBrandFilter')?.addEventListener('change', renderSpareParts);
     document.getElementById('modelNumberSearch')?.addEventListener('input', renderSpareParts);
     
-    document.getElementById('cartBtn')?.addEventListener('click', (e) => {
-      // Just redirect to main page cart - no sidebar needed
-      window.location.href = 'index.html#cart';
-    });
-    
     document.getElementById('menuToggle')?.addEventListener('click', () => document.getElementById('mobileMenu')?.classList.toggle('open'));
     
     document.getElementById('repairBookingForm')?.addEventListener('submit', (e) => {
       e.preventDefault();
-      const booking = {
-        id: 'BKG-' + Date.now(),
-        name: document.getElementById('customerName').value,
-        phone: document.getElementById('customerPhone').value,
-        email: document.getElementById('customerEmail').value,
-        brand: document.getElementById('deviceBrand').value,
-        model: document.getElementById('deviceModel').value,
-        service: document.getElementById('serviceType').value,
-        description: document.getElementById('issueDescription').value,
-        status: 'Pending',
-        date: new Date().toISOString()
-      };
-      const bookings = JSON.parse(localStorage.getItem('repair_bookings') || '[]');
-      bookings.push(booking);
-      localStorage.setItem('repair_bookings', JSON.stringify(bookings));
-      document.getElementById('bookingMessage').innerHTML = '<div style="background:#00c853; padding:1rem; border-radius:0.75rem;">✅ Booking submitted! ID: ' + booking.id + '</div>';
+      document.getElementById('bookingMessage').innerHTML = '<div style="background:#00c853; padding:1rem; border-radius:0.75rem;">✅ Booking submitted! We will contact you within 24 hours.</div>';
       e.target.reset();
       setTimeout(() => document.getElementById('bookingMessage').innerHTML = '', 5000);
-    });
-
-    // Listen for cart updates from main page
-    window.addEventListener('storage', (e) => {
-      if (e.key === 'nova_cart') updateCartBadge();
     });
 
     // Initialize
     loadSpareParts();
     renderServices();
     updateCartBadge();
-    
-    console.log("Repair page loaded - Add to Cart redirects to main page cart");
   </script>
 
   <aside class="mobile-menu" id="mobileMenu">
