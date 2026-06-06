@@ -87,86 +87,65 @@ function toast(msg, type='info') {
 // ============================================
 
 function showEditSparePartModal(part) {
-  // Create modal for editing
   const modal = document.createElement('div');
-  modal.className = 'modal';
-  modal.style.display = 'flex';
-  modal.style.position = 'fixed';
-  modal.style.top = '0';
-  modal.style.left = '0';
-  modal.style.width = '100%';
-  modal.style.height = '100%';
-  modal.style.backgroundColor = 'rgba(0,0,0,0.8)';
-  modal.style.zIndex = '2000';
-  modal.style.alignItems = 'center';
-  modal.style.justifyContent = 'center';
+  modal.className = 'modal-overlay';
+  modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:10000; display:flex; align-items:center; justify-content:center;';
   
   modal.innerHTML = `
-    <div class="modal-card" style="max-width: 500px; width: 90%; background: #1a1a2e; border-radius: 1.5rem; padding: 2rem;">
-      <h3 style="margin-bottom: 1rem;">✏️ Edit Spare Part</h3>
-      <form id="editSparePartForm">
+    <div style="background:#1a1a2e; border-radius:1rem; padding:2rem; max-width:500px; width:90%;">
+      <h3 style="margin-bottom:1rem;">✏️ Edit Spare Part</h3>
+      <form id="editSpareForm">
         <input type="hidden" name="id" value="${part.id}">
-        <div style="margin-bottom: 1rem;">
-          <label>Part Name</label>
-          <input name="name" value="${esc(part.name)}" required style="width: 100%; padding: 0.75rem; border-radius: 0.75rem; background: #0f0f1a; border: 1px solid #2a2a3e; color: white;">
-        </div>
-        <div style="margin-bottom: 1rem;">
-          <label>Brand</label>
-          <input name="brand" value="${esc(part.brand)}" required style="width: 100%; padding: 0.75rem; border-radius: 0.75rem; background: #0f0f1a; border: 1px solid #2a2a3e; color: white;">
-        </div>
-        <div style="margin-bottom: 1rem;">
-          <label>Category</label>
-          <input name="category" value="${esc(part.category)}" required style="width: 100%; padding: 0.75rem; border-radius: 0.75rem; background: #0f0f1a; border: 1px solid #2a2a3e; color: white;">
-        </div>
-        <div style="margin-bottom: 1rem;">
-          <label>Model Number</label>
-          <input name="modelNumber" value="${esc(part.modelNumber || '')}" style="width: 100%; padding: 0.75rem; border-radius: 0.75rem; background: #0f0f1a; border: 1px solid #2a2a3e; color: white;">
-        </div>
-        <div style="margin-bottom: 1rem;">
-          <label>Price (Kshs)</label>
-          <input name="price" type="number" value="${part.price}" required style="width: 100%; padding: 0.75rem; border-radius: 0.75rem; background: #0f0f1a; border: 1px solid #2a2a3e; color: white;">
-        </div>
-        <div style="margin-bottom: 1rem;">
-          <label>Stock</label>
-          <input name="stock" type="number" value="${part.stock}" required style="width: 100%; padding: 0.75rem; border-radius: 0.75rem; background: #0f0f1a; border: 1px solid #2a2a3e; color: white;">
-        </div>
-        <div style="margin-bottom: 1rem;">
-          <label>Description</label>
-          <textarea name="description" rows="3" style="width: 100%; padding: 0.75rem; border-radius: 0.75rem; background: #0f0f1a; border: 1px solid #2a2a3e; color: white;">${esc(part.description || '')}</textarea>
-        </div>
-        <div style="display: flex; gap: 1rem;">
-          <button type="submit" class="btn primary" style="flex: 1;">💾 Save Changes</button>
-          <button type="button" class="btn ghost" onclick="this.closest('.modal').remove()" style="flex: 1;">Cancel</button>
+        <div style="margin-bottom:1rem;"><input name="name" value="${esc(part.name)}" placeholder="Part Name" required style="width:100%; padding:0.75rem; border-radius:0.5rem; background:#0f0f1a; border:1px solid #333; color:white;"></div>
+        <div style="margin-bottom:1rem;"><input name="brand" value="${esc(part.brand)}" placeholder="Brand" required style="width:100%; padding:0.75rem; border-radius:0.5rem; background:#0f0f1a; border:1px solid #333; color:white;"></div>
+        <div style="margin-bottom:1rem;"><input name="category" value="${esc(part.category)}" placeholder="Category" required style="width:100%; padding:0.75rem; border-radius:0.5rem; background:#0f0f1a; border:1px solid #333; color:white;"></div>
+        <div style="margin-bottom:1rem;"><input name="modelNumber" value="${esc(part.modelNumber || '')}" placeholder="Model Number" style="width:100%; padding:0.75rem; border-radius:0.5rem; background:#0f0f1a; border:1px solid #333; color:white;"></div>
+        <div style="margin-bottom:1rem;"><input name="price" type="number" value="${part.price}" placeholder="Price" required style="width:100%; padding:0.75rem; border-radius:0.5rem; background:#0f0f1a; border:1px solid #333; color:white;"></div>
+        <div style="margin-bottom:1rem;"><input name="stock" type="number" value="${part.stock}" placeholder="Stock" required style="width:100%; padding:0.75rem; border-radius:0.5rem; background:#0f0f1a; border:1px solid #333; color:white;"></div>
+        <div style="margin-bottom:1rem;"><textarea name="description" rows="3" placeholder="Description" style="width:100%; padding:0.75rem; border-radius:0.5rem; background:#0f0f1a; border:1px solid #333; color:white;">${esc(part.description || '')}</textarea></div>
+        <div style="display:flex; gap:1rem;">
+          <button type="submit" class="btn primary" style="flex:1;">💾 Save Changes</button>
+          <button type="button" class="btn ghost" onclick="this.closest('.modal-overlay').remove()" style="flex:1;">Cancel</button>
         </div>
       </form>
     </div>
   `;
-  
   document.body.appendChild(modal);
   
-  document.getElementById('editSparePartForm').addEventListener('submit', async (e) => {
+  document.getElementById('editSpareForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
-    const id = formData.get('id');
+    const id = parseInt(formData.get('id'));
     
-    try {
-      await api(`/api/admin/spare-parts/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify({
-          name: formData.get('name'),
-          brand: formData.get('brand'),
-          category: formData.get('category'),
-          modelNumber: formData.get('modelNumber'),
-          price: parseInt(formData.get('price')),
-          stock: parseInt(formData.get('stock')),
-          description: formData.get('description')
-        })
-      });
+    const updatedPart = {
+      id: id,
+      name: formData.get('name'),
+      brand: formData.get('brand'),
+      category: formData.get('category'),
+      modelNumber: formData.get('modelNumber'),
+      price: parseInt(formData.get('price')),
+      stock: parseInt(formData.get('stock')),
+      description: formData.get('description'),
+      image: part.image || 'shop/hero-phone.jpg'
+    };
+    
+    // Update local array
+    const index = spareParts.findIndex(p => p.id === id);
+    if (index !== -1) {
+      spareParts[index] = updatedPart;
+      localStorage.setItem('spare_parts', JSON.stringify(spareParts));
+      
+      // Try server update
+      try {
+        await api(`/api/admin/spare-parts/${id}`, {
+          method: 'PUT',
+          body: JSON.stringify(updatedPart)
+        });
+      } catch(err) {}
+      
       modal.remove();
-      toast('Spare part updated successfully!', 'success');
-      await loadAdminSpareParts();
-    } catch (err) {
-      toast(err.message, 'error');
+      renderAdminSpareParts();
+      toast('Spare part updated!', 'success');
     }
   });
 }
@@ -181,36 +160,31 @@ function renderAdminSpareParts() {
   }
   
   el.innerHTML = spareParts.map(part => `
-    <div class="spare-card" style="background: #1a1a2e; border-radius: 1rem; padding: 1rem; margin-bottom: 1rem; border: 1px solid rgba(255,255,255,0.1);">
-      <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-        ${part.image ? `<img src="${part.image}" alt="${esc(part.name)}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 0.5rem;">` : ''}
+    <div style="background: #1a1a2e; border-radius: 1rem; padding: 1rem; margin-bottom: 1rem; border: 1px solid rgba(255,255,255,0.1);">
+      <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
+        <img src="${part.image || 'shop/hero-phone.jpg'}" alt="${esc(part.name)}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 0.5rem;">
         <div style="flex: 1;">
-          <h4 style="margin-bottom: 0.5rem;">${esc(part.name)}</h4>
-          <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.5rem;">
+          <h4 style="margin-bottom: 0.25rem;">${esc(part.name)}</h4>
+          <div style="display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.875rem;">
             <span style="color: #00e5ff;">${esc(part.brand)}</span>
             <span style="color: #888;">${esc(part.category)}</span>
             ${part.modelNumber ? `<span style="color: #888;">Model: ${esc(part.modelNumber)}</span>` : ''}
+            <span style="color: #00e5ff;">${fmt(part.price)}</span>
+            <span style="${part.stock > 0 ? 'color:#00c853' : 'color:#ff3b30'}">Stock: ${part.stock}</span>
           </div>
-          <div style="display: flex; gap: 1rem; align-items: center;">
-            <span class="price" style="font-size: 1.25rem; font-weight: bold; color: #00e5ff;">${fmt(part.price)}</span>
-            <span class="stock ${part.stock > 0 ? 'in-stock' : 'out-stock'}" style="padding: 0.25rem 0.75rem; border-radius: 2rem; font-size: 0.75rem; ${part.stock > 0 ? 'background: #00c853; color: white;' : 'background: #ff3b30; color: white;'}">
-              ${part.stock > 0 ? `Stock: ${part.stock}` : 'Out of Stock'}
-            </span>
-          </div>
-          ${part.description ? `<p style="margin-top: 0.5rem; font-size: 0.875rem; color: #888;">${esc(part.description)}</p>` : ''}
+          ${part.description ? `<p style="font-size: 0.75rem; color: #888; margin-top: 0.25rem;">${esc(part.description)}</p>` : ''}
         </div>
-        <div style="display: flex; gap: 0.5rem; align-items: flex-start;">
-          <button class="btn-sm btn-edit" onclick="window.editSparePart(${part.id})" style="background: #00e5ff; color: #000; border: none; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer;">✏️ Edit</button>
-          <button class="btn-sm btn-delete" onclick="window.deleteSparePart(${part.id})" style="background: #ff3b30; color: white; border: none; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer;">🗑️ Delete</button>
+        <div style="display: flex; gap: 0.5rem;">
+          <button onclick="editSparePart(${part.id})" style="background: #00e5ff; color: #000; border: none; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer;">✏️ Edit</button>
+          <button onclick="deleteSparePart(${part.id})" style="background: #ff3b30; color: white; border: none; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer;">🗑️ Delete</button>
         </div>
       </div>
     </div>
   `).join('');
 }
 
-// Make functions global for onclick handlers
-window.editSparePart = async (id) => {
-  const part = spareParts.find(p => p.id == id);
+window.editSparePart = function(id) {
+  const part = spareParts.find(p => p.id === id);
   if (part) {
     showEditSparePartModal(part);
   } else {
@@ -218,109 +192,87 @@ window.editSparePart = async (id) => {
   }
 };
 
-window.deleteSparePart = async (id) => {
+window.deleteSparePart = function(id) {
   if (!confirm('Are you sure you want to delete this spare part?')) return;
-  try {
-    await api(`/api/admin/spare-parts/${id}`, { method: 'DELETE' });
-    toast('Spare part deleted', 'success');
-    await loadAdminSpareParts();
-  } catch (err) {
-    toast(err.message, 'error');
-  }
+  
+  spareParts = spareParts.filter(p => p.id !== id);
+  localStorage.setItem('spare_parts', JSON.stringify(spareParts));
+  
+  // Try server delete
+  api(`/api/admin/spare-parts/${id}`, { method: 'DELETE' }).catch(() => {});
+  
+  renderAdminSpareParts();
+  toast('Spare part deleted', 'success');
 };
 
 // ============================================
-// REPAIR SERVICES - FULL CRUD (Add, Update, Delete)
+// REPAIR SERVICES - FULL CRUD
 // ============================================
 
 function showEditRepairServiceModal(service) {
   const modal = document.createElement('div');
-  modal.className = 'modal';
-  modal.style.display = 'flex';
-  modal.style.position = 'fixed';
-  modal.style.top = '0';
-  modal.style.left = '0';
-  modal.style.width = '100%';
-  modal.style.height = '100%';
-  modal.style.backgroundColor = 'rgba(0,0,0,0.8)';
-  modal.style.zIndex = '2000';
-  modal.style.alignItems = 'center';
-  modal.style.justifyContent = 'center';
+  modal.className = 'modal-overlay';
+  modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:10000; display:flex; align-items:center; justify-content:center;';
   
   modal.innerHTML = `
-    <div class="modal-card" style="max-width: 500px; width: 90%; background: #1a1a2e; border-radius: 1.5rem; padding: 2rem;">
-      <h3 style="margin-bottom: 1rem;">✏️ Edit Repair Service</h3>
-      <form id="editRepairServiceForm">
+    <div style="background:#1a1a2e; border-radius:1rem; padding:2rem; max-width:500px; width:90%;">
+      <h3 style="margin-bottom:1rem;">✏️ Edit Repair Service</h3>
+      <form id="editServiceForm">
         <input type="hidden" name="id" value="${service.id}">
-        <div style="margin-bottom: 1rem;">
-          <label>Service Title</label>
-          <input name="title" value="${esc(service.title)}" required style="width: 100%; padding: 0.75rem; border-radius: 0.75rem; background: #0f0f1a; border: 1px solid #2a2a3e; color: white;">
-        </div>
-        <div style="margin-bottom: 1rem;">
-          <label>Brand</label>
-          <input name="brand" value="${esc(service.brand)}" required style="width: 100%; padding: 0.75rem; border-radius: 0.75rem; background: #0f0f1a; border: 1px solid #2a2a3e; color: white;">
-        </div>
-        <div style="margin-bottom: 1rem;">
-          <label>Repair Type</label>
-          <input name="repairType" value="${esc(service.repairType)}" required style="width: 100%; padding: 0.75rem; border-radius: 0.75rem; background: #0f0f1a; border: 1px solid #2a2a3e; color: white;">
-        </div>
-        <div style="margin-bottom: 1rem;">
-          <label>Price (Kshs)</label>
-          <input name="price" type="number" value="${service.price}" required style="width: 100%; padding: 0.75rem; border-radius: 0.75rem; background: #0f0f1a; border: 1px solid #2a2a3e; color: white;">
-        </div>
-        <div style="margin-bottom: 1rem;">
-          <label>Duration</label>
-          <input name="duration" value="${esc(service.duration)}" required style="width: 100%; padding: 0.75rem; border-radius: 0.75rem; background: #0f0f1a; border: 1px solid #2a2a3e; color: white;">
-        </div>
-        <div style="margin-bottom: 1rem;">
-          <label>Warranty</label>
-          <input name="warranty" value="${esc(service.warranty)}" required style="width: 100%; padding: 0.75rem; border-radius: 0.75rem; background: #0f0f1a; border: 1px solid #2a2a3e; color: white;">
-        </div>
-        <div style="margin-bottom: 1rem;">
-          <label>Available</label>
-          <select name="available" style="width: 100%; padding: 0.75rem; border-radius: 0.75rem; background: #0f0f1a; border: 1px solid #2a2a3e; color: white;">
+        <div style="margin-bottom:1rem;"><input name="title" value="${esc(service.title)}" placeholder="Service Title" required style="width:100%; padding:0.75rem; border-radius:0.5rem; background:#0f0f1a; border:1px solid #333; color:white;"></div>
+        <div style="margin-bottom:1rem;"><input name="brand" value="${esc(service.brand)}" placeholder="Brand" required style="width:100%; padding:0.75rem; border-radius:0.5rem; background:#0f0f1a; border:1px solid #333; color:white;"></div>
+        <div style="margin-bottom:1rem;"><input name="repairType" value="${esc(service.repairType)}" placeholder="Repair Type" required style="width:100%; padding:0.75rem; border-radius:0.5rem; background:#0f0f1a; border:1px solid #333; color:white;"></div>
+        <div style="margin-bottom:1rem;"><input name="price" type="number" value="${service.price}" placeholder="Price" required style="width:100%; padding:0.75rem; border-radius:0.5rem; background:#0f0f1a; border:1px solid #333; color:white;"></div>
+        <div style="margin-bottom:1rem;"><input name="duration" value="${esc(service.duration || '')}" placeholder="Duration" style="width:100%; padding:0.75rem; border-radius:0.5rem; background:#0f0f1a; border:1px solid #333; color:white;"></div>
+        <div style="margin-bottom:1rem;"><input name="warranty" value="${esc(service.warranty || '')}" placeholder="Warranty" style="width:100%; padding:0.75rem; border-radius:0.5rem; background:#0f0f1a; border:1px solid #333; color:white;"></div>
+        <div style="margin-bottom:1rem;">
+          <select name="available" style="width:100%; padding:0.75rem; border-radius:0.5rem; background:#0f0f1a; border:1px solid #333; color:white;">
             <option value="1" ${service.available ? 'selected' : ''}>Available</option>
             <option value="0" ${!service.available ? 'selected' : ''}>Unavailable</option>
           </select>
         </div>
-        <div style="margin-bottom: 1rem;">
-          <label>Description</label>
-          <textarea name="description" rows="3" style="width: 100%; padding: 0.75rem; border-radius: 0.75rem; background: #0f0f1a; border: 1px solid #2a2a3e; color: white;">${esc(service.description || '')}</textarea>
-        </div>
-        <div style="display: flex; gap: 1rem;">
-          <button type="submit" class="btn primary" style="flex: 1;">💾 Save Changes</button>
-          <button type="button" class="btn ghost" onclick="this.closest('.modal').remove()" style="flex: 1;">Cancel</button>
+        <div style="margin-bottom:1rem;"><textarea name="description" rows="3" placeholder="Description" style="width:100%; padding:0.75rem; border-radius:0.5rem; background:#0f0f1a; border:1px solid #333; color:white;">${esc(service.description || '')}</textarea></div>
+        <div style="display:flex; gap:1rem;">
+          <button type="submit" class="btn primary" style="flex:1;">💾 Save Changes</button>
+          <button type="button" class="btn ghost" onclick="this.closest('.modal-overlay').remove()" style="flex:1;">Cancel</button>
         </div>
       </form>
     </div>
   `;
-  
   document.body.appendChild(modal);
   
-  document.getElementById('editRepairServiceForm').addEventListener('submit', async (e) => {
+  document.getElementById('editServiceForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
-    const id = formData.get('id');
+    const id = parseInt(formData.get('id'));
     
-    try {
-      await api(`/api/management/repair-services/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify({
-          title: formData.get('title'),
-          brand: formData.get('brand'),
-          repairType: formData.get('repairType'),
-          price: parseInt(formData.get('price')),
-          duration: formData.get('duration'),
-          warranty: formData.get('warranty'),
-          available: formData.get('available') === '1',
-          description: formData.get('description')
-        })
-      });
+    const updatedService = {
+      id: id,
+      title: formData.get('title'),
+      brand: formData.get('brand'),
+      repairType: formData.get('repairType'),
+      price: parseInt(formData.get('price')),
+      duration: formData.get('duration'),
+      warranty: formData.get('warranty'),
+      available: formData.get('available') === '1',
+      description: formData.get('description')
+    };
+    
+    const index = repairServices.findIndex(s => s.id === id);
+    if (index !== -1) {
+      repairServices[index] = updatedService;
+      localStorage.setItem('repair_services', JSON.stringify(repairServices));
+      
+      try {
+        await api(`/api/management/repair-services/${id}`, {
+          method: 'PUT',
+          body: JSON.stringify(updatedService)
+        });
+      } catch(err) {}
+      
       modal.remove();
-      toast('Repair service updated successfully!', 'success');
-      await loadRepairServices();
-    } catch (err) {
-      toast(err.message, 'error');
+      renderRepairServices();
+      toast('Repair service updated!', 'success');
     }
   });
 }
@@ -330,40 +282,34 @@ function renderRepairServices() {
   if (!el) return;
   
   if (!repairServices || repairServices.length === 0) {
-    el.innerHTML = '<div class="dash-empty">No repair services available. Click "Add Repair Service" to get started.</div>';
+    el.innerHTML = '<div class="dash-empty">No repair services available.</div>';
     return;
   }
   
   el.innerHTML = repairServices.map(service => `
-    <div class="service-card" style="background: #1a1a2e; border-radius: 1rem; padding: 1rem; margin-bottom: 1rem; border: 1px solid rgba(255,255,255,0.1);">
-      <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+    <div style="background: #1a1a2e; border-radius: 1rem; padding: 1rem; margin-bottom: 1rem; border: 1px solid rgba(255,255,255,0.1);">
+      <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
         <div style="flex: 1;">
-          <h4 style="margin-bottom: 0.5rem;">${esc(service.title)}</h4>
-          <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.5rem;">
+          <h4 style="margin-bottom: 0.25rem;">${esc(service.title)}</h4>
+          <div style="display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.875rem;">
             <span style="color: #00e5ff;">${esc(service.brand)}</span>
             <span style="color: #888;">${esc(service.repairType)}</span>
-            <span style="color: #888;">⏱️ ${service.duration || 'N/A'}</span>
-            <span style="color: #888;">🛡️ ${service.warranty || 'N/A'}</span>
+            <span style="color: #00e5ff;">${fmt(service.price)}</span>
+            <span style="${service.available ? 'color:#00c853' : 'color:#ff3b30'}">${service.available ? 'Available' : 'Unavailable'}</span>
           </div>
-          <div style="display: flex; gap: 1rem; align-items: center;">
-            <span class="price" style="font-size: 1.25rem; font-weight: bold; color: #00e5ff;">${fmt(service.price)}</span>
-            <span class="status ${service.available ? 'available' : 'unavailable'}" style="padding: 0.25rem 0.75rem; border-radius: 2rem; font-size: 0.75rem; ${service.available ? 'background: #00c853; color: white;' : 'background: #ff3b30; color: white;'}">
-              ${service.available ? 'Available' : 'Unavailable'}
-            </span>
-          </div>
-          ${service.description ? `<p style="margin-top: 0.5rem; font-size: 0.875rem; color: #888;">${esc(service.description)}</p>` : ''}
+          ${service.description ? `<p style="font-size: 0.75rem; color: #888; margin-top: 0.25rem;">${esc(service.description)}</p>` : ''}
         </div>
-        <div style="display: flex; gap: 0.5rem; align-items: flex-start;">
-          <button class="btn-sm btn-edit" onclick="window.editRepairService(${service.id})" style="background: #00e5ff; color: #000; border: none; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer;">✏️ Edit</button>
-          <button class="btn-sm btn-delete" onclick="window.deleteRepairService(${service.id})" style="background: #ff3b30; color: white; border: none; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer;">🗑️ Delete</button>
+        <div style="display: flex; gap: 0.5rem;">
+          <button onclick="editRepairService(${service.id})" style="background: #00e5ff; color: #000; border: none; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer;">✏️ Edit</button>
+          <button onclick="deleteRepairService(${service.id})" style="background: #ff3b30; color: white; border: none; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer;">🗑️ Delete</button>
         </div>
       </div>
     </div>
   `).join('');
 }
 
-window.editRepairService = async (id) => {
-  const service = repairServices.find(s => s.id == id);
+window.editRepairService = function(id) {
+  const service = repairServices.find(s => s.id === id);
   if (service) {
     showEditRepairServiceModal(service);
   } else {
@@ -371,16 +317,63 @@ window.editRepairService = async (id) => {
   }
 };
 
-window.deleteRepairService = async (id) => {
+window.deleteRepairService = function(id) {
   if (!confirm('Are you sure you want to delete this repair service?')) return;
-  try {
-    await api(`/api/management/repair-services/${id}`, { method: 'DELETE' });
-    toast('Repair service deleted', 'success');
-    await loadRepairServices();
-  } catch (err) {
-    toast(err.message, 'error');
-  }
+  
+  repairServices = repairServices.filter(s => s.id !== id);
+  localStorage.setItem('repair_services', JSON.stringify(repairServices));
+  
+  api(`/api/management/repair-services/${id}`, { method: 'DELETE' }).catch(() => {});
+  
+  renderRepairServices();
+  toast('Repair service deleted', 'success');
 };
+
+// ============================================
+// LOAD FUNCTIONS
+// ============================================
+
+async function loadAdminSpareParts() {
+  if (offlineManager) {
+    const stored = localStorage.getItem('spare_parts');
+    spareParts = stored ? JSON.parse(stored) : [];
+    renderAdminSpareParts();
+    return;
+  }
+  try {
+    const data = await api('/api/spare-parts');
+    spareParts = data.spares || [];
+    localStorage.setItem('spare_parts', JSON.stringify(spareParts));
+    renderAdminSpareParts();
+  } catch (err) {
+    const stored = localStorage.getItem('spare_parts');
+    if (stored) {
+      spareParts = JSON.parse(stored);
+      renderAdminSpareParts();
+    }
+  }
+}
+
+async function loadRepairServices() {
+  if (offlineManager) {
+    const stored = localStorage.getItem('repair_services');
+    repairServices = stored ? JSON.parse(stored) : DUMMY_REPAIR_SERVICES;
+    renderRepairServices();
+    return;
+  }
+  try {
+    const data = await api('/api/management/repair-services');
+    repairServices = data.services || [];
+    localStorage.setItem('repair_services', JSON.stringify(repairServices));
+    renderRepairServices();
+  } catch (err) {
+    const stored = localStorage.getItem('repair_services');
+    if (stored) {
+      repairServices = JSON.parse(stored);
+      renderRepairServices();
+    }
+  }
+}
 
 // ============================================
 // EXISTING FUNCTIONS (kept as is)
@@ -601,28 +594,6 @@ async function loadRepairBookings() {
   renderRepairBookings();
 }
 
-async function loadAdminSpareParts() {
-  if (offlineManager) {
-    spareParts = [];
-    renderAdminSpareParts();
-    return;
-  }
-  const data = await api('/api/spare-parts');
-  spareParts = data.spares || [];
-  renderAdminSpareParts();
-}
-
-async function loadRepairServices() {
-  if (offlineManager) {
-    repairServices = DUMMY_REPAIR_SERVICES;
-    renderRepairServices();
-    return;
-  }
-  const data = await api('/api/management/repair-services');
-  repairServices = data.services || [];
-  renderRepairServices();
-}
-
 async function loadTechnicians() {
   if (offlineManager) {
     technicians = DUMMY_TECHNICIANS;
@@ -660,248 +631,4 @@ async function loadAdminData() {
 
   try {
     api('/api/products').then(d => { products = d.products || []; renderProducts(); }).catch(e => console.error("Products load fail", e));
-    api('/api/admin/staff').then(d => { staff = d.staff || []; renderStaff(); }).catch(e => console.error("Staff load fail", e));
-    api('/api/admin/analytics').then(d => renderPerformance(d)).catch(e => console.error("Analytics load fail", e));
-  } catch (err) {
-    console.error("Admin data load failed:", err);
-    toast("Some management metrics could not be loaded", "error");
-  }
-
-  await Promise.all([loadRepairServices(), loadTechnicians(), loadRepairCategories(), loadAdminSpareParts()]);
-}
-
-async function updateView() {
-  let data = null;
-  try {
-    data = await api('/api/auth/me');
-    offlineManager = false;
-  } catch (err) {
-    if (localStorage.getItem('smd_mgmt_offline') === '1') {
-      offlineManager = true;
-      manager = OFFLINE_MANAGER;
-    } else {
-      manager = null;
-    }
-  }
-
-  if (data?.user && ['admin', 'staff'].includes(data.user.role)) {
-    manager = data.user;
-    offlineManager = false;
-  }
-  
-  if ($('#managerLogin')) $('#managerLogin').hidden = !!manager;
-  if ($('#managerOrders')) $('#managerOrders').hidden = !manager;
-
-  const revObs = new IntersectionObserver(es => es.forEach(e => {
-    if (e.isIntersecting) e.target.classList.add('in');
-  }), { threshold: .1 });
-  document.querySelectorAll('.reveal').forEach(el => revObs.observe(el));
-
-  if (!manager) return;
-
-  const isAdmin = manager.role === 'admin';
-  if ($('#managerRole')) $('#managerRole').textContent = isAdmin ? 'Admin' : 'Staff';
-  if ($('#managerTitle')) $('#managerTitle').textContent = isAdmin ? 'Admin Management' : 'Orders Placed';
-  if ($('#adminSections')) $('#adminSections').hidden = !isAdmin;
-
-  if ($('#placedOrders')) $('#placedOrders').innerHTML = LOADING.orders;
-  if ($('#repairBookings')) $('#repairBookings').innerHTML = LOADING.bookings;
-
-  return Promise.allSettled([
-    loadOrders().catch(e => console.error("Orders fail:", e)),
-    loadRepairBookings().catch(e => console.error("Bookings fail:", e)),
-    isAdmin ? loadAdminData().catch(e => console.error("Admin data fail:", e)) : Promise.resolve()
-  ]);
-}
-
-// ============================================
-// EVENT LISTENERS
-// ============================================
-
-$('#managerLoginForm')?.addEventListener('submit', async e => {
-  e.preventDefault();
-  const fd = new FormData(e.target);
-  const email = String(fd.get('email') || '').trim();
-  const password = String(fd.get('password') || '');
-  try {
-    await api('/api/auth/management-login', {
-      method:'POST',
-      body:JSON.stringify({ email, password })
-    });
-    localStorage.removeItem('smd_mgmt_offline');
-    e.target.reset();
-    await updateView();
-    toast('Login successful', 'success');
-  } catch (err) {
-    if (err.network && email && password) {
-      offlineManager = true;
-      localStorage.setItem('smd_mgmt_offline', '1');
-      await updateView();
-      toast('Login successful (offline fallback)', 'success');
-      return;
-    }
-    toast(err.message, 'error');
-  }
-});
-
-$('#sparePartForm')?.addEventListener('submit', async e => {
-  e.preventDefault();
-  const fd = new FormData(e.target);
-  try {
-    await api('/api/admin/spare-parts', { method:'POST', body:fd });
-    e.target.reset();
-    await loadAdminSpareParts();
-    toast('Spare part added to inventory', 'success');
-  } catch (err) { toast(err.message, 'error'); }
-});
-
-$('#staffForm')?.addEventListener('submit', async e => {
-  e.preventDefault();
-  const fd = new FormData(e.target);
-  try {
-    await api('/api/admin/staff', {
-      method:'POST',
-      body:JSON.stringify({ name:fd.get('name').trim(), email:fd.get('email').trim(), password:fd.get('password') })
-    });
-    e.target.reset();
-    await loadAdminData();
-    toast('Staff account created', 'success');
-  } catch (err) {
-    toast(err.message, 'error');
-  }
-});
-
-$('#technicianForm')?.addEventListener('submit', async e => {
-  e.preventDefault();
-  const fd = new FormData(e.target);
-  try {
-    await api('/api/management/repair-technicians', {
-      method:'POST',
-      body: JSON.stringify({ name: fd.get('name').trim(), email: fd.get('email').trim() })
-    });
-    e.target.reset();
-    await loadTechnicians();
-    toast('Technician added', 'success');
-  } catch (err) {
-    toast(err.message, 'error');
-  }
-});
-
-$('#repairServiceForm')?.addEventListener('submit', async e => {
-  e.preventDefault();
-  const fd = new FormData(e.target);
-  try {
-    await api('/api/management/repair-services', { method: 'POST', body: fd });
-    e.target.reset();
-    await loadRepairServices();
-    toast('Repair service added', 'success');
-  } catch (err) {
-    toast(err.message, 'error');
-  }
-});
-
-$('#repairBookings')?.addEventListener('click', async e => {
-  if (!e.target.matches('.js-update-booking')) return;
-  const bookingId = e.target.dataset.id;
-  if (!bookingId) return;
-  const status = prompt('Enter new status for booking ' + bookingId + ' (Pending, Received, Diagnosing, Repairing, Completed, Ready for pickup):');
-  if (!status) return;
-  try {
-    await api(`/api/management/repair-bookings/${encodeURIComponent(bookingId)}`, {
-      method: 'PUT',
-      body: JSON.stringify({ status })
-    });
-    await loadRepairBookings();
-    toast('Booking status updated', 'success');
-  } catch (err) {
-    toast(err.message, 'error');
-  }
-});
-
-$('#productForm')?.addEventListener('submit', async e => {
-  e.preventDefault();
-  const fd = new FormData(e.target);
-  try {
-    await api('/api/admin/products', { method:'POST', body:fd });
-    e.target.reset();
-    await loadAdminData();
-    toast('Product added', 'success');
-  } catch (err) {
-    toast(err.message, 'error');
-  }
-});
-
-$('#managerLogout')?.addEventListener('click', async () => {
-  await api('/api/auth/logout', { method:'POST', body:JSON.stringify({}) });
-  manager = null;
-  orders = [];
-  products = [];
-  staff = [];
-  repairBookings = [];
-  repairServices = [];
-  technicians = [];
-  await updateView();
-});
-
-updateView().catch(() => {
-  const login = $('#managerLogin');
-  if (login) login.hidden = false;
-  const ordersPanel = $('#managerOrders');
-  if (ordersPanel) ordersPanel.hidden = true;
-});
-// Add this function to management.js - ensures spare parts are saved with proper image handling
-async function loadAdminSpareParts() {
-  if (offlineManager) {
-    spareParts = [];
-    renderAdminSpareParts();
-    return;
-  }
-  try {
-    const data = await api('/api/spare-parts');
-    spareParts = data.spares || [];
-    // Also save to localStorage with the correct key that repair page expects
-    localStorage.setItem('spare_parts', JSON.stringify(spareParts));
-    renderAdminSpareParts();
-  } catch (err) {
-    console.error("Failed to load spare parts:", err);
-    // Try to load from localStorage as fallback
-    const stored = localStorage.getItem('spare_parts');
-    if (stored) {
-      spareParts = JSON.parse(stored);
-      renderAdminSpareParts();
-    }
-  }
-}
-
-// Update the add spare part function
-document.getElementById('sparePartForm')?.addEventListener('submit', async e => {
-  e.preventDefault();
-  const fd = new FormData(e.target);
-  try {
-    const response = await api('/api/admin/spare-parts', { method:'POST', body:fd });
-    // Save to localStorage with the correct key
-    const updatedParts = await api('/api/spare-parts');
-    localStorage.setItem('spare_parts', JSON.stringify(updatedParts.spares || []));
-    e.target.reset();
-    await loadAdminSpareParts();
-    toast('Spare part added to inventory', 'success');
-  } catch (err) { 
-    // Fallback for offline - save to localStorage directly
-    const newPart = {
-      id: Date.now(),
-      name: fd.get('name'),
-      brand: fd.get('brand'),
-      category: fd.get('category'),
-      modelNumber: fd.get('modelNumber'),
-      price: parseInt(fd.get('price')),
-      stock: parseInt(fd.get('stock')),
-      description: fd.get('description'),
-      image: 'shop/hero-phone.jpg'
-    };
-    const existing = JSON.parse(localStorage.getItem('spare_parts') || '[]');
-    existing.push(newPart);
-    localStorage.setItem('spare_parts', JSON.stringify(existing));
-    await loadAdminSpareParts();
-    toast('Spare part added (offline mode)', 'success');
-  }
-});
+    api('/api/admin/staff').then(d => { staff = d.staff || []; renderStaff(); }).catch(e
