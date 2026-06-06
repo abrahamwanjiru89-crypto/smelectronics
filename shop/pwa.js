@@ -1,11 +1,11 @@
-const pwaInstallBtn = document.getElementById('installBtn');
+const installBtn = document.getElementById('installBtn');
 const notifyBtn = document.getElementById('notifyBtn');
 let deferredPrompt = null;
 
 function showInstallButton() {
-  if (!pwaInstallBtn) return;
-  pwaInstallBtn.style.display = 'inline-flex';
-  pwaInstallBtn.addEventListener('click', async () => {
+  if (!installBtn) return;
+  installBtn.style.display = 'inline-flex';
+  installBtn.addEventListener('click', async () => {
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
     const choiceResult = await deferredPrompt.userChoice;
@@ -15,7 +15,7 @@ function showInstallButton() {
       toast('Installation dismissed. You can install it later from the browser menu.', 'info');
     }
     deferredPrompt = null;
-    pwaInstallBtn.style.display = 'none';
+    installBtn.style.display = 'none';
   });
 }
 
