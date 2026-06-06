@@ -83,8 +83,157 @@ function toast(msg, type='info') {
 }
 
 // ============================================
-// PRODUCTS CRUD
+// PRODUCTS CRUD with Badge Management (Flash Sale, Hot, New)
 // ============================================
+
+// Helper function to sync with main page
+function updateMainPageProducts() {
+  localStorage.setItem('nova_products', JSON.stringify(products));
+  window.dispatchEvent(new StorageEvent('storage', { 
+    key: 'nova_products', 
+    newValue: JSON.stringify(products) 
+  }));
+}
+
+// Mark product as Flash Sale
+window.markAsFlashSale = async function(id) {
+  const product = products.find(p => p.id == id);
+  if (!product) {
+    toast('Product not found', 'error');
+    return;
+  }
+  
+  let wasPrice = product.was;
+  if (!wasPrice) {
+    wasPrice = prompt('Enter original price (for flash sale discount display):', product.price * 1.5);
+    if (!wasPrice) return;
+    wasPrice = parseFloat(wasPrice);
+  }
+  
+  product.badge = 'sale';
+  product.was = wasPrice;
+  
+  try {
+    await api(`/api/admin/products/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        name: product.name,
+        price: product.price,
+        was: product.was,
+        cat: product.cat,
+        badge: 'sale',
+        inStock: product.inStock !== false,
+        desc: product.desc
+      })
+    });
+    toast(`🔥 ${product.name} marked as FLASH SALE!`, 'success');
+  } catch (err) {
+    toast(`${product.name} marked as FLASH SALE (offline)`, 'success');
+  }
+  
+  localStorage.setItem('management_products', JSON.stringify(products));
+  renderProducts();
+  updateMainPageProducts();
+};
+
+// Mark product as Hot
+window.markAsHot = async function(id) {
+  const product = products.find(p => p.id == id);
+  if (!product) {
+    toast('Product not found', 'error');
+    return;
+  }
+  
+  product.badge = 'hot';
+  
+  try {
+    await api(`/api/admin/products/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        name: product.name,
+        price: product.price,
+        was: product.was,
+        cat: product.cat,
+        badge: 'hot',
+        inStock: product.inStock !== false,
+        desc: product.desc
+      })
+    });
+    toast(`⚡ ${product.name} marked as HOT!`, 'success');
+  } catch (err) {
+    toast(`${product.name} marked as HOT (offline)`, 'success');
+  }
+  
+  localStorage.setItem('management_products', JSON.stringify(products));
+  renderProducts();
+  updateMainPageProducts();
+};
+
+// Mark product as New
+window.markAsNew = async function(id) {
+  const product = products.find(p => p.id == id);
+  if (!product) {
+    toast('Product not found', 'error');
+    return;
+  }
+  
+  product.badge = 'new';
+  
+  try {
+    await api(`/api/admin/products/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        name: product.name,
+        price: product.price,
+        was: product.was,
+        cat: product.cat,
+        badge: 'new',
+        inStock: product.inStock !== false,
+        desc: product.desc
+      })
+    });
+    toast(`✨ ${product.name} marked as NEW!`, 'success');
+  } catch (err) {
+    toast(`${product.name} marked as NEW (offline)`, 'success');
+  }
+  
+  localStorage.setItem('management_products', JSON.stringify(products));
+  renderProducts();
+  updateMainPageProducts();
+};
+
+// Remove badge from product
+window.removeBadge = async function(id) {
+  const product = products.find(p => p.id == id);
+  if (!product) {
+    toast('Product not found', 'error');
+    return;
+  }
+  
+  product.badge = '';
+  
+  try {
+    await api(`/api/admin/products/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        name: product.name,
+        price: product.price,
+        was: product.was,
+        cat: product.cat,
+        badge: '',
+        inStock: product.inStock !== false,
+        desc: product.desc
+      })
+    });
+    toast(`${product.name} badge removed`, 'success');
+  } catch (err) {
+    toast(`${product.name} badge removed (offline)`, 'success');
+  }
+  
+  localStorage.setItem('management_products', JSON.stringify(products));
+  renderProducts();
+  updateMainPageProducts();
+};
 
 function renderProducts() {
   const el = $('#productAdmin');
@@ -101,19 +250,28 @@ function renderProducts() {
           <h4>${esc(product.name)}</h4>
           <div style="display:flex; gap:1rem; flex-wrap:wrap; font-size:0.875rem;">
             <span style="color:#00e5ff;">${esc(product.cat)}</span>
-            <span style="color:#00e5ff;">${fmt(product.price)}</span>
-            <span style="${product.inStock !== false ? 'color:#00c853' : 'color:#ff3b30'}">${product.inStock !== false ? 'In Stock' : 'Out of Stock'}</span>
+            <span style="color:#00e5ff;">Sale: ${fmt(product.price)}</span>
+            ${product.was ? `<span style="color:#888; text-decoration:line-through;">Original: ${fmt(product.was)}</span>` : ''}
+            <span style="${product.inStock !== false ? 'color:#00c853' : 'color:#ff3b30'}">${product.inStock !== false ? '✅ In Stock' : '❌ Out of Stock'}</span>
+            <span class="badge-status" style="${product.badge === 'sale' ? 'background:#ff2bd6; padding:2px 8px; border-radius:12px; color:white;' : product.badge === 'hot' ? 'background:#ff4d6d; padding:2px 8px; border-radius:12px; color:white;' : product.badge === 'new' ? 'background:#20e0a6; padding:2px 8px; border-radius:12px; color:#000;' : ''}">
+              ${product.badge === 'sale' ? '🔥 FLASH SALE' : product.badge === 'hot' ? '⚡ HOT' : product.badge === 'new' ? '✨ NEW' : 'No Badge'}
+            </span>
           </div>
+          ${product.desc ? `<p style="font-size: 0.75rem; color: #888; margin-top: 0.25rem;">${esc(product.desc.substring(0, 100))}</p>` : ''}
         </div>
-        <div>
-          <button class="edit-product" data-id="${product.id}" style="background:#00e5ff; color:#000; border:none; padding:0.5rem 1rem; border-radius:0.5rem; cursor:pointer; margin-right:0.5rem;">✏️ Edit</button>
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+          <button onclick="markAsFlashSale(${product.id})" style="background:#ff2bd6; color:white; border:none; padding:0.5rem 0.8rem; border-radius:0.5rem; cursor:pointer; font-weight:500;">🔥 Flash Sale</button>
+          <button onclick="markAsHot(${product.id})" style="background:#ff4d6d; color:white; border:none; padding:0.5rem 0.8rem; border-radius:0.5rem; cursor:pointer; font-weight:500;">⚡ Hot</button>
+          <button onclick="markAsNew(${product.id})" style="background:#20e0a6; color:#000; border:none; padding:0.5rem 0.8rem; border-radius:0.5rem; cursor:pointer; font-weight:500;">✨ New</button>
+          <button onclick="removeBadge(${product.id})" style="background:#888; color:white; border:none; padding:0.5rem 0.8rem; border-radius:0.5rem; cursor:pointer; font-weight:500;">Remove Badge</button>
+          <button class="edit-product" data-id="${product.id}" style="background:#00e5ff; color:#000; border:none; padding:0.5rem 1rem; border-radius:0.5rem; cursor:pointer;">✏️ Edit</button>
           <button class="delete-product" data-id="${product.id}" style="background:#ff3b30; color:#fff; border:none; padding:0.5rem 1rem; border-radius:0.5rem; cursor:pointer;">🗑️ Delete</button>
         </div>
       </div>
     </div>
   `).join('');
   
-  // Attach event listeners
+  // Attach event listeners for edit and delete buttons
   $$('.edit-product').forEach(btn => btn.addEventListener('click', () => editProduct(btn.dataset.id)));
   $$('.delete-product').forEach(btn => btn.addEventListener('click', () => deleteProduct(btn.dataset.id)));
 }
@@ -124,7 +282,7 @@ function editProduct(id) {
   
   const newName = prompt('Edit product name:', product.name);
   if (newName && newName.trim()) {
-    const newPrice = prompt('Edit price (Kshs):', product.price);
+    const newPrice = prompt('Edit sale price (Kshs):', product.price);
     if (newPrice) {
       product.name = newName.trim();
       product.price = parseFloat(newPrice);
@@ -684,11 +842,22 @@ $('#repairBookings')?.addEventListener('click', async e => {
 $('#productForm')?.addEventListener('submit', async e => {
   e.preventDefault();
   const fd = new FormData(e.target);
+  
+  // Get badge and was price from form
+  const badge = fd.get('badge');
+  const wasPrice = fd.get('was');
+  if (wasPrice) {
+    fd.append('was', wasPrice);
+  }
+  if (badge && badge !== '') {
+    fd.append('badge', badge);
+  }
+  
   try {
     await api('/api/admin/products', { method:'POST', body:fd });
     e.target.reset();
     await loadAdminData();
-    toast('Product added', 'success');
+    toast('Product added successfully!', 'success');
   } catch (err) {
     toast(err.message, 'error');
   }
