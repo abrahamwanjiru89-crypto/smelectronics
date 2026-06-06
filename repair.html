@@ -1,764 +1,245 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SM Dynamics - Repair Services & Spare Parts</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="shop/styles.css">
-  <meta name="theme-color" content="#0b1120">
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    
-    body {
-      background: #0b1120;
-      color: white;
-      font-family: 'Inter', sans-serif;
-    }
-    
-    .container {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 0 2rem;
-    }
-    
-    .nav {
-      position: fixed;
-      top: 0;
-      width: 100%;
-      background: rgba(11,17,32,0.95);
-      backdrop-filter: blur(10px);
-      z-index: 1000;
-      padding: 1rem 0;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-    }
-    
-    .nav-inner {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 0 2rem;
-    }
-    
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      text-decoration: none;
-      color: white;
-      font-weight: 700;
-      font-size: 1.25rem;
-    }
-    
-    .brand img {
-      height: 40px;
-      width: auto;
-    }
-    
-    .nav-links {
-      display: flex;
-      gap: 2rem;
-    }
-    
-    .nav-links a {
-      color: #ccc;
-      text-decoration: none;
-      transition: color 0.3s;
-    }
-    
-    .nav-links a:hover, .nav-links a.active {
-      color: #00e5ff;
-    }
-    
-    .nav-tools {
-      display: flex;
-      gap: 1rem;
-      align-items: center;
-    }
-    
-    .icon-btn {
-      background: none;
-      border: none;
-      cursor: pointer;
-      color: white;
-      position: relative;
-    }
-    
-    .icon-btn svg {
-      width: 22px;
-      height: 22px;
-      fill: none;
-      stroke: white;
-      stroke-width: 2;
-    }
-    
-    .badge {
-      position: absolute;
-      top: -8px;
-      right: -8px;
-      background: #00e5ff;
-      color: #000;
-      font-size: 0.7rem;
-      padding: 2px 6px;
-      border-radius: 10px;
-    }
-    
-    .account-btn {
-      background: rgba(255,255,255,0.1);
-      border: 1px solid rgba(255,255,255,0.2);
-      padding: 0.5rem 1rem;
-      border-radius: 2rem;
-      color: white;
-      cursor: pointer;
-    }
-    
-    .hero {
-      padding: 120px 0 60px;
-    }
-    
-    .hero-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 3rem;
-      align-items: center;
-    }
-    
-    .eyebrow {
-      color: #00e5ff;
-      font-size: 0.875rem;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      display: inline-block;
-      margin-bottom: 1rem;
-    }
-    
-    .display {
-      font-size: 3rem;
-      font-weight: 700;
-      margin-bottom: 1.5rem;
-      line-height: 1.2;
-    }
-    
-    .grad {
-      background: linear-gradient(135deg, #00e5ff, #7c4dff);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-    }
-    
-    .lede {
-      color: #888;
-      margin-bottom: 2rem;
-      line-height: 1.6;
-    }
-    
-    .btn {
-      display: inline-block;
-      padding: 0.75rem 1.5rem;
-      border-radius: 2rem;
-      text-decoration: none;
-      font-weight: 500;
-      transition: all 0.3s;
-      cursor: pointer;
-      border: none;
-    }
-    
-    .btn.primary {
-      background: linear-gradient(135deg, #00e5ff, #7c4dff);
-      color: white;
-    }
-    
-    .btn.ghost {
-      background: rgba(255,255,255,0.1);
-      border: 1px solid rgba(255,255,255,0.2);
-      color: white;
-    }
-    
-    .hero-cta {
-      display: flex;
-      gap: 1rem;
-      margin-bottom: 2rem;
-    }
-    
-    .section {
-      padding: 60px 0;
-    }
-    
-    .section-head {
-      text-align: center;
-      margin-bottom: 3rem;
-    }
-    
-    .section-head h2 {
-      font-size: 2.5rem;
-      margin-bottom: 1rem;
-    }
-    
-    .service-grid, .spare-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 1.5rem;
-    }
-    
-    .service-card, .spare-card {
-      background: #1a1a2e;
-      border-radius: 1.5rem;
-      overflow: hidden;
-      transition: transform 0.3s;
-      border: 1px solid rgba(255,255,255,0.1);
-    }
-    
-    .service-card:hover, .spare-card:hover {
-      transform: translateY(-5px);
-    }
-    
-    .service-icon {
-      font-size: 3rem;
-      text-align: center;
-      padding: 2rem;
-      background: linear-gradient(135deg, rgba(0,229,255,0.1), rgba(124,77,255,0.1));
-    }
-    
-    .service-info, .spare-info {
-      padding: 1.5rem;
-    }
-    
-    .service-price, .spare-price {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: #00e5ff;
-      margin: 0.5rem 0;
-    }
-    
-    .search-filters {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 1rem;
-      margin-bottom: 2rem;
-    }
-    
-    .search-filters input, .search-filters select {
-      padding: 0.75rem 1rem;
-      border-radius: 0.75rem;
-      border: 1px solid rgba(255,255,255,0.1);
-      background: #0f0f1a;
-      color: white;
-      font-size: 1rem;
-    }
-    
-    .section-tabs {
-      display: flex;
-      gap: 1rem;
-      margin-bottom: 2rem;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-      padding-bottom: 1rem;
-    }
-    
-    .section-tab {
-      padding: 0.75rem 1.5rem;
-      background: none;
-      border: none;
-      color: #888;
-      cursor: pointer;
-      font-weight: 500;
-      transition: all 0.3s;
-    }
-    
-    .section-tab.active {
-      color: #00e5ff;
-      border-bottom: 2px solid #00e5ff;
-    }
-    
-    .badge-instock {
-      background: #00c853;
-      color: white;
-      padding: 0.25rem 0.75rem;
-      border-radius: 2rem;
-      font-size: 0.75rem;
-    }
-    
-    .badge-outstock {
-      background: #ff3b30;
-      color: white;
-      padding: 0.25rem 0.75rem;
-      border-radius: 2rem;
-      font-size: 0.75rem;
-    }
-    
-    .spare-card img {
-      width: 100%;
-      height: 180px;
-      object-fit: cover;
-      background: #0f0f1a;
-    }
-    
-    .search-stats {
-      text-align: center;
-      padding: 1rem;
-      color: #888;
-    }
-    
-    .no-results {
-      text-align: center;
-      padding: 3rem;
-      color: #888;
-    }
-    
-    .cart-side {
-      position: fixed;
-      right: -400px;
-      top: 0;
-      width: 400px;
-      height: 100vh;
-      background: #1a1a2e;
-      z-index: 2000;
-      transition: right 0.3s;
-      display: flex;
-      flex-direction: column;
-    }
-    
-    .cart-side.open {
-      right: 0;
-    }
-    
-    .cart-head {
-      padding: 1rem;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-      display: flex;
-      justify-content: space-between;
-    }
-    
-    .cart-body {
-      flex: 1;
-      overflow-y: auto;
-      padding: 1rem;
-    }
-    
-    .cart-foot {
-      padding: 1rem;
-      border-top: 1px solid rgba(255,255,255,0.1);
-    }
-    
-    .overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.7);
-      z-index: 1999;
-      display: none;
-    }
-    
-    .overlay.show {
-      display: block;
-    }
-    
-    .toasts {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      z-index: 3000;
-    }
-    
-    .toast {
-      padding: 1rem 1.5rem;
-      border-radius: 0.5rem;
-      margin-top: 0.5rem;
-      animation: slideIn 0.3s ease;
-    }
-    
-    .toast.success { background: #00c853; }
-    .toast.error { background: #ff3b30; }
-    
-    @keyframes slideIn {
-      from { transform: translateX(100%); opacity: 0; }
-      to { transform: translateX(0); opacity: 1; }
-    }
-    
-    .mobile-menu {
-      position: fixed;
-      top: 0;
-      left: -280px;
-      width: 280px;
-      height: 100vh;
-      background: #1a1a2e;
-      z-index: 2000;
-      transition: left 0.3s;
-      padding: 80px 2rem 2rem;
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-    }
-    
-    .mobile-menu.open {
-      left: 0;
-    }
-    
-    .mobile-menu a {
-      color: white;
-      text-decoration: none;
-      padding: 0.75rem 0;
-    }
-    
-    .menu-toggle {
-      display: none;
-    }
-    
-    @media (max-width: 768px) {
-      .nav-links { display: none; }
-      .menu-toggle { display: block; }
-      .hero-grid { grid-template-columns: 1fr; }
-      .cart-side { width: 100%; right: -100%; }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SM Dynamics - Professional Phone Repair</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0b1120; color: white; }
+        
+        /* Hero Section */
+        .hero { text-align: center; padding: 80px 20px; background: linear-gradient(135deg, #0b1120, #1a1a2e); }
+        .hero h1 { font-size: 48px; margin-bottom: 20px; }
+        .hero .highlight { color: #00e5ff; }
+        .trust-badges { display: flex; justify-content: center; gap: 30px; margin: 30px 0; flex-wrap: wrap; }
+        .badge { text-align: center; }
+        
+        /* Services Grid */
+        .services { padding: 60px 20px; max-width: 1200px; margin: 0 auto; }
+        .service-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-top: 40px; }
+        .service-card { background: #1a1a2e; border-radius: 16px; padding: 24px; text-align: center; border: 1px solid #2a2a3e; transition: transform 0.3s; }
+        .service-card:hover { transform: translateY(-5px); border-color: #00e5ff; }
+        .service-price { font-size: 28px; color: #00e5ff; margin: 16px 0; }
+        .btn-book { background: #00e5ff; color: #000; padding: 12px 24px; border: none; border-radius: 30px; cursor: pointer; font-weight: bold; margin-top: 16px; }
+        
+        /* Brand Selection */
+        .brands { padding: 40px 20px; text-align: center; background: #0f0f1a; }
+        .brand-icons { display: flex; justify-content: center; gap: 40px; flex-wrap: wrap; margin-top: 30px; }
+        .brand-icon { font-size: 48px; cursor: pointer; transition: transform 0.3s; }
+        .brand-icon:hover { transform: scale(1.1); }
+        
+        /* Booking Form */
+        .booking { max-width: 600px; margin: 60px auto; padding: 40px; background: #1a1a2e; border-radius: 24px; }
+        .booking h2 { text-align: center; margin-bottom: 30px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #2a2a3e; background: #0f0f1a; color: white; }
+        .btn-submit { width: 100%; padding: 14px; background: #00e5ff; color: #000; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        
+        /* Spare Parts */
+        .parts-section { padding: 60px 20px; max-width: 1200px; margin: 0 auto; }
+        .search-bar { display: flex; gap: 16px; margin-bottom: 40px; flex-wrap: wrap; }
+        .search-bar input, .search-bar select { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #2a2a3e; background: #0f0f1a; color: white; min-width: 200px; }
+        .parts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
+        .part-card { background: #1a1a2e; border-radius: 16px; overflow: hidden; }
+        .part-card img { width: 100%; height: 160px; object-fit: cover; }
+        .part-info { padding: 16px; }
+        .part-brand { color: #00e5ff; font-weight: bold; }
+        .part-price { font-size: 20px; color: #00e5ff; margin: 8px 0; }
+        .stock { font-size: 12px; padding: 4px 8px; border-radius: 12px; display: inline-block; }
+        .in-stock { background: #00c853; }
+        .out-stock { background: #ff3b30; }
+    </style>
 </head>
 <body>
-  <header class="nav" id="nav">
-    <div class="nav-inner">
-      <a href="index.html" class="brand">
-        <img src="shop/brand logo.png" alt="SM Dynamics" onerror="this.src='https://placehold.co/40x40/00e5ff/white?text=SM'">
-        <span>SM Dynamics</span>
-      </a>
-      <nav class="nav-links">
-        <a href="index.html">Home</a>
-        <a href="repair.html" class="active">Repair</a>
-        <a href="contact.html">Contact</a>
-      </nav>
-      <div class="nav-tools">
-        <button class="icon-btn" id="cartBtn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="9" cy="21" r="1"/>
-            <circle cx="20" cy="21" r="1"/>
-            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
-          </svg>
-          <span class="badge" id="cartCount">0</span>
-        </button>
-        <button class="account-btn" id="accountBtn">Login</button>
-        <button class="icon-btn menu-toggle" id="menuToggle">☰</button>
-      </div>
-    </div>
-  </header>
-
-  <main>
+    <!-- Hero Section -->
     <section class="hero">
-      <div class="container">
-        <div class="hero-grid">
-          <div>
-            <span class="eyebrow">🔧 Professional Repair Services</span>
-            <h1 class="display">Expert Mobile <span class="grad">Repair & Spare Parts</span></h1>
-            <p class="lede">Quality repairs for all mobile brands. Genuine spare parts with warranty.</p>
-            <div class="hero-cta">
-              <a href="#services" class="btn primary">View Services</a>
-              <a href="#spares" class="btn ghost">Browse Parts</a>
+        <h1>Professional <span class="highlight">Phone Repair</span><br>You Can Trust</h1>
+        <p>Fast, reliable repairs for all mobile brands. Same-day service available.</p>
+        <div class="trust-badges">
+            <div class="badge">✅ 6 Months Warranty</div>
+            <div class="badge">⚡ Same-Day Service</div>
+            <div class="badge">🔧 Certified Technicians</div>
+            <div class="badge">🚀 Free Diagnostic</div>
+        </div>
+        <button class="btn-book" onclick="document.getElementById('booking').scrollIntoView({behavior:'smooth'})">Book Repair →</button>
+    </section>
+
+    <!-- Brands Section -->
+    <section class="brands">
+        <h3>We Repair All Major Brands</h3>
+        <div class="brand-icons">
+            <div class="brand-icon">🍎 Apple</div>
+            <div class="brand-icon">📱 Samsung</div>
+            <div class="brand-icon">📱 Tecno</div>
+            <div class="brand-icon">📱 Infinix</div>
+            <div class="brand-icon">📱 Xiaomi</div>
+            <div class="brand-icon">📱 Huawei</div>
+            <div class="brand-icon">📱 Oppo</div>
+            <div class="brand-icon">📱 Vivo</div>
+        </div>
+    </section>
+
+    <!-- Services Section -->
+    <section class="services">
+        <h2 style="text-align: center;">Our Repair Services</h2>
+        <p style="text-align: center; color: #888;">Fix your device with our expert technicians</p>
+        <div class="service-grid" id="serviceGrid">
+            <!-- Services will be populated by JavaScript -->
+        </div>
+    </section>
+
+    <!-- Spare Parts Section -->
+    <section class="parts-section">
+        <h2 style="text-align: center;">Genuine Spare Parts</h2>
+        <p style="text-align: center; color: #888;">Search by brand or model number</p>
+        <div class="search-bar">
+            <input type="text" id="searchInput" placeholder="🔍 Search by brand or part name...">
+            <select id="brandFilter">
+                <option value="">All Brands</option>
+            </select>
+            <input type="text" id="modelInput" placeholder="📱 Search by model number...">
+        </div>
+        <div class="parts-grid" id="partsGrid"></div>
+        <div id="stats" style="text-align: center; margin-top: 20px; color: #888;"></div>
+    </section>
+
+    <!-- Booking Form -->
+    <section id="booking" class="booking">
+        <h2>📝 Book Your Repair</h2>
+        <form id="bookingForm">
+            <div class="form-group">
+                <input type="text" id="customerName" placeholder="Full Name" required>
             </div>
-          </div>
-          <div>
-            <img src="shop/hero-phone.jpg" alt="Repair" style="width:100%; border-radius:2rem;" onerror="this.src='https://placehold.co/500x400/1a1a2e/00e5ff?text=Phone+Repair'">
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <div class="container">
-      <div class="section-tabs">
-        <button class="section-tab active" data-tab="services">🔧 Repair Services</button>
-        <button class="section-tab" data-tab="spares">🔩 Spare Parts</button>
-        <button class="section-tab" data-tab="booking">📝 Book a Repair</button>
-      </div>
-    </div>
-
-    <section class="section" id="servicesSection">
-      <div class="container">
-        <div class="search-filters">
-          <input type="text" id="serviceSearch" placeholder="🔍 Search repair services...">
-          <select id="serviceBrandFilter">
-            <option value="">All Brands</option>
-            <option>Apple</option><option>Samsung</option><option>Xiaomi</option>
-            <option>Tecno</option><option>Infinix</option><option>Huawei</option>
-            <option>Oppo</option><option>Vivo</option><option>Google</option>
-          </select>
-        </div>
-        <div class="service-grid" id="serviceGrid"></div>
-      </div>
-    </section>
-
-    <section class="section" id="sparesSection" style="display: none;">
-      <div class="container">
-        <div class="search-filters">
-          <input type="text" id="spareSearch" placeholder="🔍 Search brand (Apple, Samsung, Tecno, Infinix)...">
-          <select id="spareBrandFilter"><option value="">All Brands</option></select>
-          <input type="text" id="modelNumberSearch" placeholder="📱 Search model number...">
-        </div>
-        <div id="searchStats" class="search-stats"></div>
-        <div class="spare-grid" id="spareGrid"></div>
-      </div>
-    </section>
-
-    <section class="section" id="bookingSection" style="display: none;">
-      <div class="container">
-        <div style="background:#1a1a2e; border-radius:1.5rem; padding:2rem;">
-          <h2>📝 Book a Repair</h2>
-          <form id="repairBookingForm" style="display:grid; gap:1rem;">
-            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:1rem;">
-              <input type="text" id="customerName" placeholder="Full Name" required style="padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;">
-              <input type="tel" id="customerPhone" placeholder="Phone Number" required style="padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;">
-              <input type="email" id="customerEmail" placeholder="Email" style="padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;">
+            <div class="form-group">
+                <input type="tel" id="customerPhone" placeholder="Phone Number" required>
             </div>
-            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:1rem;">
-              <select id="deviceBrand" required style="padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;">
-                <option value="">Select Brand</option>
-                <option>Apple</option><option>Samsung</option><option>Xiaomi</option>
-                <option>Tecno</option><option>Infinix</option><option>Huawei</option>
-                <option>Oppo</option><option>Vivo</option><option>Other</option>
-              </select>
-              <input type="text" id="deviceModel" placeholder="Model Number" required style="padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;">
-              <select id="serviceType" required style="padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;">
-                <option value="">Select Service</option>
-                <option>Screen Replacement</option>
-                <option>Battery Replacement</option>
-                <option>Water Damage Repair</option>
-                <option>Charging Port Repair</option>
-                <option>Speaker Replacement</option>
-              </select>
+            <div class="form-group">
+                <input type="email" id="customerEmail" placeholder="Email Address">
             </div>
-            <textarea id="issueDescription" rows="3" placeholder="Describe the issue..." style="padding:0.75rem; border-radius:0.75rem; background:#0f0f1a; border:1px solid #2a2a3e; color:white;"></textarea>
-            <button type="submit" class="btn primary">Submit Booking</button>
-          </form>
-          <div id="bookingMessage" style="margin-top:1rem;"></div>
-        </div>
-      </div>
+            <div class="form-group">
+                <select id="deviceBrand" required>
+                    <option value="">Select Brand</option>
+                    <option>Apple</option><option>Samsung</option><option>Tecno</option>
+                    <option>Infinix</option><option>Xiaomi</option><option>Huawei</option>
+                    <option>Oppo</option><option>Vivo</option><option>Other</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <input type="text" id="deviceModel" placeholder="Model (e.g., iPhone 13, Galaxy S22)" required>
+            </div>
+            <div class="form-group">
+                <select id="serviceType" required>
+                    <option value="">Select Service</option>
+                    <option>Screen Replacement</option>
+                    <option>Battery Replacement</option>
+                    <option>Water Damage Repair</option>
+                    <option>Charging Port Repair</option>
+                    <option>Speaker Replacement</option>
+                    <option>Earpiece/Mouthpiece Repair</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <textarea id="issueDescription" rows="3" placeholder="Describe the issue..."></textarea>
+            </div>
+            <button type="submit" class="btn-submit">Submit Booking Request</button>
+        </form>
+        <div id="bookingMessage" style="margin-top: 16px; text-align: center;"></div>
     </section>
-  </main>
 
-  <div class="overlay" id="overlay"></div>
-  <aside class="cart-side" id="cartSide">
-    <header class="cart-head"><h3>Your Cart</h3><button class="icon-btn" id="cartClose">✕</button></header>
-    <div class="cart-body" id="cartItems"></div>
-    <footer class="cart-foot"><div class="cart-total">Total: <b id="cartTotal">Kshs 0</b></div><button class="btn primary block" id="checkoutBtn">Checkout</button></footer>
-  </aside>
-  <div class="toasts" id="toasts"></div>
-  <aside class="mobile-menu" id="mobileMenu"><a href="index.html">Home</a><a href="repair.html">Repair</a><a href="contact.html">Contact</a></aside>
-
-  <script>
-    // Repair Services
-    const repairServices = [
-      { id: 1, name: "Screen Replacement", icon: "📱", price: 2500, duration: "1-2 hours", warranty: "3 months" },
-      { id: 2, name: "Battery Replacement", icon: "🔋", price: 1800, duration: "1 hour", warranty: "6 months" },
-      { id: 3, name: "Water Damage Repair", icon: "💧", price: 3500, duration: "2-3 days", warranty: "1 month" },
-      { id: 4, name: "Charging Port Repair", icon: "⚡", price: 1500, duration: "1-2 hours", warranty: "3 months" },
-      { id: 5, name: "Earpiece Replacement", icon: "👂", price: 1200, duration: "1 hour", warranty: "3 months" },
-      { id: 6, name: "Mouthpiece Replacement", icon: "🎤", price: 1200, duration: "1 hour", warranty: "3 months" },
-      { id: 7, name: "Speaker Replacement", icon: "🔊", price: 1400, duration: "1 hour", warranty: "3 months" }
-    ];
-
-    // Load spare parts from localStorage (saved by management page)
-    let spareParts = [];
-
-    function loadSpareParts() {
-      const stored = localStorage.getItem('spare_parts');
-      if (stored && JSON.parse(stored).length > 0) {
-        spareParts = JSON.parse(stored);
-      } else {
-        // Default spare parts with images
-        spareParts = [
-          { id: 1, name: "iPhone 13 Screen", brand: "Apple", modelNumber: "iPhone 13", price: 4500, stock: 15, image: "shop/hero-phone.jpg", category: "Screen" },
-          { id: 2, name: "Samsung S22 Screen", brand: "Samsung", modelNumber: "Galaxy S22", price: 4200, stock: 8, image: "shop/hero-phone.jpg", category: "Screen" },
-          { id: 3, name: "Tecno Camon 19 Screen", brand: "Tecno", modelNumber: "Camon 19", price: 3500, stock: 10, image: "shop/hero-phone.jpg", category: "Screen" },
-          { id: 4, name: "Tecno Camon 19 Battery", brand: "Tecno", modelNumber: "Camon 19", price: 1800, stock: 15, image: "shop/hero-phone.jpg", category: "Battery" },
-          { id: 5, name: "Infinix Hot 11 Screen", brand: "Infinix", modelNumber: "Hot 11", price: 2300, stock: 9, image: "shop/hero-phone.jpg", category: "Screen" },
-          { id: 6, name: "Charging Plate Infinix", brand: "Infinix", modelNumber: "X6831", price: 150, stock: 10, image: "shop/hero-phone.jpg", category: "Charging" },
-          { id: 7, name: "Charging Plate Samsung", brand: "Samsung", modelNumber: "Galaxy A12", price: 300, stock: 30, image: "shop/hero-phone.jpg", category: "Charging" }
+    <script>
+        // Service Data
+        const services = [
+            { name: "Screen Replacement", price: 2500, duration: "1-2 hours", icon: "📱" },
+            { name: "Battery Replacement", price: 1800, duration: "1 hour", icon: "🔋" },
+            { name: "Water Damage Repair", price: 3500, duration: "2-3 days", icon: "💧" },
+            { name: "Charging Port Repair", price: 1500, duration: "1-2 hours", icon: "⚡" },
+            { name: "Speaker Replacement", price: 1400, duration: "1 hour", icon: "🔊" }
         ];
-      }
-      
-      // Update brand filter
-      const brands = [...new Set(spareParts.map(p => p.brand))];
-      const filter = document.getElementById('spareBrandFilter');
-      if (filter) {
-        filter.innerHTML = '<option value="">All Brands</option>' + brands.map(b => `<option value="${b}">${b}</option>`).join('');
-      }
-      
-      renderSpareParts();
-    }
 
-    function renderSpareParts() {
-      const searchTerm = (document.getElementById('spareSearch')?.value || '').toLowerCase();
-      const brandFilter = document.getElementById('spareBrandFilter')?.value || '';
-      const modelSearch = (document.getElementById('modelNumberSearch')?.value || '').toLowerCase();
-      
-      const filtered = spareParts.filter(part => {
-        const matchSearch = !searchTerm || 
-          part.name.toLowerCase().includes(searchTerm) || 
-          part.brand.toLowerCase().includes(searchTerm);
-        const matchBrand = !brandFilter || part.brand === brandFilter;
-        const matchModel = !modelSearch || (part.modelNumber && part.modelNumber.toLowerCase().includes(modelSearch));
-        return matchSearch && matchBrand && matchModel;
-      });
-      
-      const stats = document.getElementById('searchStats');
-      if (stats) stats.innerHTML = `Found ${filtered.length} spare parts`;
-      
-      const grid = document.getElementById('spareGrid');
-      if (!grid) return;
-      
-      if (filtered.length === 0) {
-        grid.innerHTML = `<div class="no-results"><p>🔍 No spare parts found.</p><p>Try "Tecno", "Samsung", "iPhone", or "screen"</p></div>`;
-        return;
-      }
-      
-      grid.innerHTML = filtered.map(part => `
-        <div class="spare-card">
-          <img src="${part.image || 'shop/hero-phone.jpg'}" alt="${part.name}" onerror="this.src='shop/hero-phone.jpg'">
-          <div class="spare-info">
-            <h3>${escapeHtml(part.name)}</h3>
-            <div><span style="color:#00e5ff">${escapeHtml(part.brand)}</span> ${part.modelNumber ? `· ${escapeHtml(part.modelNumber)}` : ''}</div>
-            <div class="spare-price">Kshs ${part.price.toLocaleString()}</div>
-            <div>${part.stock > 0 ? `<span class="badge-instock">In Stock (${part.stock})</span>` : '<span class="badge-outstock">Out of Stock</span>'}</div>
-            <button class="btn primary" onclick='addToCart(${JSON.stringify(part)}, "spare")' ${part.stock === 0 ? 'disabled' : ''} style="margin-top:0.75rem; width:100%">Add to Cart</button>
-          </div>
-        </div>
-      `).join('');
-    }
+        // Spare Parts Data
+        let spareParts = [
+            { id: 1, name: "iPhone 13 Screen", brand: "Apple", model: "iPhone 13", price: 4500, stock: 15, image: "shop/hero-phone.jpg" },
+            { id: 2, name: "iPhone 13 Battery", brand: "Apple", model: "iPhone 13", price: 2500, stock: 20, image: "shop/hero-phone.jpg" },
+            { id: 3, name: "Samsung S22 Screen", brand: "Samsung", model: "Galaxy S22", price: 4200, stock: 8, image: "shop/hero-phone.jpg" },
+            { id: 4, name: "Tecno Camon 19 Screen", brand: "Tecno", model: "Camon 19", price: 3500, stock: 10, image: "shop/hero-phone.jpg" },
+            { id: 5, name: "Infinix Hot 11 Screen", brand: "Infinix", model: "Hot 11", price: 2300, stock: 9, image: "shop/hero-phone.jpg" }
+        ];
 
-    function renderServices() {
-      const search = (document.getElementById('serviceSearch')?.value || '').toLowerCase();
-      const filtered = repairServices.filter(s => s.name.toLowerCase().includes(search));
-      const grid = document.getElementById('serviceGrid');
-      if (grid) {
-        grid.innerHTML = filtered.map(service => `
-          <div class="service-card">
-            <div class="service-icon">${service.icon}</div>
-            <div class="service-info">
-              <h3>${service.name}</h3>
-              <div class="service-price">Kshs ${service.price.toLocaleString()}</div>
-              <div>⏱️ ${service.duration} | 🛡️ ${service.warranty}</div>
-              <button class="btn primary" onclick='addToCart(${JSON.stringify(service)}, "service")' style="margin-top:0.75rem; width:100%">Book Service</button>
-            </div>
-          </div>
-        `).join('');
-      }
-    }
-
-    function escapeHtml(str) {
-      if (!str) return '';
-      return String(str).replace(/[&<>]/g, function(m) {
-        return m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;';
-      });
-    }
-
-    // Cart functions
-    let cart = JSON.parse(localStorage.getItem('repair_cart') || '[]');
-    
-    window.addToCart = function(item, type) {
-      const existing = cart.find(i => i.id === item.id && i.type === type);
-      if (existing) existing.quantity++;
-      else cart.push({ ...item, type, quantity: 1 });
-      localStorage.setItem('repair_cart', JSON.stringify(cart));
-      updateCartUI();
-      toast(`${item.name} added to cart!`, 'success');
-    };
-    
-    function updateCartUI() {
-      const count = cart.reduce((s,i) => s + i.quantity, 0);
-      document.getElementById('cartCount').innerText = count;
-      const total = cart.reduce((s,i) => s + (i.price * i.quantity), 0);
-      document.getElementById('cartTotal').innerText = `Kshs ${total.toLocaleString()}`;
-      
-      const container = document.getElementById('cartItems');
-      if (container) {
-        if (cart.length === 0) container.innerHTML = '<div style="text-align:center; padding:2rem;">Cart empty</div>';
-        else {
-          container.innerHTML = cart.map(item => `
-            <div style="display:flex; justify-content:space-between; padding:0.75rem; border-bottom:1px solid rgba(255,255,255,0.1);">
-              <div><strong>${escapeHtml(item.name)}</strong><br><small>x${item.quantity}</small></div>
-              <div>Kshs ${(item.price * item.quantity).toLocaleString()}</div>
-              <button onclick="removeFromCart('${item.id}', '${item.type}')" style="background:none; border:none; color:#ff3b30;">✕</button>
-            </div>
-          `).join('');
+        // Render Services
+        function renderServices() {
+            const grid = document.getElementById('serviceGrid');
+            grid.innerHTML = services.map(s => `
+                <div class="service-card">
+                    <div style="font-size: 48px; margin-bottom: 16px;">${s.icon}</div>
+                    <h3>${s.name}</h3>
+                    <div class="service-price">Kshs ${s.price.toLocaleString()}</div>
+                    <div style="color:#888;">⏱️ ${s.duration}</div>
+                    <button class="btn-book" onclick="alert('Service selected: ${s.name}')">Book Now</button>
+                </div>
+            `).join('');
         }
-      }
-    }
-    
-    window.removeFromCart = function(id, type) {
-      cart = cart.filter(i => !(i.id == id && i.type === type));
-      localStorage.setItem('repair_cart', JSON.stringify(cart));
-      updateCartUI();
-      toast('Removed from cart', 'info');
-    };
-    
-    function toast(msg, type) {
-      const container = document.getElementById('toasts');
-      const el = document.createElement('div');
-      el.className = `toast ${type}`;
-      el.innerText = msg;
-      container.appendChild(el);
-      setTimeout(() => el.remove(), 3000);
-    }
 
-    // Tab switching
-    function switchTab(tab) {
-      document.querySelectorAll('.section-tab').forEach(t => t.classList.remove('active'));
-      document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
-      document.getElementById('servicesSection').style.display = tab === 'services' ? 'block' : 'none';
-      document.getElementById('sparesSection').style.display = tab === 'spares' ? 'block' : 'none';
-      document.getElementById('bookingSection').style.display = tab === 'booking' ? 'block' : 'none';
-      if (tab === 'services') renderServices();
-      if (tab === 'spares') renderSpareParts();
-    }
+        // Render Spare Parts
+        function renderParts() {
+            const search = document.getElementById('searchInput')?.value.toLowerCase() || '';
+            const brand = document.getElementById('brandFilter')?.value || '';
+            const model = document.getElementById('modelInput')?.value.toLowerCase() || '';
 
-    // Event listeners
-    document.querySelectorAll('.section-tab').forEach(t => t.addEventListener('click', () => switchTab(t.dataset.tab)));
-    document.getElementById('spareSearch')?.addEventListener('input', () => renderSpareParts());
-    document.getElementById('spareBrandFilter')?.addEventListener('change', () => renderSpareParts());
-    document.getElementById('modelNumberSearch')?.addEventListener('input', () => renderSpareParts());
-    document.getElementById('serviceSearch')?.addEventListener('input', () => renderServices());
-    document.getElementById('serviceBrandFilter')?.addEventListener('change', () => renderServices());
-    
-    document.getElementById('cartBtn')?.addEventListener('click', () => {
-      document.getElementById('cartSide').classList.add('open');
-      document.getElementById('overlay').classList.add('show');
-    });
-    document.getElementById('cartClose')?.addEventListener('click', () => {
-      document.getElementById('cartSide').classList.remove('open');
-      document.getElementById('overlay').classList.remove('show');
-    });
-    document.getElementById('overlay')?.addEventListener('click', () => {
-      document.getElementById('cartSide').classList.remove('open');
-      document.getElementById('overlay').classList.remove('show');
-    });
-    document.getElementById('menuToggle')?.addEventListener('click', () => document.getElementById('mobileMenu')?.classList.toggle('open'));
-    
-    document.getElementById('repairBookingForm')?.addEventListener('submit', (e) => {
-      e.preventDefault();
-      document.getElementById('bookingMessage').innerHTML = '<div style="background:#00c853; padding:1rem; border-radius:0.75rem;">✅ Booking submitted! We will contact you within 24 hours.</div>';
-      e.target.reset();
-      setTimeout(() => document.getElementById('bookingMessage').innerHTML = '', 5000);
-    });
-    
-    document.getElementById('checkoutBtn')?.addEventListener('click', () => {
-      const total = cart.reduce((s,i) => s + i.price * i.quantity, 0);
-      if (total === 0) toast('Cart is empty', 'error');
-      else toast(`Proceed to payment: Kshs ${total.toLocaleString()}`, 'info');
-    });
+            const filtered = spareParts.filter(p => {
+                const matchSearch = !search || p.name.toLowerCase().includes(search) || p.brand.toLowerCase().includes(search);
+                const matchBrand = !brand || p.brand === brand;
+                const matchModel = !model || (p.model && p.model.toLowerCase().includes(model));
+                return matchSearch && matchBrand && matchModel;
+            });
 
-    // Initialize
-    loadSpareParts();
-    renderServices();
-    updateCartUI();
-    
-    // Auto-refresh when localStorage changes
-    window.addEventListener('storage', (e) => {
-      if (e.key === 'spare_parts') loadSpareParts();
-    });
-  </script>
+            document.getElementById('stats').innerHTML = `Found ${filtered.length} spare parts`;
+            
+            const grid = document.getElementById('partsGrid');
+            if (filtered.length === 0) {
+                grid.innerHTML = '<div style="text-align:center; padding:40px;">No parts found. Try searching "Tecno", "Samsung", or "iPhone"</div>';
+                return;
+            }
+
+            grid.innerHTML = filtered.map(p => `
+                <div class="part-card">
+                    <img src="${p.image}" alt="${p.name}" onerror="this.src='shop/hero-phone.jpg'">
+                    <div class="part-info">
+                        <div class="part-brand">${p.brand}</div>
+                        <div><strong>${p.name}</strong></div>
+                        <div style="font-size:12px; color:#888;">Model: ${p.model}</div>
+                        <div class="part-price">Kshs ${p.price.toLocaleString()}</div>
+                        <div><span class="stock ${p.stock > 0 ? 'in-stock' : 'out-stock'}">${p.stock > 0 ? `In Stock (${p.stock})` : 'Out of Stock'}</span></div>
+                        <button class="btn-book" style="margin-top:12px; width:100%;" onclick="alert('Added to cart: ${p.name}')">Add to Cart</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Update brand filter
+        function updateBrandFilter() {
+            const brands = [...new Set(spareParts.map(p => p.brand))];
+            const filter = document.getElementById('brandFilter');
+            filter.innerHTML = '<option value="">All Brands</option>' + brands.map(b => `<option value="${b}">${b}</option>`).join('');
+        }
+
+        // Booking form handler
+        document.getElementById('bookingForm')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            document.getElementById('bookingMessage').innerHTML = '<div style="background:#00c853; padding:12px; border-radius:8px;">✅ Booking submitted! We will contact you within 24 hours.</div>';
+            e.target.reset();
+            setTimeout(() => document.getElementById('bookingMessage').innerHTML = '', 5000);
+        });
+
+        // Event listeners
+        document.getElementById('searchInput')?.addEventListener('input', renderParts);
+        document.getElementById('brandFilter')?.addEventListener('change', renderParts);
+        document.getElementById('modelInput')?.addEventListener('input', renderParts);
+
+        // Initialize
+        renderServices();
+        updateBrandFilter();
+        renderParts();
+    </script>
 </body>
 </html>
