@@ -1751,3 +1751,16 @@ if __name__ == "__main__":
     bind = (host, port)
     print(f"S.M Dynamics server running at http://{host}:{port}")
     ThreadingHTTPServer(bind, Handler).serve_forever()
+    # Update Spare Part
+@app.route('/api/admin/spare-parts/<id>', methods=['PUT'])
+def update_spare_part(id):
+    data = request.json
+    # Update in database
+    return jsonify({'success': True})
+
+# Update Repair Service  
+@app.route('/api/management/repair-services/<id>', methods=['PUT'])
+def update_repair_service(id):
+    data = request.json
+    # Update in database
+    return jsonify({'success': True})
