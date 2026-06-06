@@ -16,7 +16,6 @@
       gap: 1rem;
       margin-top: 2rem;
     }
-    
     .service-item {
       background: #1a1a2e;
       border-radius: 0.75rem;
@@ -26,22 +25,15 @@
       border: 1px solid rgba(255,255,255,0.1);
       cursor: pointer;
     }
-    
-    .service-item:hover {
-      transform: translateY(-3px);
-      border-color: #00e5ff;
-    }
-    
+    .service-item:hover { transform: translateY(-3px); border-color: #00e5ff; }
     .service-icon { font-size: 2rem; margin-bottom: 0.5rem; }
     .service-name { font-size: 0.9rem; font-weight: 500; }
-    
     .spare-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
       gap: 1.5rem;
       margin-top: 2rem;
     }
-    
     .spare-card {
       background: #1a1a2e;
       border-radius: 1rem;
@@ -49,7 +41,6 @@
       transition: transform 0.3s;
       border: 1px solid rgba(255,255,255,0.1);
     }
-    
     .spare-card:hover { transform: translateY(-5px); }
     .card-image { width: 100%; height: 160px; background: #0f0f1a; display: flex; align-items: center; justify-content: center; overflow: hidden; }
     .card-image img { width: 100%; height: 100%; object-fit: cover; }
@@ -57,12 +48,14 @@
     .spare-info h3 { font-size: 1rem; margin-bottom: 0.5rem; }
     .spare-price { font-size: 1.2rem; font-weight: 700; color: #00e5ff; margin: 0.5rem 0; }
     .brand-badge { display: inline-block; background: rgba(0,229,255,0.2); color: #00e5ff; padding: 0.2rem 0.6rem; border-radius: 1rem; font-size: 0.7rem; }
-    .badge-instock { background: #00c853; color: white; padding: 0.2rem 0.6rem; border-radius: 1rem; font-size: 0.7rem; }
-    .badge-outstock { background: #ff3b30; color: white; padding: 0.2rem 0.6rem; border-radius: 1rem; font-size: 0.7rem; }
+    .badge-instock { background: #00c853; color: white; padding: 0.2rem 0.6rem; border-radius: 1rem; font-size: 0.7rem; display: inline-block; }
+    .badge-outstock { background: #ff3b30; color: white; padding: 0.2rem 0.6rem; border-radius: 1rem; font-size: 0.7rem; display: inline-block; }
     .btn-add { background: #00e5ff; color: #000; border: none; padding: 0.5rem; border-radius: 0.5rem; cursor: pointer; font-weight: 600; margin-top: 0.5rem; width: 100%; }
+    .btn-add:hover { opacity: 0.9; }
+    .btn-add:disabled { opacity: 0.5; cursor: not-allowed; }
     .search-filters { display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap; }
     .search-filters input, .search-filters select { flex: 1; min-width: 200px; padding: 0.75rem; border-radius: 0.75rem; border: 1px solid rgba(255,255,255,0.1); background: #0f0f1a; color: white; }
-    .section-tabs { display: flex; gap: 1rem; margin-bottom: 2rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem; }
+    .section-tabs { display: flex; gap: 1rem; margin-bottom: 2rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem; flex-wrap: wrap; }
     .section-tab { padding: 0.75rem 1.5rem; background: none; border: none; color: #888; cursor: pointer; font-weight: 500; }
     .section-tab.active { color: #00e5ff; border-bottom: 2px solid #00e5ff; }
     .booking-form { background: #1a1a2e; border-radius: 1.5rem; padding: 2rem; margin-top: 2rem; margin-bottom: 2rem; }
@@ -79,6 +72,9 @@
     .foot-bot { text-align: center; padding-top: 2rem; margin-top: 2rem; border-top: 1px solid rgba(255,255,255,0.05); color: #666; font-size: 0.75rem; }
     .cart-side { position: fixed; right: -400px; top: 0; width: 400px; height: 100vh; background: #1a1a2e; z-index: 2000; transition: right 0.3s; display: flex; flex-direction: column; }
     .cart-side.open { right: 0; }
+    .cart-head { padding: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; }
+    .cart-body { flex: 1; overflow-y: auto; padding: 1rem; }
+    .cart-foot { padding: 1rem; border-top: 1px solid rgba(255,255,255,0.1); }
     .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1999; display: none; }
     .overlay.show { display: block; }
     .toasts { position: fixed; bottom: 20px; right: 20px; z-index: 3000; }
@@ -88,6 +84,11 @@
     .toast.info { background: #2196f3; color: white; }
     @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     @media (max-width: 768px) { .cart-side { width: 100%; right: -100%; } }
+    .mobile-menu { position: fixed; top: 0; left: -280px; width: 280px; height: 100vh; background: #1a1a2e; z-index: 2000; transition: left 0.3s; padding: 80px 2rem 2rem; display: flex; flex-direction: column; gap: 1rem; }
+    .mobile-menu.open { left: 0; }
+    .mobile-menu a { color: white; text-decoration: none; padding: 0.75rem 0; }
+    .menu-toggle { display: none; cursor: pointer; }
+    @media (max-width: 768px) { .nav-links { display: none; } .menu-toggle { display: block; } }
   </style>
 </head>
 <body>
@@ -101,6 +102,7 @@
         <a href="index.html">Home</a>
         <a href="repair.html" class="active">Repair</a>
         <a href="contact.html">Contact</a>
+        <a href="management.html">Management</a>
       </nav>
       <div class="nav-tools">
         <button class="icon-btn" id="cartBtn">
@@ -126,7 +128,7 @@
           </div>
         </div>
         <div>
-          <img src="" alt="Phone Repair" style="border-radius: 2rem; width: 100%;">
+          <img src="shop/hero-phone.jpg" alt="Phone Repair" style="border-radius: 2rem; width: 100%;">
         </div>
       </div>
     </section>
@@ -243,7 +245,8 @@
           { id: 1, name: "iPhone 13 Screen", brand: "Apple", modelNumber: "iPhone 13", price: 4500, stock: 15, image: "shop/hero-phone.jpg" },
           { id: 2, name: "Samsung S22 Screen", brand: "Samsung", modelNumber: "Galaxy S22", price: 4200, stock: 8, image: "shop/hero-phone.jpg" },
           { id: 3, name: "Tecno Camon 19 Screen", brand: "Tecno", modelNumber: "Camon 19", price: 3500, stock: 10, image: "shop/hero-phone.jpg" },
-          { id: 4, name: "Infinix Hot 11 Screen", brand: "Infinix", modelNumber: "Hot 11", price: 2300, stock: 9, image: "shop/hero-phone.jpg" }
+          { id: 4, name: "Infinix Hot 11 Screen", brand: "Infinix", modelNumber: "Hot 11", price: 2300, stock: 9, image: "shop/hero-phone.jpg" },
+          { id: 5, name: "Oneplus Ace 2V Screen", brand: "Oneplus", modelNumber: "Ace 2V", price: 5000, stock: 1, image: "shop/hero-phone.jpg" }
         ];
         localStorage.setItem('spare_parts', JSON.stringify(spareParts));
       }
@@ -327,15 +330,22 @@
     // CART FUNCTIONS - Uses main page's cart system (nova_cart)
     // ============================================
     
-    // Add to cart - uses the same cart system as main page
+    // Make addToCart available globally
     window.addToCart = function(id, type) {
-      let part;
+      console.log("addToCart called with id:", id, "type:", type);
+      
+      let item;
       if (type === 'spare') {
-        part = spareParts.find(p => p.id === id);
+        item = spareParts.find(p => p.id == id);
       }
       
-      if (!part) {
+      if (!item) {
         toast('Item not found', 'error');
+        return;
+      }
+      
+      if (item.stock <= 0) {
+        toast('Item is out of stock', 'error');
         return;
       }
       
@@ -343,16 +353,16 @@
       let cart = JSON.parse(localStorage.getItem('nova_cart') || '[]');
       
       // Check if item already exists in cart
-      const existingIndex = cart.findIndex(item => item.id === id && item.type === type);
+      const existingIndex = cart.findIndex(cartItem => cartItem.id == id && cartItem.type === type);
       
       if (existingIndex !== -1) {
         cart[existingIndex].quantity += 1;
       } else {
         cart.push({
-          id: part.id,
-          name: part.name,
-          price: part.price,
-          image: part.image || 'shop/hero-phone.jpg',
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          image: item.image || 'shop/hero-phone.jpg',
           type: type,
           quantity: 1
         });
@@ -361,20 +371,23 @@
       // Save back to localStorage
       localStorage.setItem('nova_cart', JSON.stringify(cart));
       
-      // Update cart UI and trigger storage event for main page
+      // Update cart UI
       updateCartUI();
-      window.dispatchEvent(new Event('storage'));
       
-      toast(`${part.name} added to cart!`, 'success');
+      // Dispatch storage event for main page to sync
+      window.dispatchEvent(new StorageEvent('storage', { key: 'nova_cart', newValue: JSON.stringify(cart) }));
+      
+      toast(`${item.name} added to cart!`, 'success');
+      console.log("Cart after add:", cart);
     };
     
     function updateCartUI() {
       const cart = JSON.parse(localStorage.getItem('nova_cart') || '[]');
-      const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+      const totalItems = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
       const cartCount = document.getElementById('cartCount');
       if (cartCount) cartCount.innerText = totalItems;
       
-      const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      const total = cart.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
       const cartTotal = document.getElementById('cartTotal');
       if (cartTotal) cartTotal.innerText = `Kshs ${total.toLocaleString()}`;
       
@@ -385,8 +398,8 @@
         } else {
           container.innerHTML = cart.map(item => `
             <div style="display:flex; justify-content:space-between; padding:0.75rem; border-bottom:1px solid rgba(255,255,255,0.1);">
-              <div><strong>${escapeHtml(item.name)}</strong><br><small>x${item.quantity}</small></div>
-              <div>Kshs ${(item.price * item.quantity).toLocaleString()}</div>
+              <div><strong>${escapeHtml(item.name)}</strong><br><small>x${item.quantity || 1}</small></div>
+              <div>Kshs ${((item.price || 0) * (item.quantity || 1)).toLocaleString()}</div>
               <button onclick="removeFromCart('${item.id}', '${item.type}')" style="background:none; border:none; color:#ff3b30; cursor:pointer;">✕</button>
             </div>
           `).join('');
@@ -399,7 +412,7 @@
       cart = cart.filter(item => !(item.id == id && item.type === type));
       localStorage.setItem('nova_cart', JSON.stringify(cart));
       updateCartUI();
-      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new StorageEvent('storage', { key: 'nova_cart', newValue: JSON.stringify(cart) }));
       toast('Removed from cart', 'info');
     };
     
@@ -468,7 +481,7 @@
     
     document.getElementById('checkoutBtn')?.addEventListener('click', () => {
       const cart = JSON.parse(localStorage.getItem('nova_cart') || '[]');
-      const total = cart.reduce((s,i) => s + i.price * i.quantity, 0);
+      const total = cart.reduce((s,i) => s + (i.price || 0) * (i.quantity || 1), 0);
       if (total === 0) toast('Cart is empty', 'error');
       else window.location.href = 'index.html#cart';
     });
@@ -482,6 +495,9 @@
     loadSpareParts();
     renderServices();
     updateCartUI();
+    
+    // Debug: Log to console that page is ready
+    console.log("Repair page loaded, addToCart function:", typeof window.addToCart);
   </script>
 
   <aside class="mobile-menu" id="mobileMenu">
