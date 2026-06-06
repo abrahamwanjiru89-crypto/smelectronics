@@ -98,6 +98,51 @@
   .danger-btn {
     color: #ff3b30 !important;
   }
+  
+  /* Badge styling for product display */
+  .badge-status {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+  }
+  .badge-flash-sale {
+    background: #ff2bd6;
+    color: white;
+  }
+  .badge-hot {
+    background: #ff4d6d;
+    color: white;
+  }
+  .badge-new {
+    background: #20e0a6;
+    color: #000;
+  }
+  .badge-none {
+    background: #888;
+    color: white;
+  }
+  
+  .btn-badge {
+    padding: 0.5rem 0.8rem;
+    border-radius: 0.5rem;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.75rem;
+    transition: all 0.2s ease;
+  }
+  .btn-badge:hover {
+    transform: translateY(-1px);
+    opacity: 0.9;
+  }
+  .btn-flash-sale { background: #ff2bd6; color: white; }
+  .btn-hot { background: #ff4d6d; color: white; }
+  .btn-new { background: #20e0a6; color: #000; }
+  .btn-remove-badge { background: #888; color: white; }
+  .btn-edit { background: #00e5ff; color: #000; }
+  .btn-delete { background: #ff3b30; color: white; }
 </style>
 </head>
 <body class="management-body">
@@ -177,7 +222,7 @@
           <div class="product-admin" id="productAdmin"></div>
         </section>
 
-        <!-- Add Product -->
+        <!-- Add Product - UPDATED with Badge and Original Price fields -->
         <section class="dash-panel wide reveal">
           <h3>➕ Add Product</h3>
           <form class="dash-form product-add" id="productForm" enctype="multipart/form-data">
@@ -191,7 +236,14 @@
               <option value="home">Smart Home</option>
               <option value="repair">Repairs</option>
             </select>
-            <input name="price" type="number" min="0" placeholder="Price" required>
+            <input name="price" type="number" min="0" placeholder="Sale Price (Kshs)" required>
+            <input name="was" type="number" min="0" placeholder="Original Price (Kshs) - for Flash Sale">
+            <select name="badge">
+              <option value="">No Badge</option>
+              <option value="sale">🔥 Flash Sale</option>
+              <option value="hot">⚡ Hot</option>
+              <option value="new">✨ New</option>
+            </select>
             <input name="img" type="file" accept="image/*" required>
             <textarea name="desc" placeholder="Description" required></textarea>
             <button class="btn primary block" type="submit">Add Product</button>
