@@ -331,6 +331,91 @@ html[data-theme="light"] .nl-form input { background: rgba(255,255,255,.6); }
 .cart-total { display:flex; justify-content:space-between; margin-bottom:1rem; font-size:1.1rem; }
 .cart-total b { font-family:var(--font-mono); color:var(--primary); }
 
+/* ============== CART DELIVERY DETAILS ============== */
+.cart-meta {
+  padding: 1.25rem;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 16px;
+  margin: 0.5rem 1rem;
+}
+
+.cart-meta h4 {
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  color: var(--primary);
+  font-family: var(--font-display);
+  letter-spacing: 0.5px;
+}
+
+.cart-meta label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.cart-meta select,
+.cart-meta input {
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg-2);
+  color: var(--text);
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+}
+
+.cart-meta select:focus,
+.cart-meta input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(0, 229, 255, 0.1);
+}
+
+.cart-meta select option {
+  background: var(--bg-2);
+  color: var(--text);
+}
+
+.cart-fees {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  margin-top: 0.5rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.cart-fees b {
+  color: var(--primary);
+  font-family: var(--font-mono);
+}
+
+/* Dark mode specific fixes for cart */
+html[data-theme="dark"] .cart-meta select,
+html[data-theme="dark"] .cart-meta input {
+  background: #0f0f1a;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+html[data-theme="light"] .cart-meta select,
+html[data-theme="light"] .cart-meta input {
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.1);
+  color: #1a1a2e;
+}
+
+html[data-theme="light"] .cart-meta select option {
+  background: #ffffff;
+  color: #1a1a2e;
+}
+
 /* ============== CHECKOUT MODAL ============== */
 .checkout-modal {
   position: fixed;
@@ -592,6 +677,7 @@ html[data-theme="light"] .nl-form input { background: rgba(255,255,255,.6); }
   .cart-items { padding:1rem; }
   .cart-item { grid-template-columns:56px 1fr auto; gap:.65rem; }
   .cart-item img { width:56px; height:56px; }
+  .cart-meta { margin: 0.5rem 0.75rem; padding: 1rem; }
   .toasts { left:.75rem; right:.75rem; bottom:calc(.75rem + env(safe-area-inset-bottom)); }
   .toast { min-width:0; width:100%; }
   .live-notif { display:none; }
@@ -628,6 +714,7 @@ html[data-theme="light"] .nl-form input { background: rgba(255,255,255,.6); }
   .cart-item { grid-template-columns:48px 1fr; }
   .ci-rm { grid-column:2; justify-self:start; }
   .metrics { grid-template-columns:1fr; }
+  .cart-meta { margin: 0.5rem 0.5rem; padding: 0.75rem; }
 }
 
 @media (min-width: 1440px) {
