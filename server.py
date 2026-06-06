@@ -738,11 +738,92 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     # ============================================
-    # FIXED: POST HANDLERS
+    # COMPLETE POST HANDLERS (with login endpoints)
     # ============================================
     def do_POST(self):
         path = urlparse(self.path).path
         
+        # ============================================
+        # MANAGEMENT LOGIN ENDPOINT
+        # ============================================
+        if path == "/api/auth/management-login":
+            data = self.read_json()
+            email = data.get("email", "").strip().lower()
+            password = data.get("password", "")
+            
+            with db() as conn:
+                user = conn.execute("SELECT * FROM users WHERE email = ? AND role IN ('admin', 'staff')", (email,)).fetchone()
+            
+            if not user or not verify_password(password, user["password_hash"]):
+                self.send_json({"error": "Invalid login details"}, 401)
+                return
+            
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.set_session(user["id"])
+            self.end_headers()
+            self.wfile.write(json.dumps({"user": public_user(user)}).encode())
+            return
+        
+        # ============================================
+        # CUSTOMER LOGIN ENDPOINT
+        # ============================================
+        if path == "/api/auth/login":
+            data = self.read_json()
+            email = data.get("email", "").strip().lower()
+            password = data.get("password", "")
+            
+            with db() as conn:
+                user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+            
+            if not user or not verify_password(password, user["password_hash"]):
+                self.send_json({"error": "Invalid login details"}, 401)
+                return
+            
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.set_session(user["id"])
+            self.end_headers()
+            self.wfile.write(json.dumps({"user": public_user(user)}).encode())
+            return
+        
+        # ============================================
+        # REGISTER ENDPOINT
+        # ============================================
+        if path == "/api/auth/register":
+            data = self.read_json()
+            name, email, password = data.get("name", "").strip(), data.get("email", "").strip().lower(), data.get("password", "")
+            if len(name) < 2 or "@" not in email or len(password) < 4:
+                self.send_json({"error": "Invalid registration details"}, 400)
+                return
+            with db() as conn:
+                if conn.execute("SELECT 1 FROM users WHERE email = ?", (email,)).fetchone():
+                    self.send_json({"error": "Email already exists"}, 409)
+                    return
+                user_id = "u-" + secrets.token_hex(8)
+                conn.execute("INSERT INTO users VALUES (?,?,?,?,?,?)", (user_id, name, email, hash_password(password), "customer", datetime.now(timezone.utc).isoformat()))
+                user = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.set_session(user_id)
+            self.end_headers()
+            self.wfile.write(json.dumps({"user": public_user(user)}).encode())
+            return
+        
+        # ============================================
+        # LOGOUT ENDPOINT
+        # ============================================
+        if path == "/api/auth/logout":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.clear_session()
+            self.end_headers()
+            self.wfile.write(b'{"ok": true}')
+            return
+        
+        # ============================================
+        # ADD SPARE PART ENDPOINT
+        # ============================================
         if path == "/api/admin/spare-parts":
             if not self.require({"admin"}):
                 return
@@ -783,11 +864,166 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json({"ok": True, "id": spare_id})
             return
         
-        # Add other POST endpoints as needed
+        # ============================================
+        # ADD STAFF ENDPOINT
+        # ============================================
+        if path == "/api/admin/staff":
+            if not self.require({"admin"}):
+                return
+            data = self.read_json()
+            name, email, password = data.get("name", "").strip(), data.get("email", "").strip().lower(), data.get("password", "")
+            if len(name) < 2 or "@" not in email or len(password) < 4:
+                self.send_json({"error": "Invalid staff details"}, 400)
+                return
+            with db() as conn:
+                if conn.execute("SELECT 1 FROM users WHERE email = ?", (email,)).fetchone():
+                    self.send_json({"error": "Email already exists"}, 409)
+                    return
+                user_id = "u-" + secrets.token_hex(8)
+                conn.execute("INSERT INTO users VALUES (?,?,?,?,?,?)", (user_id, name, email, hash_password(password), "staff", datetime.now(timezone.utc).isoformat()))
+                self.send_json({"ok": True})
+            return
+        
+        # ============================================
+        # ADD PRODUCT ENDPOINT
+        # ============================================
+        if path == "/api/admin/products":
+            if not self.require({"admin"}):
+                return
+            form, files = self.read_multipart()
+            image = files.get("img")
+            if not image:
+                self.send_json({"error": "Product image is required"}, 400)
+                return
+            ext = Path(image["filename"]).suffix.lower() or ".jpg"
+            filename = secrets.token_hex(12) + ext
+            target = UPLOAD_DIR / filename
+            with target.open("wb") as f:
+                f.write(image["content"])
+            product_id = "p-" + secrets.token_hex(8)
+            with db() as conn:
+                conn.execute(
+                    "INSERT INTO products (id,name,cat,price,was,rating,reviews,badge,img,desc,in_stock,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+                    (
+                        product_id,
+                        form.get("name", "").strip(),
+                        form.get("cat", "phones"),
+                        float(form.get("price", "0")),
+                        None,
+                        4.6,
+                        0,
+                        "new",
+                        f"/uploads/{filename}",
+                        form.get("desc", "").strip(),
+                        1,
+                        datetime.now(timezone.utc).isoformat(),
+                    ),
+                )
+            self.send_json({"ok": True})
+            return
+        
+        # ============================================
+        # ADD TECHNICIAN ENDPOINT
+        # ============================================
+        if path == "/api/management/repair-technicians":
+            if not self.require({"admin"}):
+                return
+            data = self.read_json()
+            name = (data.get("name") or "").strip()
+            email = (data.get("email") or "").strip().lower()
+            if len(name) < 2 or "@" not in email:
+                self.send_json({"error": "Invalid technician details"}, 400)
+                return
+            with db() as conn:
+                if conn.execute("SELECT 1 FROM repair_technicians WHERE email = ?", (email,)).fetchone():
+                    self.send_json({"error": "Technician already exists"}, 409)
+                    return
+                tech_id = "t-" + secrets.token_hex(8)
+                conn.execute("INSERT INTO repair_technicians (id,name,email,created_at) VALUES (?,?,?,?)", (tech_id, name, email, datetime.now(timezone.utc).isoformat()))
+            self.send_json({"ok": True})
+            return
+        
+        # ============================================
+        # ADD REPAIR SERVICE ENDPOINT
+        # ============================================
+        if path == "/api/management/repair-services":
+            if not self.require({"admin"}):
+                return
+            form, files = self.read_multipart()
+            image = files.get("image")
+            if not image:
+                self.send_json({"error": "Service image is required"}, 400)
+                return
+            ext = Path(image["filename"]).suffix.lower() or ".jpg"
+            filename = secrets.token_hex(12) + ext
+            target = UPLOAD_DIR / filename
+            with target.open("wb") as f:
+                f.write(image["content"])
+            service_id = "rs-" + secrets.token_hex(8)
+            with db() as conn:
+                conn.execute(
+                    "INSERT INTO repair_services (id,title,brand,repair_type,price,duration,warranty,image,description,available,category_id,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+                    (
+                        service_id,
+                        form.get("title", "").strip(),
+                        form.get("brand", "").strip(),
+                        form.get("repairType", "").strip(),
+                        float(form.get("price", "0") or 0),
+                        form.get("duration", "").strip(),
+                        form.get("warranty", "").strip(),
+                        f"/uploads/{filename}",
+                        form.get("description", "").strip(),
+                        1,
+                        form.get("categoryId", None),
+                        datetime.now(timezone.utc).isoformat(),
+                    ),
+                )
+            self.send_json({"ok": True})
+            return
+        
+        # ============================================
+        # CREATE ORDER ENDPOINT
+        # ============================================
+        if path == "/api/orders":
+            user = self.require({"customer"})
+            if not user:
+                return
+            data = self.read_json()
+            cart = data.get("items", [])
+            if not cart:
+                self.send_json({"error": "Cart is empty"}, 400)
+                return
+            with db() as conn:
+                order_id = "ORD-" + secrets.token_hex(4).upper()
+                total = 0
+                rows = []
+                for item in cart:
+                    pid = str(item.get("id"))
+                    product = conn.execute("SELECT id, name, price, in_stock, img FROM products WHERE id = ?", (pid,)).fetchone()
+                    if not product:
+                        product = conn.execute("SELECT id, name, price, stock as in_stock, image_path as img FROM spare_parts WHERE id = ?", (pid,)).fetchone()
+                    qty = int(item.get("qty", 1))
+                    if not product or not product["in_stock"] or qty < 1:
+                        self.send_json({"error": f"Product {pid} is unavailable"}, 400)
+                        return
+                    total += product["price"] * qty
+                    rows.append((order_id, product["id"], product["name"], product["price"], qty, product["img"]))
+                
+                conn.execute(
+                    "INSERT INTO orders (id, user_id, total, county, constituency, street, deposit_amount, deposit_mpesa, status, created_at) VALUES (?,?,?,?,?,?,?,?,?,?)",
+                    (order_id, user["id"], total, data.get("county"), data.get("constituency"), data.get("street"), 
+                     float(data.get("depositAmount", 0)), data.get("depositMpesa"), "Placed", datetime.now(timezone.utc).isoformat())
+                )
+                conn.executemany("INSERT INTO order_items (order_id,product_id,name,price,qty,img) VALUES (?,?,?,?,?,?)", rows)
+                order = conn.execute("SELECT * FROM orders WHERE id = ?", (order_id,)).fetchone()
+                self.send_json({"order": row_order(conn, order)})
+            return
+        
+        # If no endpoint matches
         self.send_json({"error": "Not found"}, 404)
 
     # ============================================
-    # FIXED: PUT HANDLERS (for updates)
+    # PUT HANDLERS (for updates)
     # ============================================
     def do_PUT(self):
         path = urlparse(self.path).path.rstrip("/")
@@ -876,7 +1112,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_json({"error": "Not found"}, 404)
 
     # ============================================
-    # FIXED: DELETE HANDLERS (with proper indentation)
+    # DELETE HANDLERS (with image deletion)
     # ============================================
     def do_DELETE(self):
         path = urlparse(self.path).path.rstrip("/")
