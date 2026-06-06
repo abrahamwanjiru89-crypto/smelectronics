@@ -1,6 +1,6 @@
 /* =========================================================
    S.M Dynamics Electronics — Premium electronics storefront (vanilla JS)
-   FIXED VERSION - County loading with immediate fallback
+   FIXED VERSION - County loading with immediate fallback AND sub-location validation fix
 ========================================================= */
 
 // ----- PRODUCT DATA -----
@@ -122,7 +122,7 @@ async function updateCartTotals() {
 }
 
 // ============================================
-// FIXED: loadCounties with immediate fallback
+// FIXED: loadCounties with immediate fallback AND populates countySubLocations
 // ============================================
 async function loadCounties() {
   const el = $('#county');
@@ -198,6 +198,7 @@ async function loadCounties() {
     const selectedCountyId = el.value;
     
     if (!selectedCountyId) {
+      countySubLocations = []; // Clear sublocations
       if (subEl) subEl.value = '';
       if (datalist) datalist.innerHTML = '';
       updateCartTotals();
@@ -205,7 +206,7 @@ async function loadCounties() {
     }
     
     // Create fallback sublocations for the selected county
-    const fallbackSubLocations = {
+    const fallbackSubLocationsData = {
       'Nairobi': ['CBD', 'Westlands', 'Kilimani', 'Karen', 'Langata', 'Eastleigh', 'South B', 'South C', 'Buruburu', 'Donholm', 'Kasarani', 'Ruaraka', 'Embakasi', 'Mathare', 'Kibera', 'Dagoretti'],
       'Mombasa': ['Nyali', 'Bamburi', 'Mtwapa', 'Likoni', 'Changamwe', 'Kisauni', 'Mombasa CBD', 'Shanzu', 'Tudor', 'Miritini'],
       'Kisumu': ['Milimani', 'Kondele', 'Nyalenda', 'Kibos', 'Kisumu East', 'Kisumu West', 'Nyando', 'Muhoroni', 'Ahero'],
@@ -216,8 +217,15 @@ async function loadCounties() {
       'Kajiado': ['Kajiado Town', 'Kitengela', 'Ngong', 'Ongata Rongai', 'Isinya', 'Loitokitok', 'Namanga']
     };
     
-    const locations = fallbackSubLocations[countyName] || 
+    const locations = fallbackSubLocationsData[countyName] || 
       ['Town Centre', 'Estate', 'Phase 1', 'Phase 2', 'Central', 'North', 'South', 'East', 'West'];
+    
+    // CRITICAL FIX: Populate countySubLocations with proper objects for validation
+    countySubLocations = locations.map((loc, index) => ({
+      id: `sl-${selectedCountyId}-${index}`,
+      name: loc,
+      countyId: selectedCountyId
+    }));
     
     if (datalist) {
       datalist.innerHTML = locations.map(loc => `<option value="${loc}"></option>`).join('');
