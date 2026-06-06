@@ -86,33 +86,47 @@ function toast(msg, type='info') {
 // PRODUCT BADGE FUNCTIONS
 // ============================================
 
-function markAsFlashSale(id) {
-  console.log('Flash Sale clicked for ID:', id);
-  const product = products.find(p => p.id == id);
+// Mark product as Flash Sale
+window.markAsFlashSale = async function(id) {
+  console.log('Flash Sale clicked for ID:', id, typeof id);
+  
+  // Convert id to string for comparison
+  const productId = String(id);
+  const product = products.find(p => String(p.id) === productId);
+  
   if (!product) {
-    toast('Product not found', 'error');
+    console.error('Product not found. Available products:', products.map(p => ({ id: p.id, name: p.name })));
+    toast('Product not found. ID: ' + id, 'error');
     return;
   }
   
+  console.log('Found product:', product.name);
+  
   let wasPrice = product.was;
   if (!wasPrice) {
-    wasPrice = prompt('Enter original price (for flash sale):', product.price * 1.5);
-    if (!wasPrice) return;
-    wasPrice = parseFloat(wasPrice);
+    const input = prompt('Enter original price (for flash sale discount display):', product.price * 1.5);
+    if (!input) return;
+    wasPrice = parseFloat(input);
   }
   
   product.badge = 'sale';
   product.was = wasPrice;
   
+  // Save to localStorage
   localStorage.setItem('management_products', JSON.stringify(products));
   renderProducts();
   toast(`🔥 ${product.name} marked as FLASH SALE!`, 'success');
-}
+};
 
-function markAsHot(id) {
-  console.log('Hot clicked for ID:', id);
-  const product = products.find(p => p.id == id);
+// Mark product as Hot
+window.markAsHot = async function(id) {
+  console.log('Hot clicked for ID:', id, typeof id);
+  
+  const productId = String(id);
+  const product = products.find(p => String(p.id) === productId);
+  
   if (!product) {
+    console.error('Product not found. ID:', id);
     toast('Product not found', 'error');
     return;
   }
@@ -122,12 +136,17 @@ function markAsHot(id) {
   localStorage.setItem('management_products', JSON.stringify(products));
   renderProducts();
   toast(`⚡ ${product.name} marked as HOT!`, 'success');
-}
+};
 
-function markAsNew(id) {
-  console.log('New clicked for ID:', id);
-  const product = products.find(p => p.id == id);
+// Mark product as New
+window.markAsNew = async function(id) {
+  console.log('New clicked for ID:', id, typeof id);
+  
+  const productId = String(id);
+  const product = products.find(p => String(p.id) === productId);
+  
   if (!product) {
+    console.error('Product not found. ID:', id);
     toast('Product not found', 'error');
     return;
   }
@@ -137,12 +156,17 @@ function markAsNew(id) {
   localStorage.setItem('management_products', JSON.stringify(products));
   renderProducts();
   toast(`✨ ${product.name} marked as NEW!`, 'success');
-}
+};
 
-function removeBadge(id) {
-  console.log('Remove Badge clicked for ID:', id);
-  const product = products.find(p => p.id == id);
+// Remove badge from product
+window.removeBadge = async function(id) {
+  console.log('Remove Badge clicked for ID:', id, typeof id);
+  
+  const productId = String(id);
+  const product = products.find(p => String(p.id) === productId);
+  
   if (!product) {
+    console.error('Product not found. ID:', id);
     toast('Product not found', 'error');
     return;
   }
@@ -152,10 +176,10 @@ function removeBadge(id) {
   localStorage.setItem('management_products', JSON.stringify(products));
   renderProducts();
   toast(`${product.name} badge removed`, 'success');
-}
+};
 
 // ============================================
-// RENDER PRODUCTS - Using data attributes instead of onclick
+// RENDER PRODUCTS
 // ============================================
 
 function renderProducts() {
@@ -165,15 +189,19 @@ function renderProducts() {
     el.innerHTML = '<div class="dash-empty">No products yet.</div>';
     return;
   }
-  el.innerHTML = products.map(product => `
-    <div class="product-item" data-id="${product.id}" style="background:#1a1a2e; border-radius:1rem; padding:1rem; margin-bottom:1rem; border:1px solid rgba(255,255,255,0.1);">
+  
+  el.innerHTML = products.map(product => {
+    // Ensure product.id is properly handled
+    const productId = product.id;
+    return `
+    <div class="product-item" data-id="${productId}" style="background:#1a1a2e; border-radius:1rem; padding:1rem; margin-bottom:1rem; border:1px solid rgba(255,255,255,0.1);">
       <div style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap;">
         <img src="${product.img || 'shop/hero-phone.jpg'}" style="width:60px; height:60px; object-fit:cover; border-radius:0.5rem;">
         <div style="flex:1;">
           <h4>${esc(product.name)}</h4>
           <div style="display:flex; gap:1rem; flex-wrap:wrap; font-size:0.875rem;">
             <span style="color:#00e5ff;">${esc(product.cat)}</span>
-            <span style="color:#00e5ff;">Sale: ${fmt(product.price)}</span>
+            <span style="color:#00e5ff;">Price: ${fmt(product.price)}</span>
             ${product.was ? `<span style="color:#888; text-decoration:line-through;">Original: ${fmt(product.was)}</span>` : ''}
             <span style="${product.inStock !== false ? 'color:#00c853' : 'color:#ff3b30'}">${product.inStock !== false ? '✅ In Stock' : '❌ Out of Stock'}</span>
             <span class="badge-status" style="${product.badge === 'sale' ? 'background:#ff2bd6; padding:2px 8px; border-radius:12px; color:white;' : product.badge === 'hot' ? 'background:#ff4d6d; padding:2px 8px; border-radius:12px; color:white;' : product.badge === 'new' ? 'background:#20e0a6; padding:2px 8px; border-radius:12px; color:#000;' : ''}">
@@ -183,69 +211,20 @@ function renderProducts() {
           ${product.desc ? `<p style="font-size: 0.75rem; color: #888; margin-top: 0.25rem;">${esc(product.desc.substring(0, 100))}</p>` : ''}
         </div>
         <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-          <button class="btn-badge btn-flash-sale" data-action="flashSale" data-id="${product.id}" style="background:#ff2bd6; color:white; border:none; padding:0.5rem 0.8rem; border-radius:0.5rem; cursor:pointer; font-weight:500;">🔥 Flash Sale</button>
-          <button class="btn-badge btn-hot" data-action="hot" data-id="${product.id}" style="background:#ff4d6d; color:white; border:none; padding:0.5rem 0.8rem; border-radius:0.5rem; cursor:pointer; font-weight:500;">⚡ Hot</button>
-          <button class="btn-badge btn-new" data-action="new" data-id="${product.id}" style="background:#20e0a6; color:#000; border:none; padding:0.5rem 0.8rem; border-radius:0.5rem; cursor:pointer; font-weight:500;">✨ New</button>
-          <button class="btn-badge btn-remove-badge" data-action="removeBadge" data-id="${product.id}" style="background:#888; color:white; border:none; padding:0.5rem 0.8rem; border-radius:0.5rem; cursor:pointer; font-weight:500;">Remove Badge</button>
-          <button class="edit-product" data-id="${product.id}" style="background:#00e5ff; color:#000; border:none; padding:0.5rem 1rem; border-radius:0.5rem; cursor:pointer;">✏️ Edit</button>
-          <button class="delete-product" data-id="${product.id}" style="background:#ff3b30; color:#fff; border:none; padding:0.5rem 1rem; border-radius:0.5rem; cursor:pointer;">🗑️ Delete</button>
+          <button onclick="window.markAsFlashSale('${productId}')" class="btn-badge" style="background:#ff2bd6; color:white; border:none; padding:0.5rem 0.8rem; border-radius:0.5rem; cursor:pointer; font-weight:500;">🔥 Flash Sale</button>
+          <button onclick="window.markAsHot('${productId}')" class="btn-badge" style="background:#ff4d6d; color:white; border:none; padding:0.5rem 0.8rem; border-radius:0.5rem; cursor:pointer; font-weight:500;">⚡ Hot</button>
+          <button onclick="window.markAsNew('${productId}')" class="btn-badge" style="background:#20e0a6; color:#000; border:none; padding:0.5rem 0.8rem; border-radius:0.5rem; cursor:pointer; font-weight:500;">✨ New</button>
+          <button onclick="window.removeBadge('${productId}')" class="btn-badge" style="background:#888; color:white; border:none; padding:0.5rem 0.8rem; border-radius:0.5rem; cursor:pointer; font-weight:500;">Remove Badge</button>
+          <button class="edit-product" data-id="${productId}" style="background:#00e5ff; color:#000; border:none; padding:0.5rem 1rem; border-radius:0.5rem; cursor:pointer;">✏️ Edit</button>
+          <button class="delete-product" data-id="${productId}" style="background:#ff3b30; color:#fff; border:none; padding:0.5rem 1rem; border-radius:0.5rem; cursor:pointer;">🗑️ Delete</button>
         </div>
       </div>
     </div>
-  `).join('');
-}
-
-// ============================================
-// EVENT DELEGATION - This handles all button clicks
-// ============================================
-
-function setupEventDelegation() {
-  const container = $('#productAdmin');
-  if (!container) return;
+  `}).join('');
   
-  container.addEventListener('click', (e) => {
-    const btn = e.target.closest('[data-action]');
-    if (!btn) return;
-    
-    const action = btn.getAttribute('data-action');
-    const id = parseInt(btn.getAttribute('data-id'));
-    
-    console.log('Button clicked:', action, 'ID:', id);
-    
-    switch(action) {
-      case 'flashSale':
-        markAsFlashSale(id);
-        break;
-      case 'hot':
-        markAsHot(id);
-        break;
-      case 'new':
-        markAsNew(id);
-        break;
-      case 'removeBadge':
-        removeBadge(id);
-        break;
-      default:
-        console.log('Unknown action:', action);
-    }
-  });
-  
-  // Edit and delete buttons
-  container.addEventListener('click', (e) => {
-    const editBtn = e.target.closest('.edit-product');
-    if (editBtn) {
-      const id = editBtn.getAttribute('data-id');
-      editProduct(id);
-      return;
-    }
-    
-    const deleteBtn = e.target.closest('.delete-product');
-    if (deleteBtn) {
-      const id = deleteBtn.getAttribute('data-id');
-      deleteProduct(id);
-      return;
-    }
-  });
+  // Attach event listeners for edit and delete buttons
+  $$('.edit-product').forEach(btn => btn.addEventListener('click', () => editProduct(btn.dataset.id)));
+  $$('.delete-product').forEach(btn => btn.addEventListener('click', () => deleteProduct(btn.dataset.id)));
 }
 
 function editProduct(id) {
@@ -254,7 +233,7 @@ function editProduct(id) {
   
   const newName = prompt('Edit product name:', product.name);
   if (newName && newName.trim()) {
-    const newPrice = prompt('Edit sale price (Kshs):', product.price);
+    const newPrice = prompt('Edit price (Kshs):', product.price);
     if (newPrice) {
       product.name = newName.trim();
       product.price = parseFloat(newPrice);
@@ -846,15 +825,9 @@ $('#managerLogout')?.addEventListener('click', async () => {
   await updateView();
 });
 
-// Setup event delegation after products are rendered
-function init() {
-  updateView().catch(() => {
-    const login = $('#managerLogin');
-    if (login) login.hidden = false;
-    const ordersPanel = $('#managerOrders');
-    if (ordersPanel) ordersPanel.hidden = true;
-  });
-  setupEventDelegation();
-}
-
-init();
+updateView().catch(() => {
+  const login = $('#managerLogin');
+  if (login) login.hidden = false;
+  const ordersPanel = $('#managerOrders');
+  if (ordersPanel) ordersPanel.hidden = true;
+});
