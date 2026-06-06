@@ -83,7 +83,7 @@ function toast(msg, type='info') {
 }
 
 // ============================================
-// PRODUCT BADGE FUNCTIONS - DEFINED FIRST
+// PRODUCT BADGE FUNCTIONS
 // ============================================
 
 function markAsFlashSale(id) {
@@ -154,14 +154,8 @@ function removeBadge(id) {
   toast(`${product.name} badge removed`, 'success');
 }
 
-// Make functions globally available
-window.markAsFlashSale = markAsFlashSale;
-window.markAsHot = markAsHot;
-window.markAsNew = markAsNew;
-window.removeBadge = removeBadge;
-
 // ============================================
-// PRODUCTS RENDER
+// RENDER PRODUCTS - Using data attributes instead of onclick
 // ============================================
 
 function renderProducts() {
@@ -189,20 +183,69 @@ function renderProducts() {
           ${product.desc ? `<p style="font-size: 0.75rem; color: #888; margin-top: 0.25rem;">${esc(product.desc.substring(0, 100))}</p>` : ''}
         </div>
         <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-          <button onclick="window.markAsFlashSale(${product.id})" style="background:#ff2bd6; color:white; border:none; padding:0.5rem 0.8rem; border-radius:0.5rem; cursor:pointer; font-weight:500;">🔥 Flash Sale</button>
-          <button onclick="window.markAsHot(${product.id})" style="background:#ff4d6d; color:white; border:none; padding:0.5rem 0.8rem; border-radius:0.5rem; cursor:pointer; font-weight:500;">⚡ Hot</button>
-          <button onclick="window.markAsNew(${product.id})" style="background:#20e0a6; color:#000; border:none; padding:0.5rem 0.8rem; border-radius:0.5rem; cursor:pointer; font-weight:500;">✨ New</button>
-          <button onclick="window.removeBadge(${product.id})" style="background:#888; color:white; border:none; padding:0.5rem 0.8rem; border-radius:0.5rem; cursor:pointer; font-weight:500;">Remove Badge</button>
+          <button class="btn-badge btn-flash-sale" data-action="flashSale" data-id="${product.id}" style="background:#ff2bd6; color:white; border:none; padding:0.5rem 0.8rem; border-radius:0.5rem; cursor:pointer; font-weight:500;">🔥 Flash Sale</button>
+          <button class="btn-badge btn-hot" data-action="hot" data-id="${product.id}" style="background:#ff4d6d; color:white; border:none; padding:0.5rem 0.8rem; border-radius:0.5rem; cursor:pointer; font-weight:500;">⚡ Hot</button>
+          <button class="btn-badge btn-new" data-action="new" data-id="${product.id}" style="background:#20e0a6; color:#000; border:none; padding:0.5rem 0.8rem; border-radius:0.5rem; cursor:pointer; font-weight:500;">✨ New</button>
+          <button class="btn-badge btn-remove-badge" data-action="removeBadge" data-id="${product.id}" style="background:#888; color:white; border:none; padding:0.5rem 0.8rem; border-radius:0.5rem; cursor:pointer; font-weight:500;">Remove Badge</button>
           <button class="edit-product" data-id="${product.id}" style="background:#00e5ff; color:#000; border:none; padding:0.5rem 1rem; border-radius:0.5rem; cursor:pointer;">✏️ Edit</button>
           <button class="delete-product" data-id="${product.id}" style="background:#ff3b30; color:#fff; border:none; padding:0.5rem 1rem; border-radius:0.5rem; cursor:pointer;">🗑️ Delete</button>
         </div>
       </div>
     </div>
   `).join('');
+}
+
+// ============================================
+// EVENT DELEGATION - This handles all button clicks
+// ============================================
+
+function setupEventDelegation() {
+  const container = $('#productAdmin');
+  if (!container) return;
   
-  // Attach event listeners for edit and delete buttons
-  $$('.edit-product').forEach(btn => btn.addEventListener('click', () => editProduct(btn.dataset.id)));
-  $$('.delete-product').forEach(btn => btn.addEventListener('click', () => deleteProduct(btn.dataset.id)));
+  container.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    
+    const action = btn.getAttribute('data-action');
+    const id = parseInt(btn.getAttribute('data-id'));
+    
+    console.log('Button clicked:', action, 'ID:', id);
+    
+    switch(action) {
+      case 'flashSale':
+        markAsFlashSale(id);
+        break;
+      case 'hot':
+        markAsHot(id);
+        break;
+      case 'new':
+        markAsNew(id);
+        break;
+      case 'removeBadge':
+        removeBadge(id);
+        break;
+      default:
+        console.log('Unknown action:', action);
+    }
+  });
+  
+  // Edit and delete buttons
+  container.addEventListener('click', (e) => {
+    const editBtn = e.target.closest('.edit-product');
+    if (editBtn) {
+      const id = editBtn.getAttribute('data-id');
+      editProduct(id);
+      return;
+    }
+    
+    const deleteBtn = e.target.closest('.delete-product');
+    if (deleteBtn) {
+      const id = deleteBtn.getAttribute('data-id');
+      deleteProduct(id);
+      return;
+    }
+  });
 }
 
 function editProduct(id) {
@@ -425,7 +468,7 @@ async function loadAdminData() {
 }
 
 // ============================================
-// EXISTING FUNCTIONS (keep as is)
+// EXISTING FUNCTIONS
 // ============================================
 
 function renderPlacedOrders() {
@@ -803,9 +846,15 @@ $('#managerLogout')?.addEventListener('click', async () => {
   await updateView();
 });
 
-updateView().catch(() => {
-  const login = $('#managerLogin');
-  if (login) login.hidden = false;
-  const ordersPanel = $('#managerOrders');
-  if (ordersPanel) ordersPanel.hidden = true;
-});
+// Setup event delegation after products are rendered
+function init() {
+  updateView().catch(() => {
+    const login = $('#managerLogin');
+    if (login) login.hidden = false;
+    const ordersPanel = $('#managerOrders');
+    if (ordersPanel) ordersPanel.hidden = true;
+  });
+  setupEventDelegation();
+}
+
+init();
