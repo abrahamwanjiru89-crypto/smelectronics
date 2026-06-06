@@ -59,7 +59,7 @@
       cursor: pointer; 
       font-weight: 600; 
       margin-top: 0.5rem; 
-      width: 100%; 
+      width: 100%;
       transition: opacity 0.3s;
     }
     .btn-add:hover { opacity: 0.8; }
@@ -257,7 +257,9 @@
           { id: 2, name: "Samsung S22 Screen", brand: "Samsung", modelNumber: "Galaxy S22", price: 4200, stock: 8, image: "shop/hero-phone.jpg" },
           { id: 3, name: "Tecno Camon 19 Screen", brand: "Tecno", modelNumber: "Camon 19", price: 3500, stock: 10, image: "shop/hero-phone.jpg" },
           { id: 4, name: "Infinix Hot 11 Screen", brand: "Infinix", modelNumber: "Hot 11", price: 2300, stock: 9, image: "shop/hero-phone.jpg" },
-          { id: 5, name: "Oneplus Ace 2V Screen", brand: "Oneplus", modelNumber: "Ace 2V", price: 5000, stock: 1, image: "shop/hero-phone.jpg" }
+          { id: 5, name: "Oneplus Ace 2V Screen", brand: "Oneplus", modelNumber: "Ace 2V", price: 5000, stock: 1, image: "shop/hero-phone.jpg" },
+          { id: 6, name: "Tecno Spark Go 2023 LCD", brand: "Tecno", modelNumber: "Spark Go 2023", price: 2500, stock: 1, image: "shop/hero-phone.jpg" },
+          { id: 7, name: "Tecno Pop 7 LCD", brand: "Tecno", modelNumber: "Pop 7", price: 1000, stock: 5, image: "shop/hero-phone.jpg" }
         ];
         localStorage.setItem('spare_parts', JSON.stringify(spareParts));
       }
@@ -325,7 +327,7 @@
               <div><span class="brand-badge">${escapeHtml(part.brand)}</span> ${part.modelNumber ? `<span style="color:#888;"> · ${escapeHtml(part.modelNumber)}</span>` : ''}</div>
               <div class="spare-price">Kshs ${part.price.toLocaleString()}</div>
               <div>${part.stock > 0 ? `<span class="badge-instock">✅ In Stock (${part.stock})</span>` : '<span class="badge-outstock">❌ Out of Stock</span>'}</div>
-              <button class="btn-add" onclick="addToCart(${part.id}, 'spare')" ${part.stock === 0 ? 'disabled' : ''}>Add to Cart</button>
+              <button class="btn-add" onclick="addToCart(${part.id})" ${part.stock === 0 ? 'disabled' : ''}>Add to Cart</button>
             </div>
           </div>
         `).join('');
@@ -341,7 +343,52 @@
     // CART FUNCTIONS - Uses main page's cart system (nova_cart)
     // ============================================
     
-    // Update cart UI from nova_cart (main page's cart)
+    // Global addToCart function - uses main page's cart
+    window.addToCart = function(id) {
+      console.log("addToCart called with id:", id);
+      
+      const item = spareParts.find(p => p.id == id);
+      if (!item) {
+        toast('Item not found', 'error');
+        return;
+      }
+      
+      if (item.stock <= 0) {
+        toast('Item is out of stock', 'error');
+        return;
+      }
+      
+      // Get existing cart from localStorage (same as main page uses)
+      let cart = JSON.parse(localStorage.getItem('nova_cart') || '[]');
+      
+      // Check if item already exists in cart
+      const existingIndex = cart.findIndex(cartItem => cartItem.id == id);
+      
+      if (existingIndex !== -1) {
+        cart[existingIndex].quantity = (cart[existingIndex].quantity || 1) + 1;
+      } else {
+        cart.push({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          image: item.image || 'shop/hero-phone.jpg',
+          quantity: 1
+        });
+      }
+      
+      // Save back to localStorage
+      localStorage.setItem('nova_cart', JSON.stringify(cart));
+      
+      // Update cart UI
+      updateCartUI();
+      
+      // Dispatch storage event for main page to sync
+      window.dispatchEvent(new StorageEvent('storage', { key: 'nova_cart', newValue: JSON.stringify(cart) }));
+      
+      toast(`${item.name} added to cart!`, 'success');
+      console.log("Cart after add:", cart);
+    };
+    
     function updateCartUI() {
       const cart = JSON.parse(localStorage.getItem('nova_cart') || '[]');
       const totalItems = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
@@ -361,74 +408,21 @@
             <div style="display:flex; justify-content:space-between; padding:0.75rem; border-bottom:1px solid rgba(255,255,255,0.1);">
               <div><strong>${escapeHtml(item.name)}</strong><br><small>x${item.quantity || 1}</small></div>
               <div>Kshs ${((item.price || 0) * (item.quantity || 1)).toLocaleString()}</div>
-              <button onclick="removeFromCart('${item.id}', '${item.type}')" style="background:none; border:none; color:#ff3b30; cursor:pointer;">✕</button>
+              <button onclick="removeFromCart('${item.id}')" style="background:none; border:none; color:#ff3b30; cursor:pointer;">✕</button>
             </div>
           `).join('');
         }
       }
     }
     
-    // Add to cart - uses nova_cart (same as main page)
-    function addToCart(id, type) {
-      console.log("addToCart called with id:", id, "type:", type);
-      
-      let item;
-      if (type === 'spare') {
-        item = spareParts.find(p => p.id == id);
-      }
-      
-      if (!item) {
-        toast('Item not found', 'error');
-        return;
-      }
-      
-      if (item.stock <= 0) {
-        toast('Item is out of stock', 'error');
-        return;
-      }
-      
-      // Get existing cart from localStorage (same as main page uses)
+    window.removeFromCart = function(id) {
       let cart = JSON.parse(localStorage.getItem('nova_cart') || '[]');
-      
-      // Check if item already exists in cart
-      const existingIndex = cart.findIndex(cartItem => cartItem.id == id && cartItem.type === type);
-      
-      if (existingIndex !== -1) {
-        cart[existingIndex].quantity = (cart[existingIndex].quantity || 1) + 1;
-      } else {
-        cart.push({
-          id: item.id,
-          name: item.name,
-          price: item.price,
-          image: item.image || 'shop/hero-phone.jpg',
-          type: type,
-          quantity: 1
-        });
-      }
-      
-      // Save back to localStorage
-      localStorage.setItem('nova_cart', JSON.stringify(cart));
-      
-      // Update cart UI
-      updateCartUI();
-      
-      // Dispatch storage event for main page to sync
-      window.dispatchEvent(new StorageEvent('storage', { key: 'nova_cart', newValue: JSON.stringify(cart) }));
-      
-      toast(`${item.name} added to cart!`, 'success');
-      console.log("Cart after add:", cart);
-      console.log("Total items in cart:", cart.reduce((sum, i) => sum + i.quantity, 0));
-    }
-    
-    // Remove from cart
-    function removeFromCart(id, type) {
-      let cart = JSON.parse(localStorage.getItem('nova_cart') || '[]');
-      cart = cart.filter(item => !(item.id == id && item.type === type));
+      cart = cart.filter(item => item.id != id);
       localStorage.setItem('nova_cart', JSON.stringify(cart));
       updateCartUI();
       window.dispatchEvent(new StorageEvent('storage', { key: 'nova_cart', newValue: JSON.stringify(cart) }));
       toast('Removed from cart', 'info');
-    }
+    };
     
     function toast(msg, type) {
       const container = document.getElementById('toasts');
@@ -439,11 +433,6 @@
       container.appendChild(el);
       setTimeout(() => el.remove(), 3000);
     }
-
-    // Make functions global for onclick
-    window.addToCart = addToCart;
-    window.removeFromCart = removeFromCart;
-    window.selectService = selectService;
 
     // Tab switching
     function switchTab(tab) {
@@ -515,8 +504,8 @@
     renderServices();
     updateCartUI();
     
-    console.log("Repair page loaded - using nova_cart cart system");
-    console.log("addToCart function available:", typeof window.addToCart);
+    // Debug
+    console.log("Repair page loaded, addToCart function:", typeof window.addToCart);
   </script>
 
   <aside class="mobile-menu" id="mobileMenu">
