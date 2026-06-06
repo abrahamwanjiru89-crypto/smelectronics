@@ -631,4 +631,210 @@ async function loadAdminData() {
 
   try {
     api('/api/products').then(d => { products = d.products || []; renderProducts(); }).catch(e => console.error("Products load fail", e));
-    api('/api/admin/staff').then(d => { staff = d.staff || []; renderStaff(); }).catch(e
+    api('/api/admin/staff').then(d => { staff = d.staff || []; renderStaff(); }).catch(e => console.error("Staff load fail", e));
+    api('/api/admin/analytics').then(d => renderPerformance(d)).catch(e => console.error("Analytics load fail", e));
+  } catch (err) {
+    console.error("Admin data load failed:", err);
+    toast("Some management metrics could not be loaded", "error");
+  }
+
+  await Promise.all([loadRepairServices(), loadTechnicians(), loadRepairCategories(), loadAdminSpareParts()]);
+}
+
+async function updateView() {
+  let data = null;
+  try {
+    data = await api('/api/auth/me');
+    offlineManager = false;
+  } catch (err) {
+    if (localStorage.getItem('smd_mgmt_offline') === '1') {
+      offlineManager = true;
+      manager = OFFLINE_MANAGER;
+    } else {
+      manager = null;
+    }
+  }
+
+  if (data?.user && ['admin', 'staff'].includes(data.user.role)) {
+    manager = data.user;
+    offlineManager = false;
+  }
+  
+  if ($('#managerLogin')) $('#managerLogin').hidden = !!manager;
+  if ($('#managerOrders')) $('#managerOrders').hidden = !manager;
+
+  const revObs = new IntersectionObserver(es => es.forEach(e => {
+    if (e.isIntersecting) e.target.classList.add('in');
+  }), { threshold: .1 });
+  document.querySelectorAll('.reveal').forEach(el => revObs.observe(el));
+
+  if (!manager) return;
+
+  const isAdmin = manager.role === 'admin';
+  if ($('#managerRole')) $('#managerRole').textContent = isAdmin ? 'Admin' : 'Staff';
+  if ($('#managerTitle')) $('#managerTitle').textContent = isAdmin ? 'Admin Management' : 'Orders Placed';
+  if ($('#adminSections')) $('#adminSections').hidden = !isAdmin;
+
+  if ($('#placedOrders')) $('#placedOrders').innerHTML = LOADING.orders;
+  if ($('#repairBookings')) $('#repairBookings').innerHTML = LOADING.bookings;
+
+  return Promise.allSettled([
+    loadOrders().catch(e => console.error("Orders fail:", e)),
+    loadRepairBookings().catch(e => console.error("Bookings fail:", e)),
+    isAdmin ? loadAdminData().catch(e => console.error("Admin data fail:", e)) : Promise.resolve()
+  ]);
+}
+
+// ============================================
+// EVENT LISTENERS
+// ============================================
+
+$('#managerLoginForm')?.addEventListener('submit', async e => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const email = String(fd.get('email') || '').trim();
+  const password = String(fd.get('password') || '');
+  try {
+    await api('/api/auth/management-login', {
+      method:'POST',
+      body:JSON.stringify({ email, password })
+    });
+    localStorage.removeItem('smd_mgmt_offline');
+    e.target.reset();
+    await updateView();
+    toast('Login successful', 'success');
+  } catch (err) {
+    if (err.network && email && password) {
+      offlineManager = true;
+      localStorage.setItem('smd_mgmt_offline', '1');
+      await updateView();
+      toast('Login successful (offline fallback)', 'success');
+      return;
+    }
+    toast(err.message, 'error');
+  }
+});
+
+$('#sparePartForm')?.addEventListener('submit', async e => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  try {
+    await api('/api/admin/spare-parts', { method:'POST', body:fd });
+    await loadAdminSpareParts();
+    e.target.reset();
+    toast('Spare part added', 'success');
+  } catch (err) {
+    const newPart = {
+      id: Date.now(),
+      name: fd.get('name'),
+      brand: fd.get('brand'),
+      category: fd.get('category'),
+      modelNumber: fd.get('modelNumber'),
+      price: parseInt(fd.get('price')),
+      stock: parseInt(fd.get('stock')),
+      description: fd.get('description'),
+      image: 'shop/hero-phone.jpg'
+    };
+    const existing = JSON.parse(localStorage.getItem('spare_parts') || '[]');
+    existing.push(newPart);
+    localStorage.setItem('spare_parts', JSON.stringify(existing));
+    await loadAdminSpareParts();
+    e.target.reset();
+    toast('Spare part added (offline)', 'success');
+  }
+});
+
+$('#staffForm')?.addEventListener('submit', async e => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  try {
+    await api('/api/admin/staff', {
+      method:'POST',
+      body:JSON.stringify({ name:fd.get('name').trim(), email:fd.get('email').trim(), password:fd.get('password') })
+    });
+    e.target.reset();
+    await loadAdminData();
+    toast('Staff account created', 'success');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+});
+
+$('#technicianForm')?.addEventListener('submit', async e => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  try {
+    await api('/api/management/repair-technicians', {
+      method:'POST',
+      body: JSON.stringify({ name: fd.get('name').trim(), email: fd.get('email').trim() })
+    });
+    e.target.reset();
+    await loadTechnicians();
+    toast('Technician added', 'success');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+});
+
+$('#repairServiceForm')?.addEventListener('submit', async e => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  try {
+    await api('/api/management/repair-services', { method: 'POST', body: fd });
+    await loadRepairServices();
+    e.target.reset();
+    toast('Repair service added', 'success');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+});
+
+$('#repairBookings')?.addEventListener('click', async e => {
+  if (!e.target.matches('.js-update-booking')) return;
+  const bookingId = e.target.dataset.id;
+  if (!bookingId) return;
+  const status = prompt('Enter new status for booking ' + bookingId + ' (Pending, Received, Diagnosing, Repairing, Completed, Ready for pickup):');
+  if (!status) return;
+  try {
+    await api(`/api/management/repair-bookings/${encodeURIComponent(bookingId)}`, {
+      method: 'PUT',
+      body: JSON.stringify({ status })
+    });
+    await loadRepairBookings();
+    toast('Booking status updated', 'success');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+});
+
+$('#productForm')?.addEventListener('submit', async e => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  try {
+    await api('/api/admin/products', { method:'POST', body:fd });
+    e.target.reset();
+    await loadAdminData();
+    toast('Product added', 'success');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+});
+
+$('#managerLogout')?.addEventListener('click', async () => {
+  await api('/api/auth/logout', { method:'POST', body:JSON.stringify({}) });
+  manager = null;
+  orders = [];
+  products = [];
+  staff = [];
+  repairBookings = [];
+  repairServices = [];
+  technicians = [];
+  await updateView();
+});
+
+updateView().catch(() => {
+  const login = $('#managerLogin');
+  if (login) login.hidden = false;
+  const ordersPanel = $('#managerOrders');
+  if (ordersPanel) ordersPanel.hidden = true;
+});
