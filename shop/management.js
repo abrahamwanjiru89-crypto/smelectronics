@@ -97,6 +97,7 @@ function updateMainPageProducts() {
 
 // Mark product as Flash Sale
 window.markAsFlashSale = async function(id) {
+  console.log('markAsFlashSale called for id:', id);
   const product = products.find(p => p.id == id);
   if (!product) {
     toast('Product not found', 'error');
@@ -138,6 +139,7 @@ window.markAsFlashSale = async function(id) {
 
 // Mark product as Hot
 window.markAsHot = async function(id) {
+  console.log('markAsHot called for id:', id);
   const product = products.find(p => p.id == id);
   if (!product) {
     toast('Product not found', 'error');
@@ -171,6 +173,7 @@ window.markAsHot = async function(id) {
 
 // Mark product as New
 window.markAsNew = async function(id) {
+  console.log('markAsNew called for id:', id);
   const product = products.find(p => p.id == id);
   if (!product) {
     toast('Product not found', 'error');
@@ -204,6 +207,7 @@ window.markAsNew = async function(id) {
 
 // Remove badge from product
 window.removeBadge = async function(id) {
+  console.log('removeBadge called for id:', id);
   const product = products.find(p => p.id == id);
   if (!product) {
     toast('Product not found', 'error');
@@ -260,10 +264,10 @@ function renderProducts() {
           ${product.desc ? `<p style="font-size: 0.75rem; color: #888; margin-top: 0.25rem;">${esc(product.desc.substring(0, 100))}</p>` : ''}
         </div>
         <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-          <button onclick="markAsFlashSale(${product.id})" style="background:#ff2bd6; color:white; border:none; padding:0.5rem 0.8rem; border-radius:0.5rem; cursor:pointer; font-weight:500;">🔥 Flash Sale</button>
-          <button onclick="markAsHot(${product.id})" style="background:#ff4d6d; color:white; border:none; padding:0.5rem 0.8rem; border-radius:0.5rem; cursor:pointer; font-weight:500;">⚡ Hot</button>
-          <button onclick="markAsNew(${product.id})" style="background:#20e0a6; color:#000; border:none; padding:0.5rem 0.8rem; border-radius:0.5rem; cursor:pointer; font-weight:500;">✨ New</button>
-          <button onclick="removeBadge(${product.id})" style="background:#888; color:white; border:none; padding:0.5rem 0.8rem; border-radius:0.5rem; cursor:pointer; font-weight:500;">Remove Badge</button>
+          <button onclick="window.markAsFlashSale(${product.id})" style="background:#ff2bd6; color:white; border:none; padding:0.5rem 0.8rem; border-radius:0.5rem; cursor:pointer; font-weight:500;">🔥 Flash Sale</button>
+          <button onclick="window.markAsHot(${product.id})" style="background:#ff4d6d; color:white; border:none; padding:0.5rem 0.8rem; border-radius:0.5rem; cursor:pointer; font-weight:500;">⚡ Hot</button>
+          <button onclick="window.markAsNew(${product.id})" style="background:#20e0a6; color:#000; border:none; padding:0.5rem 0.8rem; border-radius:0.5rem; cursor:pointer; font-weight:500;">✨ New</button>
+          <button onclick="window.removeBadge(${product.id})" style="background:#888; color:white; border:none; padding:0.5rem 0.8rem; border-radius:0.5rem; cursor:pointer; font-weight:500;">Remove Badge</button>
           <button class="edit-product" data-id="${product.id}" style="background:#00e5ff; color:#000; border:none; padding:0.5rem 1rem; border-radius:0.5rem; cursor:pointer;">✏️ Edit</button>
           <button class="delete-product" data-id="${product.id}" style="background:#ff3b30; color:#fff; border:none; padding:0.5rem 1rem; border-radius:0.5rem; cursor:pointer;">🗑️ Delete</button>
         </div>
