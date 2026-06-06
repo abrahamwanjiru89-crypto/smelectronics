@@ -40,7 +40,6 @@
       overflow: hidden;
       transition: transform 0.3s;
       border: 1px solid rgba(255,255,255,0.1);
-      cursor: pointer;
     }
     .spare-card:hover { transform: translateY(-5px); }
     .card-image { width: 100%; height: 160px; background: #0f0f1a; display: flex; align-items: center; justify-content: center; overflow: hidden; }
@@ -343,7 +342,34 @@
       // CART FUNCTIONS - Uses main page's cart system (nova_cart)
       // ============================================
       
-      // Make addToCart available globally
+      // Update cart UI from nova_cart (main page's cart)
+      function updateCartUI() {
+        const cart = JSON.parse(localStorage.getItem('nova_cart') || '[]');
+        const totalItems = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
+        const cartCount = document.getElementById('cartCount');
+        if (cartCount) cartCount.innerText = totalItems;
+        
+        const total = cart.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
+        const cartTotal = document.getElementById('cartTotal');
+        if (cartTotal) cartTotal.innerText = `Kshs ${total.toLocaleString()}`;
+        
+        const container = document.getElementById('cartItems');
+        if (container) {
+          if (cart.length === 0) {
+            container.innerHTML = '<div style="text-align:center; padding:2rem;">🛒 Cart empty</div>';
+          } else {
+            container.innerHTML = cart.map(item => `
+              <div style="display:flex; justify-content:space-between; padding:0.75rem; border-bottom:1px solid rgba(255,255,255,0.1);">
+                <div><strong>${escapeHtml(item.name)}</strong><br><small>x${item.quantity || 1}</small></div>
+                <div>Kshs ${((item.price || 0) * (item.quantity || 1)).toLocaleString()}</div>
+                <button onclick="window.removeFromCart('${item.id}', '${item.type}')" style="background:none; border:none; color:#ff3b30; cursor:pointer;">✕</button>
+              </div>
+            `).join('');
+          }
+        }
+      }
+      
+      // Add to cart - uses nova_cart (same as main page)
       window.addToCart = function(id, type) {
         console.log("addToCart called with id:", id, "type:", type);
         
@@ -392,35 +418,9 @@
         
         toast(`${item.name} added to cart!`, 'success');
         console.log("Cart after add:", cart);
-        console.log("Cart total items:", cart.reduce((sum, i) => sum + (i.quantity || 1), 0));
       };
       
-      function updateCartUI() {
-        const cart = JSON.parse(localStorage.getItem('nova_cart') || '[]');
-        const totalItems = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
-        const cartCount = document.getElementById('cartCount');
-        if (cartCount) cartCount.innerText = totalItems;
-        
-        const total = cart.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
-        const cartTotal = document.getElementById('cartTotal');
-        if (cartTotal) cartTotal.innerText = `Kshs ${total.toLocaleString()}`;
-        
-        const container = document.getElementById('cartItems');
-        if (container) {
-          if (cart.length === 0) {
-            container.innerHTML = '<div style="text-align:center; padding:2rem;">🛒 Cart empty</div>';
-          } else {
-            container.innerHTML = cart.map(item => `
-              <div style="display:flex; justify-content:space-between; padding:0.75rem; border-bottom:1px solid rgba(255,255,255,0.1);">
-                <div><strong>${escapeHtml(item.name)}</strong><br><small>x${item.quantity || 1}</small></div>
-                <div>Kshs ${((item.price || 0) * (item.quantity || 1)).toLocaleString()}</div>
-                <button onclick="window.removeFromCart('${item.id}', '${item.type}')" style="background:none; border:none; color:#ff3b30; cursor:pointer;">✕</button>
-              </div>
-            `).join('');
-          }
-        }
-      }
-      
+      // Remove from cart
       window.removeFromCart = function(id, type) {
         let cart = JSON.parse(localStorage.getItem('nova_cart') || '[]');
         cart = cart.filter(item => !(item.id == id && item.type === type));
@@ -500,7 +500,7 @@
         else window.location.href = 'index.html#cart';
       });
 
-      // Listen for cart updates from other pages
+      // Listen for cart updates from main page
       window.addEventListener('storage', (e) => {
         if (e.key === 'nova_cart') updateCartUI();
       });
@@ -510,9 +510,7 @@
       renderServices();
       updateCartUI();
       
-      // Debug: Log to console that page is ready
-      console.log("Repair page loaded");
-      console.log("Spare parts loaded:", spareParts.length);
+      console.log("Repair page loaded - using nova_cart cart system");
     })();
   </script>
 
