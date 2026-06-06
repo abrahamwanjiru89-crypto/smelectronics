@@ -841,6 +841,19 @@ class Handler(BaseHTTPRequestHandler):
     # ============================================
     def do_DELETE(self):
         path = urlparse(self.path).path.rstrip("/")
+if path == "/api/admin/delete-image":
+    if not self.require({"admin"}):
+        return
+    data = self.read_json()
+    image_path = data.get("imagePath")
+    if image_path:
+        filename = image_path.split('/')[-1]
+        target = UPLOAD_DIR / filename
+        if target.exists() and target.is_file():
+            target.unlink()
+            print(f"Deleted image: {filename}")
+    self.send_json({"ok": True})
+    return
         
         # Delete Spare Part
         if path.startswith("/api/admin/spare-parts/"):
