@@ -1,12 +1,13 @@
 /* =========================================================
    S.M Dynamics Electronics — Premium electronics storefront (vanilla JS)
+   FIXED VERSION - County loading, Checkout Modal, Mobile images
 ========================================================= */
 
 // ----- PRODUCT DATA -----
 const DEFAULT_PRODUCTS = [
   { id:'p1', name:'S.M Dynamics Phone 16 Pro', cat:'phones', price:1299, was:1499, rating:4.9, reviews:1283, badge:'hot', img:'/shop/hero-phone.jpg', desc:'A flagship redefined. Titanium frame, 6.7" OLED 120Hz display and the new A18X bionic chip.', specs:{ Display:'6.7" OLED 120Hz', Chip:'A18X Bionic', Storage:'256GB', Camera:'Triple 48MP', Battery:'4800mAh' } },
   { id:'p2', name:'Aura Studio Pro', cat:'audio', price:449, was:549, rating:4.8, reviews:842, badge:'sale', img:'/shop/headphones.jpg', desc:'Reference-grade over-ear with adaptive noise cancellation and 60h battery.', specs:{ Driver:'40mm planar', ANC:'Adaptive', Battery:'60h', Codec:'LDAC/aptX', Weight:'248g' } },
-  { id:'p3', name:'S.M Dynamics Book X1', cat:'laptops', price:2199, rating:4.9, reviews:512, badge:'new', img:'/shop/Sm dynamic.jpg', desc:'Carbon-fiber chassis, 14" mini-LED, 32GB RAM and 18-hour battery.', specs:{ CPU:'M4 Pro', RAM:'32GB', Storage:'1TB SSD', Display:'14" mini-LED', Battery:'18h' } },
+  { id:'p3', name:'S.M Dynamics Book X1', cat:'laptops', price:2199, rating:4.9, reviews:512, badge:'new', img:'/shop/Sm%20dynamic.jpg', desc:'Carbon-fiber chassis, 14" mini-LED, 32GB RAM and 18-hour battery.', specs:{ CPU:'M4 Pro', RAM:'32GB', Storage:'1TB SSD', Display:'14" mini-LED', Battery:'18h' } },
   { id:'p4', name:'Orbit Watch Ultra', cat:'wearables', price:599, was:699, rating:4.7, reviews:301, badge:'sale', img:'/shop/watch.jpg', desc:'Sapphire crystal, dual-frequency GPS and 7-day battery in titanium.', specs:{ Display:'AMOLED 1.9"', GPS:'Dual-band', Battery:'7 days', Water:'10 ATM', Material:'Titanium' } },
   { id:'p5', name:'Vision Lens VR', cat:'gaming', price:899, rating:4.6, reviews:178, badge:'new', img:'/shop/vr.jpg', desc:'4K-per-eye micro-OLED with 120Hz tracking. The future of immersion.', specs:{ Display:'4K per eye', Refresh:'120Hz', Audio:'Spatial', Tracking:'Inside-out', Weight:'420g' } },
   { id:'p6', name:'Echo Buds 3', cat:'audio', price:179, was:229, rating:4.7, reviews:921, badge:'sale', img:'/shop/earbuds.jpg', desc:'Hi-Res certified earbuds with hybrid ANC and 32h total battery.', specs:{ Driver:'11mm dynamic', ANC:'Hybrid', Battery:'32h', Codec:'LHDC', Case:'Wireless charging' } },
@@ -17,16 +18,8 @@ const DEFAULT_PRODUCTS = [
   { id:'p11', name:'Falcon Drone 4K', cat:'gaming', price:1199, rating:4.8, reviews:243, badge:'new', img:'/shop/drone.jpg', desc:'4K stabilized drone with 40-minute flight time and obstacle avoidance.', specs:{ Camera:'4K 60p', Range:'12km', Flight:'40 min', Obstacle:'6-direction', Weight:'595g' } },
   { id:'p12', name:'Nest Hub Mini', cat:'home', price:129, rating:4.5, reviews:1109, img:'/shop/hub.jpg', desc:'Smart home command center with ambient display and voice control.', specs:{ Display:'7" touch', Voice:'Built-in', Hub:'Matter/Thread', Audio:'Stereo', Camera:'1080p' } },
   { id:'p13', name:'Forge Keyboard RGB', cat:'gaming', price:189, was:229, rating:4.7, reviews:534, badge:'sale', img:'/shop/keyboard.jpg', desc:'Mechanical RGB keyboard with hot-swap switches and aluminum frame.', specs:{ Switches:'Hot-swap', Layout:'87-key TKL', RGB:'Per-key', Connect:'USB-C / BT', Build:'Aluminum' } },
-  { id:'r1', name:'Screen Replacement — iPhone 14', cat:'repair', price:7500, was:8600, rating:4.7, reviews:112, badge:'hot', img:'/shop/hero-phone.jpg', desc:'OEM screen replacement with precision installation and full quality testing.', specs:{ Brand:'Apple', Service:'Screen replacement', Warranty:'6 months', Turnaround:'1-2 days' } },
-  { id:'r2', name:'Screen Replacement — Galaxy S23', cat:'repair', price:7200, was:8200, rating:4.7, reviews:98, badge:'hot', img:'/shop/hero-phone.jpg', desc:'Fast Samsung Galaxy screen repair with original-grade glass and calibration.', specs:{ Brand:'Samsung', Service:'Screen replacement', Warranty:'6 months', Turnaround:'1-2 days' } },
-  { id:'r3', name:'Battery Replacement — Samsung', cat:'repair', price:3500, rating:4.6, reviews:206, img:'/shop/hero-phone.jpg', desc:'High-capacity replacement battery for Samsung phones, including health calibration.', specs:{ Brand:'Samsung', Service:'Battery replacement', Warranty:'3 months', Turnaround:'Same day' } },
-  { id:'r4', name:'Charging Port Repair', cat:'repair', price:2200, rating:4.5, reviews:168, img:'/shop/headphones.jpg', desc:'Charging port replacement and cleaning for phones with intermittent power issues.', specs:{ Service:'Charging port', Warranty:'3 months', Turnaround:'1 day' } },
-  { id:'r5', name:'Speaker & Mouthpiece Repair', cat:'repair', price:1999, rating:4.5, reviews:154, img:'/shop/earbuds.jpg', desc:'Repair or replacement of loudspeaker and mouthpiece components for clear calls and media.', specs:{ Service:'Speaker / mouthpiece', Warranty:'3 months', Turnaround:'1-2 days' } },
-  { id:'r6', name:'Software & Network Support', cat:'repair', price:1900, rating:4.4, reviews:121, img:'/shop/laptop.jpg', desc:'Software fixes, network troubleshooting and system optimization for any phone model.', specs:{ Service:'Software & network', Warranty:'30 days', Turnaround:'Same day' } },
-  { id:'r7', name:'Power Switch Repair', cat:'repair', price:2100, rating:4.5, reviews:103, img:'/shop/wristwatch.jpg', desc:'Power button repair for phones that do not turn on or have unresponsive side keys.', specs:{ Service:'Power switch', Warranty:'3 months', Turnaround:'1 day' } },
-  { id:'r8', name:'Screen Guard Installation', cat:'repair', price:899, rating:4.6, reviews:131, img:'/shop/watch.jpg', desc:'Professional tempered glass fitting and alignment for maximum screen protection.', specs:{ Service:'Screen guard', Warranty:'30 days', Turnaround:'Same day' } },
-  { id:'r9', name:'Screen Cover Installation', cat:'repair', price:1199, rating:4.6, reviews:98, img:'/shop/watch.jpg', desc:'Custom-fit screen covers for phones and tablets with premium clarity and protection.', specs:{ Service:'Screen cover', Warranty:'30 days', Turnaround:'Same day' } },
 ];
+
 let PRODUCTS = DEFAULT_PRODUCTS.slice();
 
 // ----- STATE -----
@@ -60,16 +53,66 @@ function getSelectedSubLocation() {
   return countySubLocations.find(sl => normalizeAreaName(sl.name) === value) || null;
 }
 
+// ============================================
+// FIXED: CHECKOUT MODAL (Popup instead of scroll)
+// ============================================
+function showCheckoutModal(total, deliveryFee, onConfirm) {
+  // Remove existing modal if any
+  const existingModal = document.querySelector('.checkout-modal');
+  if (existingModal) existingModal.remove();
+  
+  const modal = document.createElement('div');
+  modal.className = 'checkout-modal';
+  modal.innerHTML = `
+    <div class="checkout-card">
+      <h3>💰 Confirm Payment</h3>
+      <div class="amount">${fmt(total)}</div>
+      <div class="details">
+        <p>Subtotal: ${fmt(total - deliveryFee)}</p>
+        <p>Delivery Fee: ${fmt(deliveryFee)}</p>
+        <p style="margin-top: 0.5rem;">Total Amount: <strong style="color: #00e5ff;">${fmt(total)}</strong></p>
+      </div>
+      <div class="checkout-actions">
+        <button class="btn-cancel">Cancel</button>
+        <button class="btn-confirm">Proceed to Payment</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  
+  // Show modal
+  setTimeout(() => modal.classList.add('show'), 10);
+  
+  // Handle buttons
+  modal.querySelector('.btn-cancel').addEventListener('click', () => {
+    modal.classList.remove('show');
+    setTimeout(() => modal.remove(), 300);
+  });
+  
+  modal.querySelector('.btn-confirm').addEventListener('click', () => {
+    modal.classList.remove('show');
+    setTimeout(() => modal.remove(), 300);
+    if (onConfirm) onConfirm();
+  });
+  
+  // Close on overlay click
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      modal.classList.remove('show');
+      setTimeout(() => modal.remove(), 300);
+    }
+  });
+}
+
 async function updateCartTotals() {
   const subtotal = state.cart.reduce((s, c) => s + (PRODUCTS.find(p => p.id === c.id)?.price || 0) * c.qty, 0);
   const subLocId = getSelectedSubLocation()?.id;
-  // approximate weight: default 0.5kg per item unless product has weight
   const weight = state.cart.reduce((w, c) => w + (PRODUCTS.find(p => p.id === c.id)?.weight || 0.5) * c.qty, 0);
+  
   if (subLocId) {
     try {
       const data = await api('/api/delivery/calculate', { method: 'POST', body: JSON.stringify({ subLocationId: subLocId, weight, distanceKm: 0 }) });
       deliveryFee = data.fee;
-      // optional: if breakdown UI exists, show it
       if (data.breakdown && $('#deliveryBreakdown')) {
         $('#deliveryBreakdown').textContent = `Zone: ${data.breakdown.zone || 'N/A'} · Base ${fmt(data.breakdown.base)} · Weight ${data.breakdown.weight}kg`;
       }
@@ -85,8 +128,22 @@ async function updateCartTotals() {
 async function loadCounties() {
   const el = $('#county');
   if (!el) return;
-  const data = await api('/api/locations/counties');
-  el.innerHTML = '<option value="">Select County</option>' + data.counties.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  
+  try {
+    const data = await api('/api/locations/counties');
+    if (data && data.counties) {
+      el.innerHTML = '<option value="">Select County</option>' + data.counties.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    } else {
+      // Fallback counties if API fails
+      const fallbackCounties = ['Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Kiambu', 'Uasin Gishu', 'Kajiado', 'Machakos'];
+      el.innerHTML = '<option value="">Select County</option>' + fallbackCounties.map(c => `<option value="${c.toLowerCase()}">${c}</option>`).join('');
+    }
+  } catch (err) {
+    console.error('Failed to load counties:', err);
+    const fallbackCounties = ['Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Kiambu', 'Uasin Gishu', 'Kajiado', 'Machakos'];
+    el.innerHTML = '<option value="">Select County</option>' + fallbackCounties.map(c => `<option value="${c.toLowerCase()}">${c}</option>`).join('');
+  }
+  
   el.addEventListener('change', async () => {
     const subEl = $('#subLocation');
     const countyName = el.options[el.selectedIndex]?.text || '';
@@ -100,18 +157,22 @@ async function loadCounties() {
       updateCartTotals();
       return; 
     }
-    // Load existing DB sublocations first
-    const subData = await api(`/api/locations/sublocations?countyId=${el.value}`);
-    countySubLocations = subData.subLocations || [];
-    const datalist = $('#sublocationsList');
-    if (datalist) {
-      datalist.innerHTML = countySubLocations.map(sl => `<option value="${esc(sl.name)}" data-id="${esc(sl.id)}"></option>`).join('');
+    
+    try {
+      const subData = await api(`/api/locations/sublocations?countyId=${el.value}`);
+      countySubLocations = subData.subLocations || [];
+      const datalist = $('#sublocationsList');
+      if (datalist) {
+        datalist.innerHTML = countySubLocations.map(sl => `<option value="${esc(sl.name)}" data-id="${esc(sl.id)}"></option>`).join('');
+      }
+      if (subEl) subEl.value = '';
+      setupPlaceAutocomplete(countyName);
+      updateCartTotals();
+    } catch (err) {
+      console.error('Failed to load sublocations:', err);
     }
-    if (subEl) subEl.value = '';
-    // Keep street suggestions county-aware while sub-location choices come from our database.
-    setupPlaceAutocomplete(countyName);
-    updateCartTotals();
   });
+  
   $('#subLocation')?.addEventListener('change', updateCartTotals);
   $('#subLocation')?.addEventListener('input', debounce(updateCartTotals, 250));
 }
@@ -126,7 +187,6 @@ function setupPlaceAutocomplete(countyName) {
   const streetDatalist = $('#streetsList');
   if (!streetInput || !streetDatalist) return;
 
-  // Autocomplete for street addresses
   streetInput.removeEventListener('input', streetInput._placeListener || (()=>{}));
   streetInput._placeListener = debounce(async (e) => {
     const q = e.target.value.trim();
@@ -162,19 +222,31 @@ async function api(path, options = {}) {
   if (!res.ok) throw new Error(data.error || 'Request failed');
   return data;
 }
+
 async function refreshProducts() {
-  const data = await api('/api/products');
-  PRODUCTS = data.products;
+  try {
+    const data = await api('/api/products');
+    if (data && data.products) {
+      PRODUCTS = data.products;
+    }
+  } catch (err) {
+    console.error('Failed to refresh products:', err);
+  }
   renderProducts();
   renderFlash();
   renderCart();
   renderRecent();
 }
+
 async function refreshOrders() {
   if (!state.user) return;
-  const data = await api('/api/orders/my');
-  state.orders = data.orders;
-  renderDashboard();
+  try {
+    const data = await api('/api/orders/my');
+    state.orders = data.orders;
+    renderDashboard();
+  } catch (err) {
+    console.error('Failed to refresh orders:', err);
+  }
 }
 
 // ----- LOADER -----
@@ -220,12 +292,11 @@ $('#searchInput').addEventListener('input', e => {
   const hits = PRODUCTS.filter(p => p.name.toLowerCase().includes(q) || p.cat.includes(q)).slice(0, 8);
   r.innerHTML = hits.length ? hits.map(p => `
     <button class="sr-item" data-id="${p.id}">
-      <img src="${p.img}" alt="${p.name}" loading="lazy">
+      <img src="${p.img}" alt="${p.name}" loading="lazy" onerror="this.src='/shop/hero-phone.jpg'">
       <div><div>${p.name}</div><small>${fmt(p.price)} · ${p.cat}</small></div>
     </button>`).join('') : '<p class="muted" style="padding:1rem">No matches.</p>';
   r.querySelectorAll('.sr-item').forEach(b => b.addEventListener('click', () => { openModal(b.dataset.id); searchPanel.classList.remove('open'); }));
 });
-$('#repairSearch')?.addEventListener('input', e => renderRepairServices(e.target.value.trim()));
 
 // ----- PARTICLES -----
 const canvas = $('#particles');
@@ -332,7 +403,7 @@ function card(p, opts = {}) {
   return `
     <article class="card ${out ? 'out-of-stock' : ''}" data-id="${p.id}">
       <div class="card-media">
-        <img src="${p.img}" alt="${p.name}" loading="lazy" width="600" height="600">
+        <img src="${p.img}" alt="${p.name}" loading="lazy" width="600" height="600" onerror="this.src='/shop/hero-phone.jpg'">
         <div class="card-badges">
           ${out ? '<span class="b b-out">Out of Stock</span>' : ''}
           ${p.badge === 'new' ? '<span class="b b-new">New</span>' : ''}
@@ -370,16 +441,6 @@ function renderFlash() {
   const items = PRODUCTS.filter(p => p.was).slice(0, 4);
   $('#flashGrid').innerHTML = items.map(p => card(p, { stock: Math.floor(Math.random() * 60 + 20) })).join('');
   bindCards($('#flashGrid'));
-}
-function renderRepairServices(query = '') {
-  const list = PRODUCTS.filter(p => p.cat === 'repair').filter(p => {
-    const text = `${p.name} ${p.desc}`.toLowerCase();
-    return !query || text.includes(query.toLowerCase());
-  });
-  $('#repairGrid').innerHTML = list.length
-    ? list.map(p => card(p)).join('')
-    : '<p class="muted" style="padding:1rem">No repair services match your search.</p>';
-  bindCards($('#repairGrid'));
 }
 function renderRecent() {
   const list = state.recent.map(id => PRODUCTS.find(p => p.id === id)).filter(Boolean);
@@ -428,12 +489,12 @@ function renderCart() {
     box.innerHTML = state.cart.map(c => {
       const p = PRODUCTS.find(x => x.id === c.id); if (!p) return '';
       return `<div class="cart-item">
-        <img src="${p.img}" alt="${p.name}">
+        <img src="${p.img}" alt="${p.name}" onerror="this.src='/shop/hero-phone.jpg'">
         <div><div class="ci-title">${p.name}</div><div class="ci-price">${fmt(p.price)}</div>
           <div class="ci-qty"><button data-act="dec" data-id="${p.id}">−</button><span>${c.qty}</span><button data-act="inc" data-id="${p.id}">+</button></div>
         </div>
         <button class="ci-rm" data-act="rm" data-id="${p.id}" aria-label="Remove">✕</button>
-    </div>`; // Note: Quantity changes will now trigger updateCartTotals via renderCart
+    </div>`;
     }).join('');
     box.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', () => {
       const id = b.dataset.id, item = state.cart.find(c => c.id === id);
@@ -463,26 +524,13 @@ function openCart(open) {
 $('#cartBtn').addEventListener('click', () => openCart(true));
 $('#cartClose').addEventListener('click', () => openCart(false));
 $('#overlay').addEventListener('click', () => { openCart(false); closeModal(); closeAuth(); });
-['#county','#constituency','#street','#depositAmount','#depositMpesa'].forEach(sel => {
-  const el = $(sel);
-  if (el) el.addEventListener('input', updateCartTotals);
-});
 
-// lightweight confirm modal returning Promise<boolean>
-function showConfirm(message, okLabel='Continue to Payment', cancelLabel='Cancel'){
-  return new Promise(resolve => {
-    const modal = document.createElement('div');
-    modal.className = 'confirm-modal';
-    modal.innerHTML = `<div class="confirm-card"><p>${esc(message)}</p><div class="confirm-actions"><button class="btn ghost cancel">${cancelLabel}</button><button class="btn primary ok">${okLabel}</button></div></div>`;
-    document.body.appendChild(modal);
-    const cleanup = (v)=>{ modal.remove(); resolve(v); };
-    modal.querySelector('.cancel').addEventListener('click', ()=>cleanup(false));
-    modal.querySelector('.ok').addEventListener('click', ()=>cleanup(true));
-  });
-}
-
+// ============================================
+// FIXED: CHECKOUT BUTTON - Uses Modal instead of scrolling
+// ============================================
 $('#checkoutBtn').addEventListener('click', async () => {
   if (!state.cart.length) return toast('Cart is empty', 'error');
+  
   const user = currentUser();
   if (!user || user.role !== 'customer') {
     toast('Please login as a customer to place an order', 'error');
@@ -490,6 +538,7 @@ $('#checkoutBtn').addEventListener('click', async () => {
     openAuth();
     return;
   }
+  
   const countyId = $('#county').value;
   const subLocationText = $('#subLocation').value.trim();
   const subLocation = getSelectedSubLocation();
@@ -505,37 +554,38 @@ $('#checkoutBtn').addEventListener('click', async () => {
   const subtotal = state.cart.reduce((s, c) => s + (PRODUCTS.find(p => p.id === c.id)?.price || 0) * c.qty, 0);
   const total = subtotal + deliveryFee;
 
-  const ok = await showConfirm(`Your total order amount is ${fmt(total)} including delivery charges (${fmt(deliveryFee)}). Do you wish to continue to payment?`);
-  if (!ok) return;
+  // Show modal instead of confirm
+  showCheckoutModal(total, deliveryFee, async () => {
+    const phone = prompt("Enter M-Pesa Phone Number (e.g., 0712345678):");
+    if (!phone || phone.length < 10) {
+      toast("Valid phone number required", "error");
+      return;
+    }
 
-  const phone = prompt("Enter M-Pesa Phone Number (e.g., 0712345678):");
-  if (!phone || phone.length < 10) return toast("Valid phone number required", "error");
+    try {
+      const orderResp = await api('/api/orders', {
+        method:'POST',
+        body:JSON.stringify({
+          items: state.cart,
+          county: $('#county option:checked').text(),
+          constituency: subLocation.name,
+          street,
+          depositAmount: total,
+          depositMpesa: "MOCK-" + Date.now(),
+        })
+      });
+      const order = orderResp.order;
+      toast("Sending STK Push...", "info");
+      await api('/api/payments/stk-push', { method: 'POST', body: JSON.stringify({ phone, amount: total, orderId: order.id }) });
 
-  try {
-    // Create order first (status Placed)
-    const orderResp = await api('/api/orders', {
-      method:'POST',
-      body:JSON.stringify({
-        items: state.cart,
-        county: $('#county option:checked').text(),
-        constituency: subLocation.name,
-        street,
-        depositAmount: total,
-        depositMpesa: "MOCK-" + Date.now(),
-      })
-    });
-    const order = orderResp.order;
-    // Trigger STK push linked to order
-    toast("Sending STK Push...", "info");
-    const payResp = await api('/api/payments/stk-push', { method: 'POST', body: JSON.stringify({ phone, amount: total, orderId: order.id }) });
-
-    state.orders.unshift(order);
-    toast('STK Push sent. Please complete payment on your phone. We will notify you once payment is confirmed.', 'success');
-    state.cart = []; save('nova_cart', state.cart); renderCart(); openCart(false);
-    renderDashboard();
-  } catch (err) {
-    toast("Checkout failed: " + err.message, 'error');
-  }
+      state.orders.unshift(order);
+      toast('STK Push sent. Please complete payment on your phone.', 'success');
+      state.cart = []; save('nova_cart', state.cart); renderCart(); openCart(false);
+      renderDashboard();
+    } catch (err) {
+      toast("Checkout failed: " + err.message, 'error');
+    }
+  });
 });
 
 // ----- WISHLIST -----
@@ -561,8 +611,8 @@ function openModal(id) {
     <button class="modal-close" aria-label="Close">✕</button>
     <div class="modal-inner">
       <div class="modal-media">
-        <img id="mImg" src="${p.img}" alt="${p.name}">
-        <div class="modal-thumbs">${imgs.map((i, k) => `<button class="${k===0?'active':''}" data-src="${i}"><img src="${i}" alt=""></button>`).join('')}</div>
+        <img id="mImg" src="${p.img}" alt="${p.name}" onerror="this.src='/shop/hero-phone.jpg'">
+        <div class="modal-thumbs">${imgs.map((i, k) => `<button class="${k===0?'active':''}" data-src="${i}"><img src="${i}" alt="" onerror="this.src='/shop/hero-phone.jpg'"></button>`).join('')}</div>
       </div>
       <div class="modal-body">
         <span class="eyebrow"><span class="dot"></span>${p.cat}</span>
@@ -606,7 +656,7 @@ $('.rv-nav.prev').addEventListener('click', () => $('#rvTrack').scrollBy({ left:
 $('.rv-nav.next').addEventListener('click', () => $('#rvTrack').scrollBy({ left: 380, behavior: 'smooth' }));
 
 // ----- NEWSLETTER -----
-$('#nlForm').addEventListener('submit', e => { e.preventDefault(); e.target.reset(); toast('Subscribed! Welcome to NOVA ✨', 'success'); });
+$('#nlForm').addEventListener('submit', e => { e.preventDefault(); e.target.reset(); toast('Subscribed! Welcome ✨', 'success'); });
 
 // ----- AI -----
 $('#aiForm').addEventListener('submit', e => {
@@ -761,7 +811,7 @@ function liveNotif() {
   const p = PRODUCTS[Math.floor(Math.random() * PRODUCTS.length)];
   const who = FAKE[Math.floor(Math.random() * FAKE.length)];
   const el = $('#liveNotif');
-  el.innerHTML = `<img src="${p.img}" alt=""><div><b>${who}</b><small>just bought ${p.name}</small></div>`;
+  el.innerHTML = `<img src="${p.img}" alt="" onerror="this.src='/shop/hero-phone.jpg'"><div><b>${who}</b><small>just bought ${p.name}</small></div>`;
   el.classList.add('show');
   setTimeout(() => el.classList.remove('show'), 4500);
 }
@@ -770,6 +820,24 @@ setInterval(liveNotif, 16000);
 
 // ----- BACK TO TOP -----
 $('#toTop').addEventListener('click', () => scrollTo({ top: 0, behavior: 'smooth' }));
+
+// ============================================
+// ADMIN: Set Delivery Fee (for management page)
+// ============================================
+window.setDeliveryFee = async function(fee) {
+  if (!confirm('Are you sure you want to change the delivery fee?')) return;
+  try {
+    await api('/api/admin/delivery-fee', { 
+      method: 'POST', 
+      body: JSON.stringify({ fee: parseInt(fee) }) 
+    });
+    deliveryFee = parseInt(fee);
+    toast(`Delivery fee updated to ${fmt(deliveryFee)}`, 'success');
+    updateCartTotals();
+  } catch (err) {
+    toast('Failed to update delivery fee', 'error');
+  }
+};
 
 // ----- INIT -----
 (async function initApp() {
