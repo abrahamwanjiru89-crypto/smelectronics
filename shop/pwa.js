@@ -4,9 +4,10 @@ let deferredPrompt = null;
 
 function showInstallButton() {
   if (!installBtn) return;
-  installBtn.style.display = 'inline-flex';
-  installBtn.addEventListener('click', async () => {
-    if (!deferredPrompt) return;
+  function showInstallButton() {
+  if (!pwaInstallBtn) return;
+  pwaInstallBtn.style.display = 'inline-flex';
+  pwaInstallBtn.addEventListener('click', async () => {
     deferredPrompt.prompt();
     const choiceResult = await deferredPrompt.userChoice;
     if (choiceResult.outcome === 'accepted') {
