@@ -83,21 +83,11 @@ function toast(msg, type='info') {
 }
 
 // ============================================
-// PRODUCTS CRUD with Badge Management (Flash Sale, Hot, New)
+// PRODUCT BADGE FUNCTIONS - DEFINED FIRST
 // ============================================
 
-// Helper function to sync with main page
-function updateMainPageProducts() {
-  localStorage.setItem('nova_products', JSON.stringify(products));
-  window.dispatchEvent(new StorageEvent('storage', { 
-    key: 'nova_products', 
-    newValue: JSON.stringify(products) 
-  }));
-}
-
-// Mark product as Flash Sale
-window.markAsFlashSale = async function(id) {
-  console.log('markAsFlashSale called for id:', id);
+function markAsFlashSale(id) {
+  console.log('Flash Sale clicked for ID:', id);
   const product = products.find(p => p.id == id);
   if (!product) {
     toast('Product not found', 'error');
@@ -106,24 +96,21 @@ window.markAsFlashSale = async function(id) {
   
   let wasPrice = product.was;
   if (!wasPrice) {
-    const input = prompt('Enter original price (for flash sale discount display):', product.price * 1.5);
-    if (!input) return;
-    wasPrice = parseFloat(input);
+    wasPrice = prompt('Enter original price (for flash sale):', product.price * 1.5);
+    if (!wasPrice) return;
+    wasPrice = parseFloat(wasPrice);
   }
   
   product.badge = 'sale';
   product.was = wasPrice;
   
-  // Save to localStorage
   localStorage.setItem('management_products', JSON.stringify(products));
   renderProducts();
-  updateMainPageProducts();
   toast(`🔥 ${product.name} marked as FLASH SALE!`, 'success');
-};
+}
 
-// Mark product as Hot
-window.markAsHot = async function(id) {
-  console.log('markAsHot called for id:', id);
+function markAsHot(id) {
+  console.log('Hot clicked for ID:', id);
   const product = products.find(p => p.id == id);
   if (!product) {
     toast('Product not found', 'error');
@@ -134,13 +121,11 @@ window.markAsHot = async function(id) {
   
   localStorage.setItem('management_products', JSON.stringify(products));
   renderProducts();
-  updateMainPageProducts();
   toast(`⚡ ${product.name} marked as HOT!`, 'success');
-};
+}
 
-// Mark product as New
-window.markAsNew = async function(id) {
-  console.log('markAsNew called for id:', id);
+function markAsNew(id) {
+  console.log('New clicked for ID:', id);
   const product = products.find(p => p.id == id);
   if (!product) {
     toast('Product not found', 'error');
@@ -151,13 +136,11 @@ window.markAsNew = async function(id) {
   
   localStorage.setItem('management_products', JSON.stringify(products));
   renderProducts();
-  updateMainPageProducts();
   toast(`✨ ${product.name} marked as NEW!`, 'success');
-};
+}
 
-// Remove badge from product
-window.removeBadge = async function(id) {
-  console.log('removeBadge called for id:', id);
+function removeBadge(id) {
+  console.log('Remove Badge clicked for ID:', id);
   const product = products.find(p => p.id == id);
   if (!product) {
     toast('Product not found', 'error');
@@ -168,9 +151,18 @@ window.removeBadge = async function(id) {
   
   localStorage.setItem('management_products', JSON.stringify(products));
   renderProducts();
-  updateMainPageProducts();
   toast(`${product.name} badge removed`, 'success');
-};
+}
+
+// Make functions globally available
+window.markAsFlashSale = markAsFlashSale;
+window.markAsHot = markAsHot;
+window.markAsNew = markAsNew;
+window.removeBadge = removeBadge;
+
+// ============================================
+// PRODUCTS RENDER
+// ============================================
 
 function renderProducts() {
   const el = $('#productAdmin');
@@ -225,7 +217,7 @@ function editProduct(id) {
       product.price = parseFloat(newPrice);
       localStorage.setItem('management_products', JSON.stringify(products));
       renderProducts();
-      toast('Product updated locally', 'success');
+      toast('Product updated', 'success');
     }
   }
 }
@@ -780,7 +772,6 @@ $('#productForm')?.addEventListener('submit', async e => {
   e.preventDefault();
   const fd = new FormData(e.target);
   
-  // Get badge and was price from form
   const badge = fd.get('badge');
   const wasPrice = fd.get('was');
   if (wasPrice) {
