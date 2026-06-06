@@ -45,7 +45,7 @@
     .card-image { width: 100%; height: 160px; background: #0f0f1a; display: flex; align-items: center; justify-content: center; overflow: hidden; }
     .card-image img { width: 100%; height: 100%; object-fit: cover; }
     .spare-info { padding: 1rem; }
-    .spare-info h3 { font-size: 1rem; margin-bottom: 0.5rem; }
+    .spare-info h3 { font-size: 1rem; margin-bottom: 0.5rem; line-height: 1.3; }
     .spare-price { font-size: 1.2rem; font-weight: 700; color: #00e5ff; margin: 0.5rem 0; }
     .brand-badge { display: inline-block; background: rgba(0,229,255,0.2); color: #00e5ff; padding: 0.2rem 0.6rem; border-radius: 1rem; font-size: 0.7rem; }
     .badge-instock { background: #00c853; color: white; padding: 0.2rem 0.6rem; border-radius: 1rem; font-size: 0.7rem; display: inline-block; }
@@ -81,20 +81,17 @@
     .socials a { width: 36px; height: 36px; background: rgba(255,255,255,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; text-decoration: none; }
     .socials a:hover { background: #00e5ff; color: #000; }
     .foot-bot { text-align: center; padding-top: 2rem; margin-top: 2rem; border-top: 1px solid rgba(255,255,255,0.05); color: #666; font-size: 0.75rem; }
-    .cart-side { position: fixed; right: -400px; top: 0; width: 400px; height: 100vh; background: #1a1a2e; z-index: 2000; transition: right 0.3s; display: flex; flex-direction: column; }
-    .cart-side.open { right: 0; }
-    .cart-head { padding: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; }
-    .cart-body { flex: 1; overflow-y: auto; padding: 1rem; }
-    .cart-foot { padding: 1rem; border-top: 1px solid rgba(255,255,255,0.1); }
-    .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1999; display: none; }
-    .overlay.show { display: block; }
     .toasts { position: fixed; bottom: 20px; right: 20px; z-index: 3000; }
     .toast { padding: 0.75rem 1.25rem; border-radius: 0.5rem; margin-top: 0.5rem; animation: slideIn 0.3s ease; }
     .toast.success { background: #00c853; color: white; }
     .toast.error { background: #ff3b30; color: white; }
     .toast.info { background: #2196f3; color: white; }
     @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-    @media (max-width: 768px) { .cart-side { width: 100%; right: -100%; } }
+    @media (max-width: 768px) { 
+      .spare-grid { grid-template-columns: 1fr; }
+      .search-filters { flex-direction: column; }
+      .section-tabs { justify-content: center; }
+    }
     .mobile-menu { position: fixed; top: 0; left: -280px; width: 280px; height: 100vh; background: #1a1a2e; z-index: 2000; transition: left 0.3s; padding: 80px 2rem 2rem; display: flex; flex-direction: column; gap: 1rem; }
     .mobile-menu.open { left: 0; }
     .mobile-menu a { color: white; text-decoration: none; padding: 0.75rem 0; }
@@ -116,10 +113,10 @@
         <a href="management.html">Management</a>
       </nav>
       <div class="nav-tools">
-        <button class="icon-btn" id="cartBtn">
+        <a href="index.html#cart" class="icon-btn" id="cartBtn" style="position:relative; text-decoration:none;">
           <svg viewBox="0 0 24 24" width="20" height="20"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
           <span class="badge" id="cartCount">0</span>
-        </button>
+        </a>
         <button class="account-btn" id="accountBtn">Login</button>
         <button class="icon-btn menu-toggle" id="menuToggle">☰</button>
       </div>
@@ -206,13 +203,6 @@
       </div>
     </section>
   </main>
-
-  <div class="overlay" id="overlay"></div>
-  <aside class="cart-side" id="cartSide">
-    <header class="cart-head"><h3>Your Cart</h3><button class="icon-btn" id="cartClose">✕</button></header>
-    <div class="cart-body" id="cartItems"></div>
-    <footer class="cart-foot"><div class="cart-total">Total: <b id="cartTotal">Kshs 0</b></div><button class="btn primary block" id="checkoutBtn">Checkout</button></footer>
-  </aside>
 
   <div class="toasts" id="toasts"></div>
 
@@ -340,10 +330,17 @@
     }
 
     // ============================================
-    // CART FUNCTIONS - Uses main page's cart system (nova_cart)
+    // ADD TO CART - Uses main page's cart system (nova_cart)
     // ============================================
     
-    // Global addToCart function - uses main page's cart
+    function updateCartBadge() {
+      const cart = JSON.parse(localStorage.getItem('nova_cart') || '[]');
+      const totalItems = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
+      const cartCount = document.getElementById('cartCount');
+      if (cartCount) cartCount.innerText = totalItems;
+    }
+    
+    // Global addToCart function
     window.addToCart = function(id) {
       console.log("addToCart called with id:", id);
       
@@ -379,49 +376,14 @@
       // Save back to localStorage
       localStorage.setItem('nova_cart', JSON.stringify(cart));
       
-      // Update cart UI
-      updateCartUI();
+      // Update cart badge
+      updateCartBadge();
       
       // Dispatch storage event for main page to sync
       window.dispatchEvent(new StorageEvent('storage', { key: 'nova_cart', newValue: JSON.stringify(cart) }));
       
-      toast(`${item.name} added to cart!`, 'success');
+      toast(`${item.name} added to cart! View in main page cart.`, 'success');
       console.log("Cart after add:", cart);
-    };
-    
-    function updateCartUI() {
-      const cart = JSON.parse(localStorage.getItem('nova_cart') || '[]');
-      const totalItems = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
-      const cartCount = document.getElementById('cartCount');
-      if (cartCount) cartCount.innerText = totalItems;
-      
-      const total = cart.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
-      const cartTotal = document.getElementById('cartTotal');
-      if (cartTotal) cartTotal.innerText = `Kshs ${total.toLocaleString()}`;
-      
-      const container = document.getElementById('cartItems');
-      if (container) {
-        if (cart.length === 0) {
-          container.innerHTML = '<div style="text-align:center; padding:2rem;">🛒 Cart empty</div>';
-        } else {
-          container.innerHTML = cart.map(item => `
-            <div style="display:flex; justify-content:space-between; padding:0.75rem; border-bottom:1px solid rgba(255,255,255,0.1);">
-              <div><strong>${escapeHtml(item.name)}</strong><br><small>x${item.quantity || 1}</small></div>
-              <div>Kshs ${((item.price || 0) * (item.quantity || 1)).toLocaleString()}</div>
-              <button onclick="removeFromCart('${item.id}')" style="background:none; border:none; color:#ff3b30; cursor:pointer;">✕</button>
-            </div>
-          `).join('');
-        }
-      }
-    }
-    
-    window.removeFromCart = function(id) {
-      let cart = JSON.parse(localStorage.getItem('nova_cart') || '[]');
-      cart = cart.filter(item => item.id != id);
-      localStorage.setItem('nova_cart', JSON.stringify(cart));
-      updateCartUI();
-      window.dispatchEvent(new StorageEvent('storage', { key: 'nova_cart', newValue: JSON.stringify(cart) }));
-      toast('Removed from cart', 'info');
     };
     
     function toast(msg, type) {
@@ -451,18 +413,11 @@
     document.getElementById('spareBrandFilter')?.addEventListener('change', renderSpareParts);
     document.getElementById('modelNumberSearch')?.addEventListener('input', renderSpareParts);
     
-    document.getElementById('cartBtn')?.addEventListener('click', () => {
-      document.getElementById('cartSide').classList.add('open');
-      document.getElementById('overlay').classList.add('show');
+    document.getElementById('cartBtn')?.addEventListener('click', (e) => {
+      // Just redirect to main page cart - no sidebar needed
+      window.location.href = 'index.html#cart';
     });
-    document.getElementById('cartClose')?.addEventListener('click', () => {
-      document.getElementById('cartSide').classList.remove('open');
-      document.getElementById('overlay').classList.remove('show');
-    });
-    document.getElementById('overlay')?.addEventListener('click', () => {
-      document.getElementById('cartSide').classList.remove('open');
-      document.getElementById('overlay').classList.remove('show');
-    });
+    
     document.getElementById('menuToggle')?.addEventListener('click', () => document.getElementById('mobileMenu')?.classList.toggle('open'));
     
     document.getElementById('repairBookingForm')?.addEventListener('submit', (e) => {
@@ -486,26 +441,18 @@
       e.target.reset();
       setTimeout(() => document.getElementById('bookingMessage').innerHTML = '', 5000);
     });
-    
-    document.getElementById('checkoutBtn')?.addEventListener('click', () => {
-      const cart = JSON.parse(localStorage.getItem('nova_cart') || '[]');
-      const total = cart.reduce((s,i) => s + (i.price || 0) * (i.quantity || 1), 0);
-      if (total === 0) toast('Cart is empty', 'error');
-      else window.location.href = 'index.html#cart';
-    });
 
     // Listen for cart updates from main page
     window.addEventListener('storage', (e) => {
-      if (e.key === 'nova_cart') updateCartUI();
+      if (e.key === 'nova_cart') updateCartBadge();
     });
 
     // Initialize
     loadSpareParts();
     renderServices();
-    updateCartUI();
+    updateCartBadge();
     
-    // Debug
-    console.log("Repair page loaded, addToCart function:", typeof window.addToCart);
+    console.log("Repair page loaded - Add to Cart redirects to main page cart");
   </script>
 
   <aside class="mobile-menu" id="mobileMenu">
