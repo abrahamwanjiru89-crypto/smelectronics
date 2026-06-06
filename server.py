@@ -598,11 +598,36 @@ class Handler(BaseHTTPRequestHandler):
         return user
 
     # ============================================
-    # FIXED: GET HANDLERS
+    # HANDLE HEAD REQUESTS (for Render.com health checks)
+    # ============================================
+    def do_HEAD(self):
+        parsed = urlparse(self.path)
+        path = parsed.path.rstrip("/") if parsed.path != "/" else "/"
+        
+        if path == "/":
+            path = "/index.html"
+        
+        target = (ROOT / unquote(path).lstrip("/")).resolve()
+        if not str(target).startswith(str(ROOT)) or not target.exists() or target.is_dir():
+            self.send_error(404)
+            return
+        
+        self.send_response(200)
+        self.send_header("Content-Type", mimetypes.guess_type(str(target))[0] or "application/octet-stream")
+        self.send_header("Content-Length", str(target.stat().st_size))
+        self.end_headers()
+
+    # ============================================
+    # FIXED: GET HANDLERS (with root path handling)
     # ============================================
     def do_GET(self):
         parsed = urlparse(self.path)
         path = parsed.path.rstrip("/") if parsed.path != "/" else "/"
+        
+        # Handle root path - serve index.html
+        if path == "/":
+            path = "/index.html"
+        
         query = parse_qs(parsed.query)
         
         # API endpoints
@@ -678,30 +703,39 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"technicians": [row_repair_technician(r) for r in rows]})
             return
         
-        # Serve static files with caching headers for faster loading
-        if path.startswith("/shop/") or path.startswith("/uploads/"):
-            target = (ROOT / unquote(path).lstrip("/")).resolve()
-            if not str(target).startswith(str(ROOT)) or not target.exists() or target.is_dir():
-                self.send_error(404)
-                return
-            
-            body = target.read_bytes()
-            self.send_response(200)
-            
-            # Add caching headers for images
-            if path.endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp')):
-                self.send_header("Cache-Control", "public, max-age=86400")  # Cache for 24 hours
-                self.send_header("Expires", (datetime.now() + timedelta(days=1)).strftime("%a, %d %b %Y %H:%M:%S GMT"))
-            else:
-                self.send_header("Cache-Control", "no-cache")
-            
-            self.send_header("Content-Type", mimetypes.guess_type(str(target))[0] or "application/octet-stream")
-            self.send_header("Content-Length", str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
+        # Serve static files (HTML, CSS, JS, images)
+        # Build the file path
+        file_path = unquote(path).lstrip("/")
+        
+        # Security: prevent directory traversal
+        if ".." in file_path:
+            self.send_error(403)
             return
         
-        self.send_json({"error": "Not found"}, 404)
+        target = (ROOT / file_path).resolve()
+        
+        # Security: ensure file is within ROOT directory
+        if not str(target).startswith(str(ROOT)):
+            self.send_error(403)
+            return
+        
+        if not target.exists() or target.is_dir():
+            self.send_error(404)
+            return
+        
+        body = target.read_bytes()
+        self.send_response(200)
+        
+        # Add caching headers for images
+        if path.endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp', '.ico')):
+            self.send_header("Cache-Control", "public, max-age=86400")  # Cache for 24 hours
+        else:
+            self.send_header("Cache-Control", "no-cache")
+        
+        self.send_header("Content-Type", mimetypes.guess_type(str(target))[0] or "application/octet-stream")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
 
     # ============================================
     # FIXED: POST HANDLERS
@@ -791,6 +825,11 @@ class Handler(BaseHTTPRequestHandler):
                 image_path = part["image_path"]
                 image = files.get("image")
                 if image:
+                    # Delete old image if exists and not default
+                    if image_path and not image_path.startswith('/shop/'):
+                        old_file = UPLOAD_DIR / Path(image_path).name
+                        if old_file.exists():
+                            old_file.unlink()
                     ext = Path(image["filename"]).suffix.lower() or ".jpg"
                     filename = f"spare_{secrets.token_hex(8)}{ext}"
                     image_path = f"/uploads/{filename}"
@@ -837,23 +876,28 @@ class Handler(BaseHTTPRequestHandler):
         self.send_json({"error": "Not found"}, 404)
 
     # ============================================
-    # FIXED: DELETE HANDLERS
+    # FIXED: DELETE HANDLERS (with proper indentation)
     # ============================================
     def do_DELETE(self):
         path = urlparse(self.path).path.rstrip("/")
-if path == "/api/admin/delete-image":
-    if not self.require({"admin"}):
-        return
-    data = self.read_json()
-    image_path = data.get("imagePath")
-    if image_path:
-        filename = image_path.split('/')[-1]
-        target = UPLOAD_DIR / filename
-        if target.exists() and target.is_file():
-            target.unlink()
-            print(f"Deleted image: {filename}")
-    self.send_json({"ok": True})
-    return
+        
+        # Delete image file from server
+        if path == "/api/admin/delete-image":
+            if not self.require({"admin"}):
+                return
+            data = self.read_json()
+            image_path = data.get("imagePath")
+            if image_path:
+                # Don't delete default shop images
+                default_images = ['hero-phone.jpg', 'headphones.jpg', 'laptop.jpg', 'watch.jpg', 'vr.jpg', 'earbuds.jpg', 'camera.jpg', 'console.jpg', 'tablet.jpg', 'speaker.jpg', 'drone.jpg', 'hub.jpg', 'keyboard.jpg', 'brand logo.png']
+                filename = image_path.split('/')[-1]
+                if filename not in default_images:
+                    target = UPLOAD_DIR / filename
+                    if target.exists() and target.is_file():
+                        target.unlink()
+                        print(f"Deleted image: {filename}")
+            self.send_json({"ok": True})
+            return
         
         # Delete Spare Part
         if path.startswith("/api/admin/spare-parts/"):
@@ -861,10 +905,16 @@ if path == "/api/admin/delete-image":
                 return
             spare_id = path.split("/")[-1]
             with db() as conn:
-                # First check if exists
-                part = conn.execute("SELECT * FROM spare_parts WHERE id = ?", (spare_id,)).fetchone()
-                if part:
-                    conn.execute("DELETE FROM spare_parts WHERE id = ?", (spare_id,))
+                # Get the image path first to delete the file
+                part = conn.execute("SELECT image_path FROM spare_parts WHERE id = ?", (spare_id,)).fetchone()
+                if part and part["image_path"]:
+                    filename = part["image_path"].split('/')[-1]
+                    default_images = ['hero-phone.jpg', 'headphones.jpg', 'laptop.jpg', 'watch.jpg', 'vr.jpg', 'earbuds.jpg', 'camera.jpg', 'console.jpg', 'tablet.jpg', 'speaker.jpg', 'drone.jpg', 'hub.jpg', 'keyboard.jpg', 'brand logo.png']
+                    if filename not in default_images:
+                        target = UPLOAD_DIR / filename
+                        if target.exists():
+                            target.unlink()
+                conn.execute("DELETE FROM spare_parts WHERE id = ?", (spare_id,))
             self.send_json({"ok": True})
             return
         
@@ -874,6 +924,13 @@ if path == "/api/admin/delete-image":
                 return
             product_id = path.split("/")[-1]
             with db() as conn:
+                # Get the image path first
+                product = conn.execute("SELECT img FROM products WHERE id = ?", (product_id,)).fetchone()
+                if product and product["img"] and not product["img"].startswith('/shop/'):
+                    filename = product["img"].split('/')[-1]
+                    target = UPLOAD_DIR / filename
+                    if target.exists():
+                        target.unlink()
                 conn.execute("DELETE FROM products WHERE id = ?", (product_id,))
             self.send_json({"ok": True})
             return
@@ -884,6 +941,13 @@ if path == "/api/admin/delete-image":
                 return
             service_id = path.split("/")[-1]
             with db() as conn:
+                # Get the image path first
+                service = conn.execute("SELECT image FROM repair_services WHERE id = ?", (service_id,)).fetchone()
+                if service and service["image"] and not service["image"].startswith('/shop/'):
+                    filename = service["image"].split('/')[-1]
+                    target = UPLOAD_DIR / filename
+                    if target.exists():
+                        target.unlink()
                 conn.execute("DELETE FROM repair_services WHERE id = ?", (service_id,))
             self.send_json({"ok": True})
             return
