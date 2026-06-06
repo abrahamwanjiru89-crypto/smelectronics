@@ -82,6 +82,7 @@
       margin-bottom: 2rem;
       border-bottom: 1px solid rgba(255,255,255,0.1);
       padding-bottom: 1rem;
+      flex-wrap: wrap;
     }
     
     .section-tab {
@@ -138,12 +139,38 @@
       color: #888;
     }
     
+    .brand-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+    
+    .brand-chip {
+      padding: 0.5rem 1rem;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 2rem;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 0.875rem;
+    }
+    
+    .brand-chip:hover, .brand-chip.active {
+      background: #00e5ff;
+      color: #000;
+      border-color: #00e5ff;
+    }
+    
     @media (max-width: 768px) {
       .service-grid, .spare-grid {
         grid-template-columns: 1fr;
       }
       .search-filters {
         grid-template-columns: 1fr;
+      }
+      .section-tabs {
+        justify-content: center;
       }
     }
   </style>
@@ -157,10 +184,7 @@
       </a>
       <nav class="nav-links">
         <a href="index.html">Home</a>
-        <a href="index.html#categories">Shop</a>
-        <a href="repair.html">Repair Services</a>
-        <a href="#services">Services</a>
-        <a href="#spares">Spare Parts</a>
+        <a href="repair.html" class="active">Repair</a>
         <a href="contact.html">Contact</a>
       </nav>
       <div class="nav-tools">
@@ -206,7 +230,7 @@
     <section class="section" id="servicesSection">
       <div class="container">
         <div class="search-filters">
-          <input type="text" id="serviceSearch" placeholder="🔍 Search repair services (e.g., screen, battery, water damage)...">
+          <input type="text" id="serviceSearch" placeholder="🔍 Search repair services...">
           <select id="serviceBrandFilter">
             <option value="">All Brands</option>
             <option value="Apple">Apple</option>
@@ -215,6 +239,11 @@
             <option value="Huawei">Huawei</option>
             <option value="Tecno">Tecno</option>
             <option value="Infinix">Infinix</option>
+            <option value="Oppo">Oppo</option>
+            <option value="Vivo">Vivo</option>
+            <option value="Google">Google Pixel</option>
+            <option value="Motorola">Motorola</option>
+            <option value="Nokia">Nokia</option>
           </select>
         </div>
         <div class="service-grid" id="serviceGrid"></div>
@@ -225,12 +254,13 @@
     <section class="section" id="sparesSection" style="display: none;">
       <div class="container">
         <div class="search-filters">
-          <input type="text" id="spareSearch" placeholder="🔍 Search by brand (e.g., Samsung, Apple, Xiaomi) or part name...">
+          <input type="text" id="spareSearch" placeholder="🔍 Search by brand or part name (e.g., Tecno, Samsung, iPhone, screen)...">
           <select id="spareBrandFilter">
             <option value="">All Brands</option>
           </select>
-          <input type="text" id="modelNumberSearch" placeholder="📱 Search by model number (e.g., iPhone 13, Galaxy S22, A12)...">
+          <input type="text" id="modelNumberSearch" placeholder="📱 Search by model number (e.g., iPhone 13, Galaxy S22, Camon 19)...">
         </div>
+        <div class="brand-chips" id="brandChips"></div>
         <div id="searchStats" class="search-stats"></div>
         <div class="spare-grid" id="spareGrid"></div>
       </div>
@@ -268,12 +298,20 @@
                   <option>Huawei</option>
                   <option>Tecno</option>
                   <option>Infinix</option>
+                  <option>Oppo</option>
+                  <option>Vivo</option>
+                  <option>Google Pixel</option>
+                  <option>Motorola</option>
+                  <option>Nokia</option>
+                  <option>OnePlus</option>
+                  <option>Realme</option>
+                  <option>Honor</option>
                   <option>Other</option>
                 </select>
               </div>
               <div>
                 <label>Model Number *</label>
-                <input type="text" id="deviceModel" placeholder="e.g., iPhone 13, Galaxy S22" required style="width: 100%; padding: 0.75rem; border-radius: 0.75rem; background: #0f0f1a; border: 1px solid #2a2a3e; color: white;">
+                <input type="text" id="deviceModel" placeholder="e.g., iPhone 13, Galaxy S22, Camon 19" required style="width: 100%; padding: 0.75rem; border-radius: 0.75rem; background: #0f0f1a; border: 1px solid #2a2a3e; color: white;">
               </div>
               <div>
                 <label>Service Type *</label>
@@ -319,84 +357,142 @@
 
   <script>
     // ============================================
-    // REPAIR SERVICES DATA
+    // ALL MOBILE BRANDS (Complete List)
     // ============================================
-    const repairServices = [
-      { id: 1, name: "Screen Replacement", icon: "📱", price: 2500, duration: "1-2 hours", warranty: "3 months", brands: ["Apple", "Samsung", "Xiaomi", "Huawei", "Tecno", "Infinix"] },
-      { id: 2, name: "Battery Replacement", icon: "🔋", price: 1800, duration: "1 hour", warranty: "6 months", brands: ["Apple", "Samsung", "Xiaomi", "Huawei", "Tecno", "Infinix"] },
-      { id: 3, name: "Water Damage Repair", icon: "💧", price: 3500, duration: "2-3 days", warranty: "1 month", brands: ["Apple", "Samsung", "Xiaomi", "Huawei"] },
-      { id: 4, name: "Charging Port Repair", icon: "⚡", price: 1500, duration: "1-2 hours", warranty: "3 months", brands: ["Apple", "Samsung", "Xiaomi", "Huawei", "Tecno", "Infinix"] },
-      { id: 5, name: "Earpiece Replacement", icon: "👂", price: 1200, duration: "1 hour", warranty: "3 months", brands: ["Apple", "Samsung", "Xiaomi", "Huawei", "Tecno", "Infinix"] },
-      { id: 6, name: "Mouthpiece Replacement", icon: "🎤", price: 1200, duration: "1 hour", warranty: "3 months", brands: ["Apple", "Samsung", "Xiaomi", "Huawei", "Tecno", "Infinix"] },
-      { id: 7, name: "Speaker Replacement", icon: "🔊", price: 1400, duration: "1 hour", warranty: "3 months", brands: ["Apple", "Samsung", "Xiaomi", "Huawei", "Tecno", "Infinix"] }
+    const ALL_BRANDS = [
+      "Apple", "Samsung", "Xiaomi", "Tecno", "Infinix", "Itel", "Oppo", "Vivo", 
+      "Huawei", "Google", "Motorola", "Nokia", "OnePlus", "Realme", "Honor", 
+      "Sony", "LG", "HTC", "ASUS", "BlackBerry", "Alcatel", "Lenovo", "ZTE", 
+      "Micromax", "Lava", "Meizu", "Coolpad"
     ];
 
     // ============================================
-    // SPARE PARTS DATA (from localStorage or API)
+    // REPAIR SERVICES DATA
+    // ============================================
+    const repairServices = [
+      { id: 1, name: "Screen Replacement", icon: "📱", price: 2500, duration: "1-2 hours", warranty: "3 months", brands: ALL_BRANDS },
+      { id: 2, name: "Battery Replacement", icon: "🔋", price: 1800, duration: "1 hour", warranty: "6 months", brands: ALL_BRANDS },
+      { id: 3, name: "Water Damage Repair", icon: "💧", price: 3500, duration: "2-3 days", warranty: "1 month", brands: ALL_BRANDS },
+      { id: 4, name: "Charging Port Repair", icon: "⚡", price: 1500, duration: "1-2 hours", warranty: "3 months", brands: ALL_BRANDS },
+      { id: 5, name: "Earpiece Replacement", icon: "👂", price: 1200, duration: "1 hour", warranty: "3 months", brands: ALL_BRANDS },
+      { id: 6, name: "Mouthpiece Replacement", icon: "🎤", price: 1200, duration: "1 hour", warranty: "3 months", brands: ALL_BRANDS },
+      { id: 7, name: "Speaker Replacement", icon: "🔊", price: 1400, duration: "1 hour", warranty: "3 months", brands: ALL_BRANDS },
+      { id: 8, name: "Software/OS Repair", icon: "💻", price: 1000, duration: "1-2 hours", warranty: "1 month", brands: ALL_BRANDS }
+    ];
+
+    // ============================================
+    // SPARE PARTS - Load from localStorage (synced with management page)
     // ============================================
     let spareParts = [];
 
-    // Load spare parts from localStorage (from management page) or API
     function loadSparePartsFromStorage() {
-      // Try to load from localStorage first (what management page saves)
+      // Try to load from localStorage (what management page saves)
       const stored = localStorage.getItem('spare_parts');
+      
       if (stored && JSON.parse(stored).length > 0) {
         spareParts = JSON.parse(stored);
+        console.log(`Loaded ${spareParts.length} spare parts from management page`);
       } else {
-        // Default spare parts if none exist
+        // Default spare parts if none exist - INCLUDING TECNO PARTS
         spareParts = [
           { id: 1, name: "iPhone 13 LCD Screen", brand: "Apple", modelNumber: "iPhone 13", price: 4500, stock: 15, image: "shop/hero-phone.jpg", category: "Screen" },
           { id: 2, name: "iPhone 13 Battery", brand: "Apple", modelNumber: "iPhone 13", price: 2500, stock: 20, image: "shop/hero-phone.jpg", category: "Battery" },
           { id: 3, name: "Samsung Galaxy S22 Screen", brand: "Samsung", modelNumber: "Galaxy S22", price: 4200, stock: 8, image: "shop/hero-phone.jpg", category: "Screen" },
           { id: 4, name: "Samsung Galaxy S22 Battery", brand: "Samsung", modelNumber: "Galaxy S22", price: 2200, stock: 12, image: "shop/hero-phone.jpg", category: "Battery" },
-          { id: 5, name: "Xiaomi Redmi Note 11 Screen", brand: "Xiaomi", modelNumber: "Redmi Note 11", price: 3500, stock: 10, image: "shop/hero-phone.jpg", category: "Screen" },
-          { id: 6, name: "Charging Plate Infinix", brand: "Infinix", modelNumber: "Infinix Hot 11", price: 150, stock: 10, image: "shop/hero-phone.jpg", category: "Charging Plate" },
-          { id: 7, name: "Charging Plate Samsung", brand: "Samsung", modelNumber: "Galaxy A12", price: 300, stock: 30, image: "shop/hero-phone.jpg", category: "Charging Plate" },
-          { id: 8, name: "Original IPS LCD Screen", brand: "Xiaomi", modelNumber: "A3_12_13c Poco M6_c65", price: 4500, stock: 1, image: "shop/hero-phone.jpg", category: "Screen" }
+          { id: 5, name: "Tecno Camon 19 Screen", brand: "Tecno", modelNumber: "Camon 19", price: 5500, stock: 10, image: "shop/hero-phone.jpg", category: "Screen" },
+          { id: 6, name: "Tecno Camon 19 Battery", brand: "Tecno", modelNumber: "Camon 19", price: 1800, stock: 15, image: "shop/hero-phone.jpg", category: "Battery" },
+          { id: 7, name: "Tecno Spark 7 Charging Port", brand: "Tecno", modelNumber: "Spark 7", price: 1200, stock: 8, image: "shop/hero-phone.jpg", category: "Charging Port" },
+          { id: 8, name: "Tecno Pova 4 Screen", brand: "Tecno", modelNumber: "Pova 4", price: 3300, stock: 5, image: "shop/hero-phone.jpg", category: "Screen" },
+          { id: 9, name: "Infinix Hot 11 Screen", brand: "Infinix", modelNumber: "Hot 11", price: 2300, stock: 9, image: "shop/hero-phone.jpg", category: "Screen" },
+          { id: 10, name: "Infinix Note 10 Pro Screen", brand: "Infinix", modelNumber: "Note 10 Pro", price: 3900, stock: 7, image: "shop/hero-phone.jpg", category: "Screen" },
+          { id: 11, name: "Xiaomi Redmi Note 11 Screen", brand: "Xiaomi", modelNumber: "Redmi Note 11", price: 3500, stock: 10, image: "shop/hero-phone.jpg", category: "Screen" },
+          { id: 12, name: "Charging Plate Infinix X6831", brand: "Infinix", modelNumber: "X6831", price: 150, stock: 10, image: "shop/hero-phone.jpg", category: "Charging Plate" },
+          { id: 13, name: "Charging Plate Samsung", brand: "Samsung", modelNumber: "Galaxy A12", price: 300, stock: 30, image: "shop/hero-phone.jpg", category: "Charging Plate" },
+          { id: 14, name: "Original IPS LCD Screen", brand: "Xiaomi", modelNumber: "A3_12_13c Poco M6_c65", price: 4500, stock: 1, image: "shop/hero-phone.jpg", category: "Screen" },
+          { id: 15, name: "Oppo A54 Screen", brand: "Oppo", modelNumber: "A54", price: 3200, stock: 6, image: "shop/hero-phone.jpg", category: "Screen" },
+          { id: 16, name: "Vivo Y20 Screen", brand: "Vivo", modelNumber: "Y20", price: 2800, stock: 4, image: "shop/hero-phone.jpg", category: "Screen" },
+          { id: 17, name: "Huawei P30 Lite Screen", brand: "Huawei", modelNumber: "P30 Lite", price: 3500, stock: 3, image: "shop/hero-phone.jpg", category: "Screen" }
         ];
       }
       
-      // Populate brand filter
-      const brands = [...new Set(spareParts.map(p => p.brand))];
+      // Populate brand filter with ALL brands that have parts
+      const brandsWithParts = [...new Set(spareParts.map(p => p.brand))].sort();
       const brandFilter = document.getElementById('spareBrandFilter');
       if (brandFilter) {
         brandFilter.innerHTML = '<option value="">All Brands</option>' + 
-          brands.map(b => `<option value="${b}">${b}</option>`).join('');
+          brandsWithParts.map(b => `<option value="${b}">${b}</option>`).join('');
       }
+      
+      // Render brand chips for quick filtering
+      renderBrandChips();
       
       renderSpareParts();
     }
 
+    function renderBrandChips() {
+      const container = document.getElementById('brandChips');
+      if (!container) return;
+      
+      const brands = [...new Set(spareParts.map(p => p.brand))].sort();
+      container.innerHTML = brands.map(brand => `
+        <button class="brand-chip" data-brand="${brand}">${brand}</button>
+      `).join('');
+      
+      // Add click handlers
+      container.querySelectorAll('.brand-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+          // Toggle active class
+          container.querySelectorAll('.brand-chip').forEach(c => c.classList.remove('active'));
+          chip.classList.add('active');
+          // Set filter value
+          const brandFilter = document.getElementById('spareBrandFilter');
+          if (brandFilter) {
+            brandFilter.value = chip.dataset.brand;
+            renderSpareParts();
+          }
+        });
+      });
+    }
+
     // ============================================
-    // IMPROVED SEARCH FUNCTION
+    // IMPROVED SEARCH FUNCTION - Case insensitive, partial matching
     // ============================================
     function renderSpareParts() {
       const searchTerm = document.getElementById('spareSearch')?.value.toLowerCase().trim() || '';
       const brandFilter = document.getElementById('spareBrandFilter')?.value || '';
       const modelSearch = document.getElementById('modelNumberSearch')?.value.toLowerCase().trim() || '';
       
-      // Case-insensitive search with partial matching
+      // Filter with multiple search conditions
       const filtered = spareParts.filter(part => {
-        // Search by brand (partial match - "sam" matches "Samsung")
-        const matchesBrandSearch = !searchTerm || 
-          part.brand.toLowerCase().includes(searchTerm) ||
-          part.name.toLowerCase().includes(searchTerm) ||
-          (part.modelNumber && part.modelNumber.toLowerCase().includes(searchTerm));
+        // Convert all searchable fields to lowercase for case-insensitive matching
+        const partName = (part.name || '').toLowerCase();
+        const partBrand = (part.brand || '').toLowerCase();
+        const partModel = (part.modelNumber || '').toLowerCase();
+        const partCategory = (part.category || '').toLowerCase();
+        
+        // Search by brand, name, or category (partial match)
+        const matchesGeneralSearch = !searchTerm || 
+          partBrand.includes(searchTerm) ||
+          partName.includes(searchTerm) ||
+          partCategory.includes(searchTerm);
         
         // Exact brand filter from dropdown
         const matchesBrandFilter = !brandFilter || part.brand === brandFilter;
         
         // Search by model number (partial match)
-        const matchesModel = !modelSearch || 
-          (part.modelNumber && part.modelNumber.toLowerCase().includes(modelSearch));
+        const matchesModel = !modelSearch || partModel.includes(modelSearch);
         
-        return matchesBrandSearch && matchesBrandFilter && matchesModel;
+        return matchesGeneralSearch && matchesBrandFilter && matchesModel;
       });
       
       // Update search stats
       const statsEl = document.getElementById('searchStats');
       if (statsEl) {
-        statsEl.innerHTML = `Found ${filtered.length} spare part${filtered.length !== 1 ? 's' : ''}`;
+        if (searchTerm || brandFilter || modelSearch) {
+          statsEl.innerHTML = `🔍 Found ${filtered.length} spare part${filtered.length !== 1 ? 's' : ''} matching your search`;
+        } else {
+          statsEl.innerHTML = `📦 Total ${spareParts.length} spare parts available`;
+        }
       }
       
       const grid = document.getElementById('spareGrid');
@@ -405,26 +501,29 @@
       if (filtered.length === 0) {
         grid.innerHTML = `<div class="no-results">
           <p>🔍 No spare parts found matching your search.</p>
-          <p style="font-size: 0.875rem;">Try searching for "Samsung", "iPhone", "screen", or a specific model number.</p>
+          <p style="font-size: 0.875rem; margin-top: 0.5rem;">Try searching for "Tecno", "Samsung", "iPhone", "screen", or a specific model number.</p>
+          <p style="font-size: 0.875rem;">Popular brands: Apple, Samsung, Tecno, Infinix, Xiaomi, Oppo, Vivo</p>
         </div>`;
         return;
       }
       
       grid.innerHTML = filtered.map(part => `
         <div class="spare-card">
-          <img src="${part.image || 'shop/hero-phone.jpg'}" alt="${part.name}">
+          <img src="${part.image || 'shop/hero-phone.jpg'}" alt="${escapeHtml(part.name)}" onerror="this.src='shop/hero-phone.jpg'">
           <div class="spare-info">
             <h3>${escapeHtml(part.name)}</h3>
             <div style="margin: 0.5rem 0;">
-              <span style="color: #00e5ff;">${escapeHtml(part.brand)}</span>
+              <span style="color: #00e5ff; font-weight: 500;">${escapeHtml(part.brand)}</span>
               ${part.modelNumber ? `<span style="color: #888; margin-left: 0.5rem;">📱 ${escapeHtml(part.modelNumber)}</span>` : ''}
+              ${part.category ? `<span style="color: #888; margin-left: 0.5rem;">🔧 ${escapeHtml(part.category)}</span>` : ''}
             </div>
             <div class="spare-price">Kshs ${part.price.toLocaleString()}</div>
             <div style="margin: 0.5rem 0;">
-              ${part.stock > 0 ? `<span class="badge-instock">In Stock (${part.stock})</span>` : '<span class="badge-outstock">Out of Stock</span>'}
+              ${part.stock > 0 ? `<span class="badge-instock">✅ In Stock (${part.stock})</span>` : '<span class="badge-outstock">❌ Out of Stock</span>'}
             </div>
-            <button class="btn primary" onclick='addToCart(${JSON.stringify(part)}, "spare")' ${part.stock === 0 ? 'disabled' : ''} style="width: 100%; margin-top: 0.5rem;">
-              ${part.stock > 0 ? 'Add to Cart' : 'Out of Stock'}
+            ${part.description ? `<p style="font-size: 0.75rem; color: #888; margin-top: 0.5rem;">${escapeHtml(part.description.substring(0, 100))}</p>` : ''}
+            <button class="btn primary" onclick='addToCart(${JSON.stringify(part)}, "spare")' ${part.stock === 0 ? 'disabled' : ''} style="width: 100%; margin-top: 0.75rem;">
+              ${part.stock > 0 ? '🛒 Add to Cart' : 'Out of Stock'}
             </button>
           </div>
         </div>
@@ -443,22 +542,27 @@
       
       const grid = document.getElementById('serviceGrid');
       if (grid) {
-        grid.innerHTML = filtered.map(service => `
-          <div class="service-card">
-            <div class="service-icon">${service.icon}</div>
-            <div class="service-info">
-              <h3>${service.name}</h3>
-              <div class="service-price">Kshs ${service.price.toLocaleString()}</div>
-              <div class="service-duration">⏱️ ${service.duration} | 🛡️ ${service.warranty} warranty</div>
-              <button class="btn primary" onclick='addToCart(${JSON.stringify(service)}, "service")' style="width: 100%;">Book This Service</button>
+        if (filtered.length === 0) {
+          grid.innerHTML = `<div class="no-results"><p>🔍 No repair services found matching "${escapeHtml(search)}"</p></div>`;
+        } else {
+          grid.innerHTML = filtered.map(service => `
+            <div class="service-card">
+              <div class="service-icon">${service.icon}</div>
+              <div class="service-info">
+                <h3>${service.name}</h3>
+                <div class="service-price">Kshs ${service.price.toLocaleString()}</div>
+                <div class="service-duration">⏱️ ${service.duration} | 🛡️ ${service.warranty} warranty</div>
+                <button class="btn primary" onclick='addToCart(${JSON.stringify(service)}, "service")' style="width: 100%; margin-top: 0.5rem;">Book This Service</button>
+              </div>
             </div>
-          </div>
-        `).join('');
+          `).join('');
+        }
       }
     }
     
     function escapeHtml(str) {
-      return String(str || '').replace(/[&<>]/g, function(m) {
+      if (!str) return '';
+      return String(str).replace(/[&<>]/g, function(m) {
         if (m === '&') return '&amp;';
         if (m === '<') return '&lt;';
         if (m === '>') return '&gt;';
@@ -497,16 +601,16 @@
       
       if (cartItems) {
         if (cart.length === 0) {
-          cartItems.innerHTML = '<div class="cart-empty">Your cart is empty</div>';
+          cartItems.innerHTML = '<div class="cart-empty" style="text-align: center; padding: 2rem;">🛒 Your cart is empty</div>';
         } else {
           cartItems.innerHTML = cart.map(item => `
-            <div class="cart-item" style="display: flex; justify-content: space-between; padding: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
-              <div>
-                <div>${escapeHtml(item.name)}</div>
-                <small>${item.type === 'spare' ? 'Spare Part' : 'Service'} × ${item.quantity}</small>
+            <div class="cart-item" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
+              <div style="flex: 2;">
+                <div style="font-weight: 500;">${escapeHtml(item.name)}</div>
+                <small style="color: #888;">${item.type === 'spare' ? 'Spare Part' : 'Service'} × ${item.quantity}</small>
               </div>
-              <div>Kshs ${(item.price * item.quantity).toLocaleString()}</div>
-              <button onclick="removeFromCart('${item.id}', '${item.type}')" style="background:none; border:none; color:#ff3b30; cursor:pointer;">✕</button>
+              <div style="flex: 1; text-align: right;">Kshs ${(item.price * item.quantity).toLocaleString()}</div>
+              <button onclick="removeFromCart('${item.id}', '${item.type}')" style="background:none; border:none; color:#ff3b30; cursor:pointer; font-size: 1.2rem; margin-left: 0.5rem;">✕</button>
             </div>
           `).join('');
         }
@@ -601,7 +705,7 @@
     });
     
     // ============================================
-    // EVENT LISTENERS - WITH DEBOUNCE FOR BETTER PERFORMANCE
+    // EVENT LISTENERS - With debounce
     // ============================================
     let searchTimeout;
     function debouncedSearch(fn, delay = 300) {
@@ -633,16 +737,27 @@
     // Listen for storage changes (when management page adds new parts)
     window.addEventListener('storage', (e) => {
       if (e.key === 'spare_parts') {
+        console.log('Spare parts updated from management page, reloading...');
         loadSparePartsFromStorage();
       }
     });
+    
+    // Also check for updates every 5 seconds (for same-tab updates)
+    setInterval(() => {
+      const stored = localStorage.getItem('spare_parts');
+      if (stored) {
+        const newParts = JSON.parse(stored);
+        if (newParts.length !== spareParts.length) {
+          loadSparePartsFromStorage();
+        }
+      }
+    }, 5000);
   </script>
   
   <!-- Mobile Menu -->
   <aside class="mobile-menu" id="mobileMenu">
     <a href="index.html">Home</a>
-    <a href="#services">Repair Services</a>
-    <a href="#spares">Spare Parts</a>
+    <a href="repair.html">Repair</a>
     <a href="contact.html">Contact</a>
   </aside>
 </body>
