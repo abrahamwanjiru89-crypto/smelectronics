@@ -1,6 +1,6 @@
 /* =========================================================
    S.M Dynamics Electronics — Premium electronics storefront (vanilla JS)
-   FIXED VERSION - County loading, Checkout Modal, Mobile images
+   FIXED VERSION - County loading with immediate fallback
 ========================================================= */
 
 // ----- PRODUCT DATA -----
@@ -57,7 +57,6 @@ function getSelectedSubLocation() {
 // FIXED: CHECKOUT MODAL (Popup instead of scroll)
 // ============================================
 function showCheckoutModal(total, deliveryFee, onConfirm) {
-  // Remove existing modal if any
   const existingModal = document.querySelector('.checkout-modal');
   if (existingModal) existingModal.remove();
   
@@ -80,10 +79,8 @@ function showCheckoutModal(total, deliveryFee, onConfirm) {
   `;
   document.body.appendChild(modal);
   
-  // Show modal
   setTimeout(() => modal.classList.add('show'), 10);
   
-  // Handle buttons
   modal.querySelector('.btn-cancel').addEventListener('click', () => {
     modal.classList.remove('show');
     setTimeout(() => modal.remove(), 300);
@@ -95,7 +92,6 @@ function showCheckoutModal(total, deliveryFee, onConfirm) {
     if (onConfirm) onConfirm();
   });
   
-  // Close on overlay click
   modal.addEventListener('click', (e) => {
     if (e.target === modal) {
       modal.classList.remove('show');
@@ -125,53 +121,118 @@ async function updateCartTotals() {
   if ($('#cartTotal')) $('#cartTotal').textContent = fmt(subtotal + deliveryFee);
 }
 
+// ============================================
+// FIXED: loadCounties with immediate fallback
+// ============================================
 async function loadCounties() {
   const el = $('#county');
   if (!el) return;
   
+  // IMMEDIATELY populate with fallback counties so dropdown works right away
+  const fallbackCounties = [
+    { id: 'c-nairobi', name: 'Nairobi' },
+    { id: 'c-mombasa', name: 'Mombasa' },
+    { id: 'c-kisumu', name: 'Kisumu' },
+    { id: 'c-nakuru', name: 'Nakuru' },
+    { id: 'c-kiambu', name: 'Kiambu' },
+    { id: 'c-eldoret', name: 'Uasin Gishu' },
+    { id: 'c-machakos', name: 'Machakos' },
+    { id: 'c-kajiado', name: 'Kajiado' },
+    { id: 'c-thika', name: 'Thika' },
+    { id: 'c-malindi', name: 'Malindi' },
+    { id: 'c-garissa', name: 'Garissa' },
+    { id: 'c-kakamega', name: 'Kakamega' },
+    { id: 'c-bungoma', name: 'Bungoma' },
+    { id: 'c-nyeri', name: 'Nyeri' },
+    { id: 'c-meru', name: 'Meru' },
+    { id: 'c-embu', name: 'Embu' },
+    { id: 'c-kitui', name: 'Kitui' },
+    { id: 'c-muranga', name: 'Muranga' },
+    { id: 'c-kericho', name: 'Kericho' },
+    { id: 'c-kisii', name: 'Kisii' },
+    { id: 'c-kwale', name: 'Kwale' },
+    { id: 'c-kilifi', name: 'Kilifi' },
+    { id: 'c-lamu', name: 'Lamu' },
+    { id: 'c-tana-river', name: 'Tana River' },
+    { id: 'c-taita-taveta', name: 'Taita Taveta' },
+    { id: 'c-vihiga', name: 'Vihiga' },
+    { id: 'c-siaya', name: 'Siaya' },
+    { id: 'c-homa-bay', name: 'Homa Bay' },
+    { id: 'c-migori', name: 'Migori' },
+    { id: 'c-nyamira', name: 'Nyamira' },
+    { id: 'c-trans-nzoia', name: 'Trans Nzoia' },
+    { id: 'c-west-pokot', name: 'West Pokot' },
+    { id: 'c-nyandarua', name: 'Nyandarua' },
+    { id: 'c-laikipia', name: 'Laikipia' },
+    { id: 'c-samburu', name: 'Samburu' },
+    { id: 'c-isiolo', name: 'Isiolo' },
+    { id: 'c-marsabit', name: 'Marsabit' },
+    { id: 'c-wajir', name: 'Wajir' },
+    { id: 'c-mandera', name: 'Mandera' }
+  ];
+  
+  // Populate dropdown immediately
+  el.innerHTML = '<option value="">Select County</option>' + 
+    fallbackCounties.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  
+  // Then try to fetch from server and update if successful
   try {
     const data = await api('/api/locations/counties');
-    if (data && data.counties) {
-      el.innerHTML = '<option value="">Select County</option>' + data.counties.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-    } else {
-      // Fallback counties if API fails
-      const fallbackCounties = ['Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Kiambu', 'Uasin Gishu', 'Kajiado', 'Machakos'];
-      el.innerHTML = '<option value="">Select County</option>' + fallbackCounties.map(c => `<option value="${c.toLowerCase()}">${c}</option>`).join('');
+    if (data && data.counties && data.counties.length > 0) {
+      el.innerHTML = '<option value="">Select County</option>' + 
+        data.counties.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
     }
   } catch (err) {
-    console.error('Failed to load counties:', err);
-    const fallbackCounties = ['Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Kiambu', 'Uasin Gishu', 'Kajiado', 'Machakos'];
-    el.innerHTML = '<option value="">Select County</option>' + fallbackCounties.map(c => `<option value="${c.toLowerCase()}">${c}</option>`).join('');
+    console.error('Failed to load counties from server, using fallback');
   }
   
-  el.addEventListener('change', async () => {
+  // Remove existing event listener to avoid duplicates
+  const oldListener = el._changeListener;
+  if (oldListener) el.removeEventListener('change', oldListener);
+  
+  // Add change event listener
+  const changeHandler = async () => {
     const subEl = $('#subLocation');
+    const datalist = $('#sublocationsList');
     const countyName = el.options[el.selectedIndex]?.text || '';
-    if (!el.value) { 
-      countySubLocations = [];
+    const selectedCountyId = el.value;
+    
+    if (!selectedCountyId) {
       if (subEl) subEl.value = '';
-      const datalist = $('#sublocationsList');
       if (datalist) datalist.innerHTML = '';
-      const streetDatalist = $('#streetsList');
-      if (streetDatalist) streetDatalist.innerHTML = '';
       updateCartTotals();
-      return; 
+      return;
     }
     
-    try {
-      const subData = await api(`/api/locations/sublocations?countyId=${el.value}`);
-      countySubLocations = subData.subLocations || [];
-      const datalist = $('#sublocationsList');
-      if (datalist) {
-        datalist.innerHTML = countySubLocations.map(sl => `<option value="${esc(sl.name)}" data-id="${esc(sl.id)}"></option>`).join('');
-      }
-      if (subEl) subEl.value = '';
-      setupPlaceAutocomplete(countyName);
-      updateCartTotals();
-    } catch (err) {
-      console.error('Failed to load sublocations:', err);
+    // Create fallback sublocations for the selected county
+    const fallbackSubLocations = {
+      'Nairobi': ['CBD', 'Westlands', 'Kilimani', 'Karen', 'Langata', 'Eastleigh', 'South B', 'South C', 'Buruburu', 'Donholm', 'Kasarani', 'Ruaraka', 'Embakasi', 'Mathare', 'Kibera', 'Dagoretti'],
+      'Mombasa': ['Nyali', 'Bamburi', 'Mtwapa', 'Likoni', 'Changamwe', 'Kisauni', 'Mombasa CBD', 'Shanzu', 'Tudor', 'Miritini'],
+      'Kisumu': ['Milimani', 'Kondele', 'Nyalenda', 'Kibos', 'Kisumu East', 'Kisumu West', 'Nyando', 'Muhoroni', 'Ahero'],
+      'Nakuru': ['CBD', 'Milimani', 'Lanet', 'Rhoda', 'Kaptembwo', 'London', 'Bondeni', 'Free Area', 'Menengai', 'Nakuru West', 'Nakuru East', 'Bahati', 'Njoro', 'Molo'],
+      'Kiambu': ['Kiambu Town', 'Thika', 'Ruiru', 'Kikuyu', 'Limuru', 'Githunguri', 'Juja', 'Gatundu', 'Lari'],
+      'Uasin Gishu': ['Eldoret CBD', 'Kapsoya', 'Langas', 'Huruma', 'Kimumu', 'Kamukunji', 'Elgon View', 'Pioneer', 'Racecourse'],
+      'Machakos': ['Machakos Town', 'Athi River', 'Mavoko', 'Kangundo', 'Tala', 'Matuu', 'Masii'],
+      'Kajiado': ['Kajiado Town', 'Kitengela', 'Ngong', 'Ongata Rongai', 'Isinya', 'Loitokitok', 'Namanga']
+    };
+    
+    const locations = fallbackSubLocations[countyName] || 
+      ['Town Centre', 'Estate', 'Phase 1', 'Phase 2', 'Central', 'North', 'South', 'East', 'West'];
+    
+    if (datalist) {
+      datalist.innerHTML = locations.map(loc => `<option value="${loc}"></option>`).join('');
     }
-  });
+    
+    if (subEl) {
+      subEl.placeholder = `Type area in ${countyName}...`;
+      subEl.value = '';
+    }
+    
+    updateCartTotals();
+  };
+  
+  el._changeListener = changeHandler;
+  el.addEventListener('change', changeHandler);
   
   $('#subLocation')?.addEventListener('change', updateCartTotals);
   $('#subLocation')?.addEventListener('input', debounce(updateCartTotals, 250));
@@ -554,7 +615,6 @@ $('#checkoutBtn').addEventListener('click', async () => {
   const subtotal = state.cart.reduce((s, c) => s + (PRODUCTS.find(p => p.id === c.id)?.price || 0) * c.qty, 0);
   const total = subtotal + deliveryFee;
 
-  // Show modal instead of confirm
   showCheckoutModal(total, deliveryFee, async () => {
     const phone = prompt("Enter M-Pesa Phone Number (e.g., 0712345678):");
     if (!phone || phone.length < 10) {
