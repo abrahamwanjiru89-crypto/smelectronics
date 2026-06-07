@@ -1,6 +1,6 @@
 /* =========================================================
    S.M Dynamics Electronics — Premium electronics storefront (vanilla JS)
-   FIXED VERSION - County loading with immediate fallback AND sub-location validation fix
+   FIXED VERSION - Syncs with management page for badges
 ========================================================= */
 
 // ----- PRODUCT DATA -----
@@ -51,6 +51,20 @@ function getSelectedSubLocation() {
   const value = normalizeAreaName($('#subLocation')?.value);
   if (!value) return null;
   return countySubLocations.find(sl => normalizeAreaName(sl.name) === value) || null;
+}
+
+// ============================================
+// LOAD PRODUCTS FROM LOCALSTORAGE (SYNC WITH MANAGEMENT PAGE)
+// ============================================
+
+function loadProductsFromLocalStorage() {
+  const stored = localStorage.getItem('management_products');
+  if (stored && JSON.parse(stored).length > 0) {
+    PRODUCTS = JSON.parse(stored);
+    console.log('Loaded products from management page:', PRODUCTS.length);
+    return true;
+  }
+  return false;
 }
 
 // ============================================
@@ -292,11 +306,26 @@ async function api(path, options = {}) {
   return data;
 }
 
+// ============================================
+// UPDATED: refreshProducts - Checks localStorage first
+// ============================================
 async function refreshProducts() {
+  // First try to load from localStorage (management page saves here)
+  if (loadProductsFromLocalStorage()) {
+    renderProducts();
+    renderFlash();
+    renderCart();
+    renderRecent();
+    return;
+  }
+  
+  // Fallback to server
   try {
     const data = await api('/api/products');
     if (data && data.products) {
       PRODUCTS = data.products;
+      // Save to localStorage for consistency
+      localStorage.setItem('management_products', JSON.stringify(PRODUCTS));
     }
   } catch (err) {
     console.error('Failed to refresh products:', err);
@@ -477,7 +506,8 @@ function card(p, opts = {}) {
           ${out ? '<span class="b b-out">Out of Stock</span>' : ''}
           ${p.badge === 'new' ? '<span class="b b-new">New</span>' : ''}
           ${p.badge === 'hot' ? '<span class="b b-hot">Hot</span>' : ''}
-          ${p.badge === 'sale' || p.was ? '<span class="b b-sale">-' + Math.round((1 - p.price / (p.was||p.price)) * 100) + '%</span>' : ''}
+          ${p.badge === 'sale' ? '<span class="b b-sale">Flash Sale</span>' : ''}
+          ${(!p.badge && p.was) ? '<span class="b b-sale">Sale</span>' : ''}
         </div>
         <div class="card-actions">
           <button class="act js-wish ${isWish ? 'active' : ''}" aria-label="Wishlist"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8Z"/></svg></button>
@@ -907,8 +937,25 @@ window.setDeliveryFee = async function(fee) {
   }
 };
 
+// ============================================
+// LISTEN FOR STORAGE EVENTS FROM MANAGEMENT PAGE
+// ============================================
+window.addEventListener('storage', (e) => {
+  if (e.key === 'management_products') {
+    console.log('Products updated from management page, refreshing...');
+    loadProductsFromLocalStorage();
+    renderProducts();
+    renderFlash();
+    renderCart();
+    renderRecent();
+  }
+});
+
 // ----- INIT -----
 (async function initApp() {
+  // First try to load from localStorage
+  loadProductsFromLocalStorage();
+  
   renderProducts();
   renderFlash();
   renderCart();
