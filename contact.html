@@ -1,191 +1,594 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="description" content="Contact S.M Dynamics Electronics for WhatsApp support, helpline, email, TikTok, location, company details, terms, and founder information." />
-<title>Contact S.M Dynamics Electronics</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@600;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shop/styles.css">
-<link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#0b1120">
-<meta name="application-name" content="SM Dynamics Electronics">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="SM Dynamics Electronics">
-<meta name="apple-touch-icon" href="shop/brand logo.png">
-<link rel="icon" href="shop/brand logo.png">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>S.M Dynamics Electronics - Contact Us</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="shop/styles.css">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0b1120">
+  <meta name="application-name" content="SM Dynamics Electronics">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="SM Dynamics Electronics">
+  <link rel="apple-touch-icon" href="shop/brand logo.png">
+  <style>
+    /* Contact Page Specific Styles */
+    .contact-hero {
+      background: linear-gradient(135deg, rgba(0,229,255,.08), rgba(124,77,255,.08), rgba(255,43,214,.05));
+      position: relative;
+      overflow: hidden;
+      padding: 80px 0;
+    }
+    
+    .contact-hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 20% 50%, rgba(124,77,255,.15), transparent 50%),
+                  radial-gradient(circle at 80% -10%, rgba(0,229,255,.12), transparent 50%);
+      pointer-events: none;
+    }
+    
+    .contact-card-grid {
+      display: grid;
+      gap: 1.5rem;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      margin-top: 3rem;
+    }
+    
+    .contact-card {
+      padding: 2rem;
+      border-radius: 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+      transition: all 0.4s cubic-bezier(0.16, 0.1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    
+    .contact-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, var(--grad-1), transparent);
+      opacity: 0;
+      transition: opacity 0.4s;
+      z-index: 0;
+      border-radius: 24px;
+    }
+    
+    .contact-card:hover {
+      transform: translateY(-8px);
+      border-color: color-mix(in srgb, var(--primary) 50%, var(--border));
+      box-shadow: var(--shadow-glow);
+    }
+    
+    .contact-card:hover::before {
+      opacity: 0.08;
+    }
+    
+    .contact-card > * {
+      position: relative;
+      z-index: 1;
+    }
+    
+    .contact-icon {
+      width: 64px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 18px;
+      background: linear-gradient(135deg, rgba(0,229,255,.15), rgba(124,77,255,.15));
+      border: 1.5px solid color-mix(in srgb, var(--primary) 30%, var(--border));
+      color: var(--primary);
+      transition: all 0.3s;
+    }
+    
+    .contact-card:hover .contact-icon {
+      transform: scale(1.12) translateY(-4px);
+      background: linear-gradient(135deg, rgba(0,229,255,.25), rgba(124,77,255,.25));
+      border-color: var(--primary);
+      box-shadow: 0 12px 30px -8px rgba(0,229,255,.3);
+    }
+    
+    .contact-icon svg {
+      width: 32px;
+      height: 32px;
+      stroke-width: 1.5;
+    }
+    
+    .contact-card h3 {
+      font-family: var(--font-display);
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin-bottom: 0.3rem;
+    }
+    
+    .contact-card p {
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+    
+    .contact-card a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.3s;
+    }
+    
+    .contact-card a:hover {
+      color: var(--accent);
+    }
+    
+    /* Map Section */
+    .map-section {
+      padding: 60px 0;
+      background: linear-gradient(to bottom, transparent, rgba(0,229,255,.04));
+    }
+    
+    .map-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3rem;
+      align-items: center;
+    }
+    
+    .map-copy h2 {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      font-weight: 700;
+      margin: 1rem 0;
+    }
+    
+    .map-frame {
+      position: relative;
+      aspect-ratio: 4/3;
+      border-radius: 24px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-glow);
+    }
+    
+    .map-frame iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    
+    /* Company Section */
+    .company-grid {
+      display: grid;
+      gap: 1.5rem;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      margin-top: 3rem;
+    }
+    
+    .company-card {
+      padding: 2rem;
+      border-radius: 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      transition: all 0.35s;
+    }
+    
+    .company-card:hover {
+      border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
+      box-shadow: 0 20px 50px -20px rgba(124,77,255,.3);
+      transform: translateY(-5px);
+    }
+    
+    .company-card h3 {
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin: 1rem 0;
+    }
+    
+    .company-card p {
+      color: var(--muted);
+      line-height: 1.7;
+    }
+    
+    /* Form Section */
+    .contact-form-section {
+      padding: 60px 0;
+    }
+    
+    .contact-form-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      padding: 2.5rem;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    .contact-form-card h2 {
+      font-family: var(--font-display);
+      font-size: 1.8rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .contact-form {
+      display: grid;
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+    
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+    }
+    
+    .contact-form input,
+    .contact-form select,
+    .contact-form textarea {
+      width: 100%;
+      padding: 1rem;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: var(--bg-2);
+      color: var(--text);
+      font-size: 1rem;
+      transition: all 0.3s;
+    }
+    
+    .contact-form input:focus,
+    .contact-form select:focus,
+    .contact-form textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(0,229,255,0.1);
+    }
+    
+    .contact-form textarea {
+      resize: vertical;
+      min-height: 120px;
+    }
+    
+    /* FAQ Section */
+    .faq-section {
+      padding: 60px 0;
+      background: linear-gradient(180deg, transparent, rgba(0,229,255,.04), transparent);
+    }
+    
+    .faq-grid {
+      display: grid;
+      gap: 1.5rem;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      margin-top: 3rem;
+    }
+    
+    .faq-item {
+      padding: 1.5rem;
+      border-radius: 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+    }
+    
+    .faq-item h4 {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      margin-bottom: 0.75rem;
+      color: var(--primary);
+    }
+    
+    .faq-item p {
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    
+    @media (max-width: 768px) {
+      .map-layout {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+      }
+      .contact-form-card {
+        padding: 1.5rem;
+      }
+      .faq-grid {
+        grid-template-columns: 1fr;
+      }
+      .contact-card-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
 <body>
-<header class="nav" id="nav">
-  <div class="nav-inner">
-    <a href="index.html" class="brand" aria-label="S.M Dynamics home">
-      <img src="shop/brand logo.png" alt="S.M Dynamics Electronics" class="brand-logo">
-      <span class="brand-name">S.M Dynamics Electronics</span>
-    </a>
-    <nav class="nav-links" aria-label="Primary">
-      <a href="index.html">Home</a>
-      <a href="index.html#categories">Shop</a>
-      <a href="repair.html">Repair Services</a>
-      <a href="index.html#featured">Featured</a>
-      <a href="contact.html" aria-current="page">Contact</a>
-    </nav>
-    <div class="nav-tools">
-      <button class="icon-btn" id="themeBtn" aria-label="Toggle theme">
-        <svg viewBox="0 0 24 24" class="i-moon"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
-        <svg viewBox="0 0 24 24" class="i-sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
-      </button>
-      <button class="icon-btn menu-toggle" id="menuToggle" aria-label="Menu"><span></span><span></span><span></span></button>
-    </div>
-  </div>
-</header>
-
-<aside class="mobile-menu" id="mobileMenu" aria-hidden="true">
-  <a href="index.html">Home</a>
-  <a href="index.html#categories">Shop</a>
-  <a href="repair.html">Repair Services</a>
-  <a href="index.html#featured">Featured</a>
-  <a href="contact.html">Contact</a>
-</aside>
-
-<main class="contact-page">
-  <section class="section contact-hero">
-    <div class="container">
-      <header class="section-head">
-        <span class="eyebrow"><span class="dot"></span> Contact S.M Dynamics</span>
-        <h1>Talk to us, visit us, or find the right support channel.</h1>
-        <p>All official contact details are gathered here for quick access.</p>
-      </header>
-
-      <div class="contact-grid contact-card-grid">
-        <article class="contact-card info-card" data-icon="whatsapp">
-          <span class="contact-icon">
-            <svg viewBox="0 0 24 24" fill="currentColor">
-              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.67-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.076 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421-7.403h-.004a6.963 6.963 0 00-6.961 6.961 6.965 6.965 0 006.961 6.961h.004a6.965 6.965 0 006.961-6.961 6.965 6.965 0 00-6.961-6.961m0-1.385C12.926 2.607 20.505 2.607 20.505 12c0 7.393-7.579 7.393-7.579 7.393-7.393 0-7.393-7.579-7.393-7.393 0-7.393 7.579-7.393 7.579-7.393"/>
-              <circle cx="12" cy="12" r="10.5" fill="none" stroke="currentColor" stroke-width="1.5"/>
-            </svg>
-          </span>
-          <h2>WhatsApp</h2>
-          <p>Message our team for product questions, repairs, and order support.</p>
-          <a class="btn primary" href="https://wa.me/254717043977" target="_blank" rel="noopener">Open WhatsApp</a>
-          <small>+254 717 043 977</small>
-        </article>
-
-        <article class="contact-card info-card" data-icon="phone">
-          <span class="contact-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-            </svg>
-          </span>
-          <h2>Helpline Contact</h2>
-          <p>Call the helpline for urgent order, delivery, or repair support.</p>
-          <a class="btn ghost" href="tel:+254717043977">Call Helpline</a>
-          <small>+254 717 043 977</small>
-        </article>
-
-        <article class="contact-card info-card" data-icon="email">
-          <span class="contact-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="2" y="4" width="20" height="16" rx="2"></rect>
-              <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
-            </svg>
-          </span>
-          <h2>Email</h2>
-          <p>Send documents, purchase requests, repair details, and business inquiries.</p>
-          <a class="btn ghost" href="mailto:info@smdynamics.com">Send Email</a>
-          <small>info@smdynamics.com</small>
-        </article>
-
-        <article class="contact-card info-card" data-icon="tiktok">
-          <span class="contact-icon">
-            <svg viewBox="0 0 24 24" fill="currentColor">
-              <path d="M19.321 5.562a5.122 5.122 0 0 1-2.958-2.926c-.546-1.155-1.051-2.392-1.051-3.636 0-2.312-1.851-4-4.137-4h-.825v13.78c0 1.885-1.53 3.415-3.414 3.415-1.886 0-3.416-1.53-3.416-3.414 0-1.886 1.53-3.415 3.416-3.415.321 0 .631.046.93.133V5.562c-.31-.046-.631-.07-.93-.07-4.854 0-8.804 3.95-8.804 8.804 0 4.854 3.95 8.804 8.804 8.804 4.854 0 8.804-3.95 8.804-8.804v-5.734z"/>
-            </svg>
-          </span>
-          <h2>TikTok Account</h2>
-          <p>Follow product drops, repair clips, offers, and shop updates.</p>
-          <a class="btn ghost" href="https://www.tiktok.com/@smdynamics" target="_blank" rel="noopener">Open TikTok</a>
-          <small>@smdynamics</small>
-        </article>
+  <!-- Navbar -->
+  <header class="nav" id="nav">
+    <div class="nav-inner">
+      <a href="index.html" class="brand" aria-label="S.M Dynamics home">
+        <img src="shop/brand logo.png" alt="S.M Dynamics Electronics" class="brand-logo">
+        <span class="brand-name">S.M Dynamics Electronics</span>
+      </a>
+      <nav class="nav-links" aria-label="Primary">
+        <a href="index.html">Home</a>
+        <a href="index.html#categories">Shop</a>
+        <a href="repair.html">Repair Services</a>
+        <a href="index.html#featured">Featured</a>
+        <a href="contact.html" class="active">Contact</a>
+        <a href="management.html">Management</a>
+      </nav>
+      <div class="nav-tools">
+        <button class="icon-btn" id="themeBtn" aria-label="Toggle theme">
+          <svg viewBox="0 0 24 24" class="i-moon"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+          <svg viewBox="0 0 24 24" class="i-sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        </button>
+        <button class="icon-btn" id="cartBtn" aria-label="Cart">
+          <svg viewBox="0 0 24 24"><path d="M3 3h2l2.7 12.3a2 2 0 0 0 2 1.7h8.6a2 2 0 0 0 2-1.6L22 7H6"/><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/></svg>
+          <span class="badge" id="cartCount">0</span>
+        </button>
+        <button class="account-btn" id="accountBtn" aria-label="Account">Login</button>
+        <button class="icon-btn menu-toggle" id="menuToggle" aria-label="Menu"><span></span><span></span><span></span></button>
       </div>
     </div>
-  </section>
+  </header>
 
-  <section class="section contact-map-section">
-    <div class="container map-layout">
-      <div class="map-copy">
-        <span class="eyebrow"><span class="dot"></span> Location</span>
-        <h2>Google Maps is open here.</h2>
-        <p>The map stays visible on this page so customers can check the shop location without opening another tab.</p>
-        <a class="btn primary" href="https://maps.google.com/maps?q=S.M+Dynamics+Electronics+Kenya" target="_blank" rel="noopener">Open Full Map</a>
+  <main>
+    <!-- Hero Section -->
+    <section class="contact-hero">
+      <div class="container">
+        <div class="section-head">
+          <span class="eyebrow"><span class="dot"></span> Get in Touch</span>
+          <h1>We'd Love to <span class="grad">Hear From You</span></h1>
+          <p>Have questions about our products or repair services? Reach out to us anytime.</p>
+        </div>
       </div>
-      <div class="map-frame" aria-label="S.M Dynamics Electronics on Google Maps">
-        <iframe
-          title="S.M Dynamics Electronics location map"
-          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3988.8134517340754!2d36.1177673!3d-0.2283216!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1829ed3d19eb98af:0xa4f4cd21fd43d06b!2sS.M%20DYNAMICS%20ELECTRONICS!5e0!3m2!1sen!2ske!4v1717236000000"
-          loading="lazy"
-          referrerpolicy="no-referrer-when-downgrade"
-          style="border:0;"
-          allowfullscreen=""
-          aria-hidden="false"
-          tabindex="0"></iframe>
+    </section>
+
+    <!-- Contact Cards -->
+    <section class="section">
+      <div class="container">
+        <div class="contact-card-grid">
+          <!-- Phone -->
+          <div class="contact-card">
+            <div class="contact-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+              </svg>
+            </div>
+            <h3>Phone</h3>
+            <p>Call us for immediate assistance with orders or repairs.</p>
+            <a href="tel:+254717043977">+254 717 043 977</a>
+          </div>
+
+          <!-- WhatsApp -->
+          <div class="contact-card">
+            <div class="contact-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+              </svg>
+            </div>
+            <h3>WhatsApp</h3>
+            <p>Chat with us on WhatsApp for quick responses.</p>
+            <a href="https://wa.me/254717043977" target="_blank">Chat on WhatsApp →</a>
+          </div>
+
+          <!-- Email -->
+          <div class="contact-card">
+            <div class="contact-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="4" width="20" height="16" rx="2"/>
+                <path d="m22 7-10 7L2 7"/>
+              </svg>
+            </div>
+            <h3>Email</h3>
+            <p>Send us an email and we'll respond within 24 hours.</p>
+            <a href="mailto:info@smdynamics.com">info@smdynamics.com</a>
+          </div>
+
+          <!-- Location -->
+          <div class="contact-card">
+            <div class="contact-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                <circle cx="12" cy="10" r="3"/>
+              </svg>
+            </div>
+            <h3>Location</h3>
+            <p>Visit our physical store in Nakuru, Kenya.</p>
+            <a href="https://maps.google.com/maps?q=S.M+Dynamics+Electronics+Kenya" target="_blank">View on Maps →</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Map Section -->
+    <section class="map-section">
+      <div class="container">
+        <div class="map-layout">
+          <div class="map-copy">
+            <span class="eyebrow"><span class="dot"></span> Visit Us</span>
+            <h2>Find Our <span class="grad">Store Location</span></h2>
+            <p>We're conveniently located in Nakuru, Kenya. Come visit us for in-person shopping, repairs, or consultations.</p>
+            <div style="margin-top: 1rem;">
+              <p><strong>📍 Address:</strong> Nakuru, Kenya</p>
+              <p><strong>🕒 Business Hours:</strong> Monday - Saturday: 9:00 AM - 6:00 PM</p>
+              <p><strong>📅 Sunday:</strong> Closed</p>
+            </div>
+            <a href="https://maps.google.com/maps?q=S.M+Dynamics+Electronics+Kenya" target="_blank" class="btn primary" style="margin-top: 1.5rem;">Get Directions →</a>
+          </div>
+          <div class="map-frame">
+            <iframe 
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d255282.3589422489!2d36.03299829368206!3d-0.303099179113325!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x182981aae6a9a4b5%3A0x3b3b3b3b3b3b3b3b!2sNakuru%2C%20Kenya!5e0!3m2!1sen!2s!4v1700000000000!5m2!1sen!2s" 
+              allowfullscreen="" 
+              loading="lazy">
+            </iframe>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Contact Form -->
+    <section class="contact-form-section">
+      <div class="container">
+        <div class="contact-form-card">
+          <h2>Send Us a <span class="grad">Message</span></h2>
+          <p>Have a question or need support? Fill out the form and we'll get back to you.</p>
+          
+          <form id="contactForm" class="contact-form">
+            <div class="form-row">
+              <input type="text" id="contactName" placeholder="Your Name" required>
+              <input type="email" id="contactEmail" placeholder="Email Address" required>
+            </div>
+            <div class="form-row">
+              <input type="tel" id="contactPhone" placeholder="Phone Number">
+              <select id="contactSubject">
+                <option value="">Select Subject</option>
+                <option>Product Inquiry</option>
+                <option>Repair Service</option>
+                <option>Order Status</option>
+                <option>Feedback</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <textarea id="contactMessage" placeholder="Your Message..."></textarea>
+            <button type="submit" class="btn primary block">Send Message</button>
+          </form>
+          <div id="contactFormMessage" style="margin-top: 1rem; text-align: center;"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="faq-section">
+      <div class="container">
+        <div class="section-head">
+          <span class="eyebrow"><span class="dot"></span> FAQ</span>
+          <h2>Frequently Asked <span class="grad">Questions</span></h2>
+          <p>Find quick answers to common questions about our products and services.</p>
+        </div>
+        <div class="faq-grid">
+          <div class="faq-item">
+            <h4>📦 Do you ship nationwide?</h4>
+            <p>Yes! We ship to all counties in Kenya. Delivery times vary by location, typically 1-3 business days.</p>
+          </div>
+          <div class="faq-item">
+            <h4>🔧 How long does repair take?</h4>
+            <p>Most repairs are completed within 1-2 days. Screen and battery replacements can be done same-day.</p>
+          </div>
+          <div class="faq-item">
+            <h4>🛡️ Do you offer warranty?</h4>
+            <p>Yes! All products come with a 2-year warranty, and repairs include a 3-6 month warranty on parts.</p>
+          </div>
+          <div class="faq-item">
+            <h4>💳 What payment methods do you accept?</h4>
+            <p>We accept M-Pesa, bank transfers, and cash on delivery for eligible areas.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container foot-grid">
+      <div>
+        <a href="index.html" class="brand">
+          <img src="shop/brand logo.png" alt="S.M Dynamics Electronics" class="brand-logo-sm">
+          <span class="brand-name">S.M Dynamics Electronics</span>
+        </a>
+        <p class="muted">Premium electronics and repair services across Kenya.</p>
+        <div class="socials">
+          <a href="https://www.facebook.com/Smatelectronics/" aria-label="Facebook">f</a>
+          <a href="https://x.com" aria-label="X">𝕏</a>
+          <a href="https://tiktok.com" aria-label="TikTok">♪</a>
+          <a href="https://wa.me/254717043977" aria-label="WhatsApp">💬</a>
+        </div>
+      </div>
+      <div>
+        <h4>Shop</h4>
+        <a href="index.html#categories">Phones</a>
+        <a href="index.html#categories">Audio</a>
+        <a href="index.html#categories">Laptops</a>
+        <a href="index.html#categories">Gaming</a>
+      </div>
+      <div>
+        <h4>Support</h4>
+        <a href="contact.html">Help Center</a>
+        <a href="contact.html">Shipping</a>
+        <a href="contact.html">Returns</a>
+        <a href="contact.html">Warranty</a>
+      </div>
+      <div>
+        <h4>Contact</h4>
+        <a href="https://wa.me/254717043977">💬 WhatsApp: +254 717 043 977</a>
+        <a href="mailto:info@smdynamics.com">📧 info@smdynamics.com</a>
+        <a href="https://www.tiktok.com/@smdynamics">🎵 TikTok</a>
+      </div>
+      <div>
+        <h4>Company</h4>
+        <a href="contact.html">About</a>
+        <a href="contact.html">Terms and Conditions</a>
+        <a href="management.html">Management</a>
       </div>
     </div>
-  </section>
-
-</main>
-
-<footer class="footer">
-  <div class="container foot-grid">
-    <div>
-      <a href="index.html" class="brand"><img src="shop/brand logo.png" alt="S.M Dynamics Electronics" class="brand-logo-sm"><span class="brand-name">S.M Dynamics Electronics</span></a>
-      <p class="muted">Premium electronics and repair services across Kenya.</p>
-      <div class="socials">
-        <a href="https://www.facebook.com/Smatelectronics/" aria-label="Facebook">f</a>
-        <a href="https://x.com" aria-label="X">X</a>
-        <a href="https://www.tiktok.com/@smdynamics" aria-label="TikTok">TT</a>
-        <a href="https://wa.me/254717043977" aria-label="WhatsApp">WA</a>
-      </div>
+    <div class="foot-bot container">
+      <span>© 2026 S.M Dynamics Electronics. All rights reserved.</span>
+      <span>Designed for Kenya · Built for Earth.</span>
     </div>
-    <div><h4>Shop</h4><a href="index.html#categories">Phones</a><a href="index.html#categories">Audio</a><a href="index.html#categories">Laptops</a><a href="index.html#categories">Gaming</a></div>
-    <div><h4>Company</h4><a href="management.html">Management</a></div>
-  </div>
-  <div class="foot-bot container">
-    <span>Copyright 2026 S.M Dynamics Electronics. All rights reserved.</span>
-    <span>Designed for Kenya. Built for Earth.</span>
-  </div>
-</footer>
+  </footer>
 
-<script>
-  const savedTheme = localStorage.getItem('nova_theme') || 'dark';
-  document.documentElement.dataset.theme = savedTheme;
+  <script>
+    // Theme toggle
+    const savedTheme = localStorage.getItem('nova_theme') || 'dark';
+    document.documentElement.dataset.theme = savedTheme;
+    document.getElementById('themeBtn')?.addEventListener('click', () => {
+      const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+      document.documentElement.dataset.theme = next;
+      localStorage.setItem('nova_theme', next);
+    });
 
-  const themeBtn = document.getElementById('themeBtn');
-  themeBtn?.addEventListener('click', () => {
-    const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-    document.documentElement.dataset.theme = next;
-    localStorage.setItem('nova_theme', next);
-  });
+    // Cart badge update
+    function updateCartBadge() {
+      const cart = JSON.parse(localStorage.getItem('nova_cart') || '[]');
+      const totalItems = cart.reduce((sum, item) => sum + (item.qty || 1), 0);
+      const cartCount = document.getElementById('cartCount');
+      if (cartCount) cartCount.innerText = totalItems;
+    }
+    updateCartBadge();
 
-  const nav = document.getElementById('nav');
-  addEventListener('scroll', () => nav?.classList.toggle('scrolled', scrollY > 20), { passive: true });
+    // Contact form submission
+    document.getElementById('contactForm')?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = document.getElementById('contactName').value;
+      const messageDiv = document.getElementById('contactFormMessage');
+      messageDiv.innerHTML = '<div style="background:#00c853; padding:1rem; border-radius:0.75rem;">✅ Thank you ' + name + '! Your message has been sent. We will get back to you soon.</div>';
+      e.target.reset();
+      setTimeout(() => messageDiv.innerHTML = '', 5000);
+    });
 
-  const menuToggle = document.getElementById('menuToggle');
-  const mobileMenu = document.getElementById('mobileMenu');
-  menuToggle?.addEventListener('click', () => {
-    menuToggle.classList.toggle('open');
-    mobileMenu?.classList.toggle('open');
-    mobileMenu?.setAttribute('aria-hidden', String(!mobileMenu.classList.contains('open')));
-  });
-  mobileMenu?.querySelectorAll('a').forEach(link => link.addEventListener('click', () => {
-    menuToggle?.classList.remove('open');
-    mobileMenu.classList.remove('open');
-    mobileMenu.setAttribute('aria-hidden', 'true');
-  }));
-</script>
-<script src="shop/app.js" defer></script>
-<script src="shop/pwa.js" defer></script>
+    // Mobile menu toggle
+    document.getElementById('menuToggle')?.addEventListener('click', () => {
+      document.getElementById('mobileMenu')?.classList.toggle('open');
+    });
+
+    // Cart button
+    document.getElementById('cartBtn')?.addEventListener('click', () => {
+      window.location.href = 'index.html#cart';
+    });
+  </script>
+
+  <!-- Mobile Menu -->
+  <aside class="mobile-menu" id="mobileMenu" aria-hidden="true">
+    <a href="index.html">Home</a>
+    <a href="index.html#categories">Shop</a>
+    <a href="repair.html">Services</a>
+    <a href="index.html#featured">Featured</a>
+    <a href="contact.html">Contact</a>
+    <a href="management.html">Management</a>
+  </aside>
 </body>
 </html>
