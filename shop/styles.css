@@ -537,6 +537,8 @@ html[data-theme="light"] .nl-form input { background: rgba(255,255,255,.6); }
 }
 
 /* Payment Breakdown Box */
+/* ============== CART STYLING FIXES ============== */
+/* Fix payment breakdown alignment */
 .payment-breakdown {
   background: linear-gradient(135deg, rgba(0, 229, 255, 0.08), rgba(124, 77, 255, 0.08));
   border-radius: 1rem;
@@ -545,35 +547,33 @@ html[data-theme="light"] .nl-form input { background: rgba(255,255,255,.6); }
   border: 1px solid rgba(0, 229, 255, 0.2);
 }
 
-.payment-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.5rem 0;
-}
-
-.payment-row:not(:last-child) {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.payment-label {
-  color: var(--muted);
-  font-size: 0.9rem;
-}
-
-.payment-amount {
-  font-weight: 600;
-  font-family: var(--font-mono);
-}
-
+/* Make delivery fee more visible */
 .payment-amount.delivery {
   color: #00c853;
+  font-weight: 700;
+  font-size: 1.1rem;
 }
 
+/* Remaining on delivery styling */
 .payment-amount.remaining {
   color: #ff9800;
+  font-weight: 700;
+  font-size: 1.1rem;
 }
 
+/* Fix cart item spacing */
+.cart-item {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--surface);
+  border-radius: 1rem;
+  border: 1px solid var(--border);
+  align-items: center;
+  transition: all 0.3s;
+}
+
+/* Ensure delivery fee note is readable */
 .payment-note {
   margin-top: 0.75rem;
   padding: 0.75rem;
@@ -589,6 +589,14 @@ html[data-theme="light"] .nl-form input { background: rgba(255,255,255,.6); }
   font-style: normal;
 }
 
+/* Fix for light mode */
+html[data-theme="light"] .payment-breakdown {
+  background: linear-gradient(135deg, rgba(0, 229, 255, 0.04), rgba(124, 77, 255, 0.04));
+}
+
+html[data-theme="light"] .payment-note {
+  background: rgba(0, 0, 0, 0.04);
+}
 /* Cart Footer */
 .cart-foot { 
   padding: 1.25rem; 
