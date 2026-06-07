@@ -156,6 +156,7 @@
       overflow: hidden;
       border: 1px solid var(--border);
       box-shadow: var(--shadow-glow);
+      background: #1a1a2e;
     }
     
     .map-frame iframe {
@@ -319,7 +320,6 @@
         <a href="repair.html">Repair Services</a>
         <a href="index.html#featured">Featured</a>
         <a href="contact.html" class="active">Contact</a>
-        <a href="management.html">Management</a>
       </nav>
       <div class="nav-tools">
         <button class="icon-btn" id="themeBtn" aria-label="Toggle theme">
@@ -399,7 +399,7 @@
             </div>
             <h3>Location</h3>
             <p>Visit our physical store in Nakuru, Kenya.</p>
-            <a href="https://maps.google.com/maps?q=S.M+Dynamics+Electronics+Kenya" target="_blank">View on Maps →</a>
+            <a href="https://maps.google.com/maps?q=S.M+DYNAMIC+ELECTRONICS+Nakuru" target="_blank">View on Maps →</a>
           </div>
         </div>
       </div>
@@ -418,13 +418,14 @@
               <p><strong>🕒 Business Hours:</strong> Monday - Saturday: 9:00 AM - 6:00 PM</p>
               <p><strong>📅 Sunday:</strong> Closed</p>
             </div>
-            <a href="https://maps.google.com/maps?q=S.M+Dynamics+Electronics+Kenya" target="_blank" class="btn primary" style="margin-top: 1.5rem;">Get Directions →</a>
+            <a href="https://maps.google.com/maps?q=S.M+DYNAMIC+ELECTRONICS+Nakuru" target="_blank" class="btn primary" style="margin-top: 1.5rem;">Get Directions →</a>
           </div>
           <div class="map-frame">
             <iframe 
-              src="https://www.google.com/maps/place/S.M+DYNAMIC+ELECTRONICS/@-0.2470823,36.096895,14.08z/data=!4m21!1m14!4m13!1m4!2m2!1d36.1234432!2d-0.2392064!4e1!1m6!1m2!1s0x18298d90cf610bef:0xf2f21833bc7cc21a!2sNakuru!2m2!1d36.080026!2d-0.3030988!3e0!3m5!1s0x1829ed3d19eb98af:0xa4f4cd21fd43d06b!8m2!3d-0.228327!4d36.1203422!16s%2Fg%2F11pty7gprj?entry=ttu&g_ep=EgoyMDI2MDYwMS4wIKXMDSoASAFQAw%3D%3D" 
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d255282.3589422489!2d36.03299829368206!3d-0.303099179113325!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x18298d90cf610bef%3A0xf2f21833bc7cc21a!2sNakuru!5e0!3m2!1sen!2ske!4v1700000000000!5m2!1sen!2ske" 
               allowfullscreen="" 
-              loading="lazy">
+              loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade">
             </iframe>
           </div>
         </div>
@@ -532,7 +533,6 @@
         <h4>Company</h4>
         <a href="contact.html">About</a>
         <a href="contact.html">Terms and Conditions</a>
-        <a href="management.html">Management</a>
       </div>
     </div>
     <div class="foot-bot container">
@@ -564,6 +564,24 @@
     document.getElementById('contactForm')?.addEventListener('submit', (e) => {
       e.preventDefault();
       const name = document.getElementById('contactName').value;
+      const email = document.getElementById('contactEmail').value;
+      const subject = document.getElementById('contactSubject').value;
+      const message = document.getElementById('contactMessage').value;
+      const phone = document.getElementById('contactPhone').value;
+      
+      // Save to localStorage
+      const contacts = JSON.parse(localStorage.getItem('contact_messages') || '[]');
+      contacts.push({
+        id: Date.now(),
+        name: name,
+        email: email,
+        phone: phone,
+        subject: subject,
+        message: message,
+        date: new Date().toISOString()
+      });
+      localStorage.setItem('contact_messages', JSON.stringify(contacts));
+      
       const messageDiv = document.getElementById('contactFormMessage');
       messageDiv.innerHTML = '<div style="background:#00c853; padding:1rem; border-radius:0.75rem;">✅ Thank you ' + name + '! Your message has been sent. We will get back to you soon.</div>';
       e.target.reset();
@@ -572,7 +590,8 @@
 
     // Mobile menu toggle
     document.getElementById('menuToggle')?.addEventListener('click', () => {
-      document.getElementById('mobileMenu')?.classList.toggle('open');
+      const menu = document.getElementById('mobileMenu');
+      if (menu) menu.classList.toggle('open');
     });
 
     // Cart button
