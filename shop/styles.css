@@ -308,44 +308,38 @@ html[data-theme="light"] .nl-form input { background: rgba(255,255,255,.6); }
 .socials a:hover { background: var(--grad-1); color:#0a0a12; }
 .foot-bot { display:flex; justify-content:space-between; padding-top:1.5rem; border-top:1px solid var(--border); color:var(--muted); font-size:.8rem; flex-wrap:wrap; gap:.5rem; }
 @media (max-width: 760px) { .foot-grid { grid-template-columns: 1fr 1fr; } }
-
-/* ============== CART - LEFT SIDE ============== */
-.overlay { position:fixed; inset:0; background: rgba(0,0,0,.6); backdrop-filter: blur(6px); opacity:0; visibility:hidden; transition: opacity .3s; z-index:200; }
-.overlay.show { opacity:1; visibility:visible; }
-
-/* Cart slides from LEFT instead of right */
-/* ============== CART - LEFT SIDE (FIXED) ============== */
+/* ============== CART - RIGHT SIDE (CORRECTED) ============== */
 .overlay { 
-  position:fixed; 
-  inset:0; 
+  position: fixed; 
+  inset: 0; 
   background: rgba(0,0,0,.6); 
   backdrop-filter: blur(6px); 
-  opacity:0; 
-  visibility:hidden; 
+  opacity: 0; 
+  visibility: hidden; 
   transition: opacity .3s; 
-  z-index:200; 
+  z-index: 200; 
 }
 .overlay.show { 
-  opacity:1; 
-  visibility:visible; 
+  opacity: 1; 
+  visibility: visible; 
 }
 
-/* Cart slides from LEFT side */
+/* Cart slides from RIGHT side */
 .cart-side { 
   position: fixed; 
   top: 0;
-  left: 0;
+  right: 0;
   width: min(450px, 92%); 
   height: 100vh; 
   background: var(--bg-2); 
-  border-right: 1px solid var(--border);
+  border-left: 1px solid var(--border);
   z-index: 201; 
-  transform: translateX(-100%); 
+  transform: translateX(100%); 
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
   display: flex; 
   flex-direction: column; 
   overflow: hidden;
-  box-shadow: 10px 0 30px rgba(0, 0, 0, 0.3);
+  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.3);
 }
 
 .cart-side.open { 
@@ -418,7 +412,7 @@ html[data-theme="light"] .nl-form input { background: rgba(255,255,255,.6); }
 
 .cart-item:hover { 
   border-color: var(--primary);
-  transform: translateX(5px);
+  transform: translateX(-5px);
 }
 
 .cart-item img { 
@@ -435,14 +429,14 @@ html[data-theme="light"] .nl-form input { background: rgba(255,255,255,.6); }
 
 .ci-title { 
   font-weight: 600; 
-  font-size: 0.95rem; 
+  font-size: 1rem; 
   margin-bottom: 0.25rem; 
 }
 
 .ci-price { 
   color: var(--primary); 
   font-family: var(--font-mono); 
-  font-size: 0.9rem; 
+  font-size: 1rem; 
   font-weight: 600; 
 }
 
@@ -501,44 +495,13 @@ html[data-theme="light"] .nl-form input { background: rgba(255,255,255,.6); }
 }
 
 .cart-meta h4 {
-  font-size: 0.9rem;
+  font-size: 1rem;
   margin-bottom: 1rem;
   color: var(--primary);
   font-family: var(--font-display);
-  letter-spacing: 0.5px;
-}
-
-.cart-meta label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  margin-bottom: 1rem;
-  font-size: 0.8rem;
-  color: var(--muted);
-}
-
-.cart-meta select,
-.cart-meta input {
-  width: 100%;
-  padding: 0.7rem 0.9rem;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: var(--bg-2);
-  color: var(--text);
-  font-size: 0.85rem;
-  transition: all 0.2s ease;
-}
-
-.cart-meta select:focus,
-.cart-meta input:focus {
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 2px rgba(0, 229, 255, 0.1);
 }
 
 /* Payment Breakdown Box */
-/* ============== CART STYLING FIXES ============== */
-/* Fix payment breakdown alignment */
 .payment-breakdown {
   background: linear-gradient(135deg, rgba(0, 229, 255, 0.08), rgba(124, 77, 255, 0.08));
   border-radius: 1rem;
@@ -547,7 +510,37 @@ html[data-theme="light"] .nl-form input { background: rgba(255,255,255,.6); }
   border: 1px solid rgba(0, 229, 255, 0.2);
 }
 
-/* Make delivery fee more visible */
+/* Payment rows - FIXED ALIGNMENT */
+.payment-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+}
+
+.payment-row:not(:last-child) {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.payment-label {
+  color: var(--muted);
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.payment-amount {
+  font-weight: 700;
+  font-family: var(--font-mono);
+  font-size: 1rem;
+}
+
+/* Subtotal styling */
+.payment-amount.subtotal {
+  color: var(--text);
+  font-size: 1.1rem;
+}
+
+/* Delivery fee styling */
 .payment-amount.delivery {
   color: #00c853;
   font-weight: 700;
@@ -561,27 +554,16 @@ html[data-theme="light"] .nl-form input { background: rgba(255,255,255,.6); }
   font-size: 1.1rem;
 }
 
-/* Fix cart item spacing */
-.cart-item {
-  display: flex;
-  gap: 1rem;
-  padding: 1rem;
-  background: var(--surface);
-  border-radius: 1rem;
-  border: 1px solid var(--border);
-  align-items: center;
-  transition: all 0.3s;
-}
-
-/* Ensure delivery fee note is readable */
+/* Delivery note */
 .payment-note {
   margin-top: 0.75rem;
   padding: 0.75rem;
   background: rgba(0, 0, 0, 0.2);
   border-radius: 0.75rem;
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   color: var(--muted);
   text-align: center;
+  line-height: 1.4;
 }
 
 .payment-note i {
@@ -589,14 +571,6 @@ html[data-theme="light"] .nl-form input { background: rgba(255,255,255,.6); }
   font-style: normal;
 }
 
-/* Fix for light mode */
-html[data-theme="light"] .payment-breakdown {
-  background: linear-gradient(135deg, rgba(0, 229, 255, 0.04), rgba(124, 77, 255, 0.04));
-}
-
-html[data-theme="light"] .payment-note {
-  background: rgba(0, 0, 0, 0.04);
-}
 /* Cart Footer */
 .cart-foot { 
   padding: 1.25rem; 
@@ -610,14 +584,14 @@ html[data-theme="light"] .payment-note {
   align-items: center; 
   padding: 0.75rem 0;
   margin-bottom: 1rem;
-  font-size: 1.1rem; 
+  font-size: 1rem; 
   font-weight: 600; 
 }
 
 .cart-total b { 
   font-family: var(--font-mono); 
   color: var(--primary);
-  font-size: 1.3rem;
+  font-size: 1.2rem;
 }
 
 /* Checkout Button */
@@ -639,11 +613,17 @@ html[data-theme="light"] .payment-note {
   box-shadow: 0 10px 30px -10px rgba(0, 229, 255, 0.5);
 }
 
-/* Dark mode specific fixes for cart */
-html[data-theme="dark"] .cart-meta select,
-html[data-theme="dark"] .cart-meta input {
-  background: #0f0f1a;
-  border-color: rgba(255, 255, 255, 0.1);
+/* Light mode fixes */
+html[data-theme="light"] .payment-breakdown {
+  background: linear-gradient(135deg, rgba(0, 229, 255, 0.04), rgba(124, 77, 255, 0.04));
+}
+
+html[data-theme="light"] .payment-note {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+html[data-theme="light"] .payment-row:not(:last-child) {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 html[data-theme="light"] .cart-meta select,
@@ -653,9 +633,10 @@ html[data-theme="light"] .cart-meta input {
   color: #1a1a2e;
 }
 
-html[data-theme="light"] .cart-meta select option {
-  background: #ffffff;
-  color: #1a1a2e;
+html[data-theme="dark"] .cart-meta select,
+html[data-theme="dark"] .cart-meta input {
+  background: #0f0f1a;
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 /* Mobile Responsive */
@@ -676,6 +657,12 @@ html[data-theme="light"] .cart-meta select option {
   }
   .cart-head, .cart-foot { 
     padding: 1rem; 
+  }
+  .payment-label {
+    font-size: 0.85rem;
+  }
+  .payment-amount {
+    font-size: 0.9rem;
   }
 }
 
