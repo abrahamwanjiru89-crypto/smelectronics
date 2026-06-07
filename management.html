@@ -143,6 +143,48 @@
   .btn-remove-badge { background: #888; color: white; }
   .btn-edit { background: #00e5ff; color: #000; }
   .btn-delete { background: #ff3b30; color: white; }
+  
+  /* Delivery Fee Control Styles */
+  .delivery-fee-card {
+    background: linear-gradient(135deg, rgba(0,229,255,0.1), rgba(124,77,255,0.1));
+    border: 1px solid rgba(0,229,255,0.3);
+  }
+  .delivery-fee-display {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #00e5ff;
+    font-family: var(--font-mono);
+  }
+  .delivery-fee-input {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .delivery-fee-input input {
+    flex: 1;
+    min-width: 150px;
+    padding: 0.75rem;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: #0f0f1a;
+    color: white;
+    font-size: 1rem;
+  }
+  .delivery-fee-input button {
+    padding: 0.75rem 1.5rem;
+  }
+  .fee-info {
+    margin-top: 1rem;
+    padding: 0.75rem;
+    background: rgba(0,0,0,0.2);
+    border-radius: 0.75rem;
+    font-size: 0.85rem;
+    color: #888;
+  }
+  .fee-info i {
+    color: #00e5ff;
+  }
 </style>
 </head>
 <body class="management-body">
@@ -161,10 +203,7 @@
           <input name="password" type="password" placeholder="Password" autocomplete="current-password" required>
           <button class="btn primary block" type="submit">Login</button>
         </form>
-        <p class="auth-hint" style="margin-top: 1rem; font-size: 0.875rem; color: #888;">
-          Demo: admin@smdynamics.com / admin123<br>
-          Staff: staff@smdynamics.com / staff123
-        </p>
+        
       </div>
     </section>
 
@@ -202,6 +241,22 @@
           <h3>📊 Business Performance</h3>
           <canvas id="performanceChart" width="900" height="320" aria-label="Business performance graph"></canvas>
           <div class="metrics" id="metrics"></div>
+        </section>
+
+        <!-- ============================================ -->
+        <!-- DELIVERY FEE CONTROL (ADMIN ONLY) -->
+        <!-- ============================================ -->
+        <section class="dash-panel reveal delivery-fee-card">
+          <h3>🚚 Delivery Fee Control</h3>
+          <p style="margin-bottom: 1rem; color: #888;">Set the delivery fee that customers will pay upfront when placing orders.</p>
+          <div class="delivery-fee-display" id="currentDeliveryFee">Kshs 600</div>
+          <div class="delivery-fee-input" style="margin-top: 1rem;">
+            <input type="number" id="newDeliveryFee" placeholder="Enter new delivery fee" min="0" step="50">
+            <button class="btn primary" id="updateDeliveryFeeBtn">Update Delivery Fee</button>
+          </div>
+          <div class="fee-info">
+            <i>💡 Note:</i> Customers will pay this delivery fee upfront via M-Pesa. The remaining product amount will be paid on delivery.
+          </div>
         </section>
 
         <!-- Staff Accounts -->
@@ -319,6 +374,95 @@
   
   <div class="toasts" id="toasts" aria-live="polite"></div>
 
+  <script>
+    // ============================================
+    // DELIVERY FEE CONTROL FUNCTIONS
+    // ============================================
+    
+    async function loadDeliveryFee() {
+      try {
+        const response = await fetch('/api/admin/delivery-fee', {
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          const feeElement = document.getElementById('currentDeliveryFee');
+          if (feeElement) {
+            feeElement.textContent = `Kshs ${data.fee.toLocaleString()}`;
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load delivery fee:', err);
+      }
+    }
+    
+    async function updateDeliveryFee() {
+      const input = document.getElementById('newDeliveryFee');
+      const newFee = parseInt(input.value);
+      
+      if (isNaN(newFee) || newFee < 0) {
+        toast('Please enter a valid delivery fee amount', 'error');
+        return;
+      }
+      
+      if (!confirm(`Are you sure you want to change the delivery fee to Kshs ${newFee.toLocaleString()}?`)) {
+        return;
+      }
+      
+      try {
+        const response = await fetch('/api/admin/delivery-fee', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fee: newFee })
+        });
+        
+        if (response.ok) {
+          const feeElement = document.getElementById('currentDeliveryFee');
+          if (feeElement) {
+            feeElement.textContent = `Kshs ${newFee.toLocaleString()}`;
+          }
+          input.value = '';
+          toast(`Delivery fee updated to Kshs ${newFee.toLocaleString()}`, 'success');
+        } else {
+          throw new Error('Update failed');
+        }
+      } catch (err) {
+        toast('Failed to update delivery fee', 'error');
+      }
+    }
+    
+    // Simple toast function for this page
+    function toast(msg, type) {
+      const container = document.getElementById('toasts');
+      if (!container) return;
+      const el = document.createElement('div');
+      el.className = `toast ${type}`;
+      el.innerText = msg;
+      container.appendChild(el);
+      setTimeout(() => el.remove(), 3000);
+    }
+    
+    // Attach event listener when DOM is ready
+    document.addEventListener('DOMContentLoaded', () => {
+      const updateBtn = document.getElementById('updateDeliveryFeeBtn');
+      if (updateBtn) {
+        updateBtn.addEventListener('click', updateDeliveryFee);
+      }
+      
+      // Allow Enter key to submit
+      const feeInput = document.getElementById('newDeliveryFee');
+      if (feeInput) {
+        feeInput.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') {
+            updateDeliveryFee();
+          }
+        });
+      }
+    });
+  </script>
+  
   <script src="shop/management.js" defer></script>
 </body>
 </html>
