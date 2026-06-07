@@ -1,6 +1,6 @@
 /* =========================================================
    S.M Dynamics Electronics — Premium electronics storefront (vanilla JS)
-   FIXED VERSION - Syncs with management page for badges
+   UPDATED: Partial Payment System - Pay delivery fee only upfront
 ========================================================= */
 
 // ----- PRODUCT DATA -----
@@ -68,26 +68,31 @@ function loadProductsFromLocalStorage() {
 }
 
 // ============================================
-// FIXED: CHECKOUT MODAL (Popup instead of scroll)
+// UPDATED: CHECKOUT MODAL - Partial Payment (Only Delivery Fee)
 // ============================================
-function showCheckoutModal(total, deliveryFee, onConfirm) {
+function showCheckoutModal(subtotal, deliveryFeeAmount, onConfirm) {
   const existingModal = document.querySelector('.checkout-modal');
   if (existingModal) existingModal.remove();
+  
+  const total = subtotal + deliveryFeeAmount;
+  const remainingAmount = subtotal;
   
   const modal = document.createElement('div');
   modal.className = 'checkout-modal';
   modal.innerHTML = `
     <div class="checkout-card">
-      <h3>💰 Confirm Payment</h3>
-      <div class="amount">${fmt(total)}</div>
-      <div class="details">
-        <p>Subtotal: ${fmt(total - deliveryFee)}</p>
-        <p>Delivery Fee: ${fmt(deliveryFee)}</p>
-        <p style="margin-top: 0.5rem;">Total Amount: <strong style="color: #00e5ff;">${fmt(total)}</strong></p>
+      <h3>💰 Payment Summary</h3>
+      <div class="details" style="text-align: left;">
+        <p><strong>Subtotal:</strong> ${fmt(subtotal)}</p>
+        <p><strong>Delivery Fee (Pay Now):</strong> <span style="color: #00e5ff;">${fmt(deliveryFeeAmount)}</span></p>
+        <p><strong>Remaining on Delivery:</strong> ${fmt(remainingAmount)}</p>
+        <hr style="margin: 1rem 0; border-color: rgba(255,255,255,0.1);">
+        <p style="font-size: 0.85rem;">✅ You will only pay the delivery fee now via M-Pesa</p>
+        <p style="font-size: 0.85rem;">📦 The remaining amount (${fmt(remainingAmount)}) will be paid when you receive your product</p>
       </div>
       <div class="checkout-actions">
         <button class="btn-cancel">Cancel</button>
-        <button class="btn-confirm">Proceed to Payment</button>
+        <button class="btn-confirm">Pay Delivery Fee (${fmt(deliveryFeeAmount)})</button>
       </div>
     </div>
   `;
@@ -132,7 +137,128 @@ async function updateCartTotals() {
   }
 
   if ($('#deliveryFee')) $('#deliveryFee').textContent = fmt(deliveryFee);
-  if ($('#cartTotal')) $('#cartTotal').textContent = fmt(subtotal + deliveryFee);
+  
+  // Update cart footer with partial payment breakdown
+  updateCartFooter(subtotal);
+}
+
+function updateCartFooter(subtotal) {
+  const cartFooter = $('.cart-foot');
+  if (cartFooter) {
+    const total = subtotal + deliveryFee;
+    const remainingOnDelivery = subtotal;
+    
+    cartFooter.innerHTML = `
+      <div class="cart-total">
+        <div style="margin-bottom: 0.75rem;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span>Subtotal:</span>
+            <b>${fmt(subtotal)}</b>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span>Delivery Fee (Pay Now):</span>
+            <b style="color: #00e5ff;">${fmt(deliveryFee)}</b>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.1);">
+            <span>Remaining on Delivery:</span>
+            <b>${fmt(remainingOnDelivery)}</b>
+          </div>
+        </div>
+        <div style="background: rgba(0,229,255,0.1); padding: 0.75rem; border-radius: 0.75rem; margin-top: 0.5rem;">
+          <small>💡 You only pay delivery fee (${fmt(deliveryFee)}) now. The remaining ${fmt(remainingOnDelivery)} will be paid when you receive your product.</small>
+        </div>
+      </div>
+      <button class="btn primary block" id="checkoutBtn">Pay Delivery Fee & Place Order</button>
+    `;
+    
+    // Re-attach checkout event listener
+    const newCheckoutBtn = document.getElementById('checkoutBtn');
+    if (newCheckoutBtn) {
+      newCheckoutBtn.addEventListener('click', handleCheckout);
+    }
+  }
+}
+
+// ============================================
+// UPDATED: CHECKOUT HANDLER - Partial Payment
+// ============================================
+async function handleCheckout() {
+  if (!state.cart.length) {
+    toast('Cart is empty', 'error');
+    return;
+  }
+  
+  const user = currentUser();
+  if (!user || user.role !== 'customer') {
+    toast('Please login as a customer to place an order', 'error');
+    openCart(false);
+    openAuth();
+    return;
+  }
+  
+  const countyId = $('#county').value;
+  const subLocationText = $('#subLocation').value.trim();
+  const subLocation = getSelectedSubLocation();
+  const street = $('#street').value.trim();
+  
+  if (!countyId || !subLocationText || !street) {
+    toast('Please fill in your delivery location', 'error');
+    return;
+  }
+  if (!subLocation) {
+    toast('Please choose a listed sub-location for the selected county', 'error');
+    return;
+  }
+
+  const subtotal = state.cart.reduce((s, c) => s + (PRODUCTS.find(p => p.id === c.id)?.price || 0) * c.qty, 0);
+  const total = subtotal + deliveryFee;
+
+  // Show modal with partial payment info
+  showCheckoutModal(subtotal, deliveryFee, async () => {
+    const phone = prompt("Enter M-Pesa Phone Number to pay delivery fee (e.g., 0712345678):");
+    if (!phone || phone.length < 10) {
+      toast("Valid phone number required", "error");
+      return;
+    }
+
+    try {
+      // Create order with partial payment (only delivery fee upfront)
+      const orderResp = await api('/api/orders', {
+        method: 'POST',
+        body: JSON.stringify({
+          items: state.cart,
+          county: $('#county option:checked').text(),
+          constituency: subLocation.name,
+          street,
+          depositAmount: deliveryFee,
+          depositMpesa: "MOCK-" + Date.now(),
+        })
+      });
+      const order = orderResp.order;
+      
+      // Process M-Pesa payment for delivery fee only
+      toast("Processing delivery fee payment...", "info");
+      await api('/api/payments/stk-push', { 
+        method: 'POST', 
+        body: JSON.stringify({ 
+          phone, 
+          amount: deliveryFee, 
+          orderId: order.id,
+          paymentType: 'delivery_fee'
+        }) 
+      });
+
+      state.orders.unshift(order);
+      toast(`✅ Delivery fee of ${fmt(deliveryFee)} paid! Remaining ${fmt(subtotal)} to be paid on delivery.`, 'success');
+      state.cart = []; 
+      save('nova_cart', state.cart); 
+      renderCart(); 
+      openCart(false);
+      renderDashboard();
+    } catch (err) {
+      toast("Checkout failed: " + err.message, 'error');
+    }
+  });
 }
 
 // ============================================
@@ -581,12 +707,15 @@ function setQty(id, q) {
   const it = state.cart.find(c => c.id === id); if (!it) return;
   it.qty = Math.max(1, q); save('nova_cart', state.cart); renderCart();
 }
+
 function renderCart() {
   const box = $('#cartItems');
-  if (!state.cart.length) { box.innerHTML = '<div class="cart-empty"><div style="font-size:3rem">🛒</div><p>Your cart is empty</p></div>'; }
-  else {
+  if (!state.cart.length) { 
+    box.innerHTML = '<div class="cart-empty"><div style="font-size:3rem">🛒</div><p>Your cart is empty</p></div>'; 
+  } else {
     box.innerHTML = state.cart.map(c => {
-      const p = PRODUCTS.find(x => x.id === c.id); if (!p) return '';
+      const p = PRODUCTS.find(x => x.id === c.id);
+      if (!p) return '';
       return `<div class="cart-item">
         <img src="${p.img}" alt="${p.name}" onerror="this.src='/shop/hero-phone.jpg'">
         <div><div class="ci-title">${p.name}</div><div class="ci-price">${fmt(p.price)}</div>
@@ -595,6 +724,7 @@ function renderCart() {
         <button class="ci-rm" data-act="rm" data-id="${p.id}" aria-label="Remove">✕</button>
     </div>`;
     }).join('');
+    
     box.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', () => {
       const id = b.dataset.id, item = state.cart.find(c => c.id === id);
       if (b.dataset.act === 'inc') setQty(id, item.qty + 1);
@@ -602,10 +732,14 @@ function renderCart() {
       if (b.dataset.act === 'rm') rmCart(id);
     }));
   }
-  const total = state.cart.reduce((s, c) => s + (PRODUCTS.find(p => p.id === c.id)?.price || 0) * c.qty, 0);
+  
+  const subtotal = state.cart.reduce((s, c) => s + (PRODUCTS.find(p => p.id === c.id)?.price || 0) * c.qty, 0);
   $('#cartCount').textContent = state.cart.reduce((s, c) => s + c.qty, 0);
-  updateCartTotals();
+  
+  // Update cart footer with partial payment info
+  updateCartFooter(subtotal);
 }
+
 function openCart(open) {
   const cart = $('#cartSide');
   const overlay = $('#overlay');
@@ -623,68 +757,6 @@ function openCart(open) {
 $('#cartBtn').addEventListener('click', () => openCart(true));
 $('#cartClose').addEventListener('click', () => openCart(false));
 $('#overlay').addEventListener('click', () => { openCart(false); closeModal(); closeAuth(); });
-
-// ============================================
-// FIXED: CHECKOUT BUTTON - Uses Modal instead of scrolling
-// ============================================
-$('#checkoutBtn').addEventListener('click', async () => {
-  if (!state.cart.length) return toast('Cart is empty', 'error');
-  
-  const user = currentUser();
-  if (!user || user.role !== 'customer') {
-    toast('Please login as a customer to place an order', 'error');
-    openCart(false);
-    openAuth();
-    return;
-  }
-  
-  const countyId = $('#county').value;
-  const subLocationText = $('#subLocation').value.trim();
-  const subLocation = getSelectedSubLocation();
-  const street = $('#street').value.trim();
-  
-  if (!countyId || !subLocationText || !street) {
-    return toast('Please fill in your delivery location', 'error');
-  }
-  if (!subLocation) {
-    return toast('Please choose a listed sub-location for the selected county', 'error');
-  }
-
-  const subtotal = state.cart.reduce((s, c) => s + (PRODUCTS.find(p => p.id === c.id)?.price || 0) * c.qty, 0);
-  const total = subtotal + deliveryFee;
-
-  showCheckoutModal(total, deliveryFee, async () => {
-    const phone = prompt("Enter M-Pesa Phone Number (e.g., 0712345678):");
-    if (!phone || phone.length < 10) {
-      toast("Valid phone number required", "error");
-      return;
-    }
-
-    try {
-      const orderResp = await api('/api/orders', {
-        method:'POST',
-        body:JSON.stringify({
-          items: state.cart,
-          county: $('#county option:checked').text(),
-          constituency: subLocation.name,
-          street,
-          depositAmount: total,
-          depositMpesa: "MOCK-" + Date.now(),
-        })
-      });
-      const order = orderResp.order;
-      toast("Sending STK Push...", "info");
-      await api('/api/payments/stk-push', { method: 'POST', body: JSON.stringify({ phone, amount: total, orderId: order.id }) });
-
-      state.orders.unshift(order);
-      toast('STK Push sent. Please complete payment on your phone.', 'success');
-      state.cart = []; save('nova_cart', state.cart); renderCart(); openCart(false);
-      renderDashboard();
-    } catch (err) {
-      toast("Checkout failed: " + err.message, 'error');
-    }
-  });
-});
 
 // ----- WISHLIST -----
 function toggleWish(id, cardEl) {
@@ -962,6 +1034,18 @@ window.addEventListener('storage', (e) => {
   renderRecent();
   $('#wishCount').textContent = state.wish.length;
   loadCounties();
+  
+  // Load delivery fee from server
+  try {
+    const feeData = await api('/api/admin/delivery-fee');
+    if (feeData && feeData.fee) {
+      deliveryFee = feeData.fee;
+      updateCartTotals();
+    }
+  } catch (err) {
+    console.log('Using default delivery fee');
+  }
+  
   try {
     const session = await api('/api/auth/me');
     if (session.user?.role === 'customer') {
