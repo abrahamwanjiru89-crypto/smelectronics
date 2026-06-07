@@ -245,10 +245,13 @@ def init_db():
           id TEXT PRIMARY KEY,
           user_id TEXT NOT NULL,
           total REAL NOT NULL,
+          delivery_fee REAL DEFAULT 0,
+          deposit_amount REAL DEFAULT 0,
+          remaining_amount REAL DEFAULT 0,
+          payment_status TEXT DEFAULT 'Pending',
           county TEXT,
           constituency TEXT,
           street TEXT,
-          deposit_amount REAL,
           deposit_mpesa TEXT,
           status TEXT NOT NULL DEFAULT 'Placed',
           created_at TEXT NOT NULL,
@@ -388,6 +391,10 @@ def init_db():
           created_at TEXT NOT NULL,
           FOREIGN KEY(order_id) REFERENCES orders(id)
         );
+        CREATE TABLE IF NOT EXISTS settings (
+          key TEXT PRIMARY KEY,
+          value TEXT NOT NULL
+        );
         """)
 
         now = datetime.now(timezone.utc).isoformat()
@@ -433,6 +440,8 @@ def init_db():
                 "INSERT INTO spare_parts (id,name,brand,category,price,stock,image_path,description,created_at) VALUES (?,?,?,?,?,?,?,?,?)",
                 [(*p, now) for p in DEFAULT_SPARE_PARTS],
             )
+        if conn.execute("SELECT COUNT(*) FROM settings").fetchone()[0] == 0:
+            conn.execute("INSERT INTO settings (key, value) VALUES ('delivery_fee', '600')")
         seed_county_locations(conn, now)
 
 
@@ -466,11 +475,14 @@ def row_order(conn, row):
         "customer": user["name"] if user else "Unknown",
         "email": user["email"] if user else "Unknown",
         "total": row["total"],
+        "deliveryFee": row["delivery_fee"],
+        "depositAmount": row["deposit_amount"],
+        "remainingAmount": row["remaining_amount"],
+        "paymentStatus": row["payment_status"],
         "status": row["status"],
         "createdAt": row["created_at"],
         "items": [{"id": i["product_id"], "name": i["name"], "price": i["price"], "qty": i["qty"], "img": i["img"]} for i in items],
         "location": {"county": row["county"], "constituency": row["constituency"], "street": row["street"]},
-        "depositAmount": row["deposit_amount"],
         "depositMpesa": row["deposit_mpesa"]
     }
 
@@ -678,6 +690,15 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"services": [row_repair_service(r) for r in rows]})
             return
         
+        if path == "/api/admin/delivery-fee":
+            if not self.require({"admin"}):
+                return
+            with db() as conn:
+                setting = conn.execute("SELECT value FROM settings WHERE key = 'delivery_fee'").fetchone()
+                fee = int(setting['value']) if setting else 600
+                self.send_json({"fee": fee})
+            return
+        
         if path == "/api/products":
             with db() as conn:
                 rows = conn.execute("SELECT * FROM products ORDER BY created_at DESC").fetchall()
@@ -819,6 +840,19 @@ class Handler(BaseHTTPRequestHandler):
             self.clear_session()
             self.end_headers()
             self.wfile.write(b'{"ok": true}')
+            return
+        
+        # ============================================
+        # UPDATE DELIVERY FEE (ADMIN)
+        # ============================================
+        if path == "/api/admin/delivery-fee":
+            if not self.require({"admin"}):
+                return
+            data = self.read_json()
+            fee = int(data.get('fee', 600))
+            with db() as conn:
+                conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('delivery_fee', ?)", (str(fee),))
+            self.send_json({"ok": True})
             return
         
         # ============================================
@@ -982,7 +1016,7 @@ class Handler(BaseHTTPRequestHandler):
             return
         
         # ============================================
-        # CREATE ORDER ENDPOINT
+        # CREATE ORDER ENDPOINT (Partial Payment - Only delivery fee upfront)
         # ============================================
         if path == "/api/orders":
             user = self.require({"customer"})
@@ -994,6 +1028,10 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"error": "Cart is empty"}, 400)
                 return
             with db() as conn:
+                # Get delivery fee from settings
+                delivery_fee_setting = conn.execute("SELECT value FROM settings WHERE key = 'delivery_fee'").fetchone()
+                delivery_fee = int(delivery_fee_setting['value']) if delivery_fee_setting else 600
+                
                 order_id = "ORD-" + secrets.token_hex(4).upper()
                 total = 0
                 rows = []
@@ -1009,10 +1047,18 @@ class Handler(BaseHTTPRequestHandler):
                     total += product["price"] * qty
                     rows.append((order_id, product["id"], product["name"], product["price"], qty, product["img"]))
                 
+                # Customer only pays delivery fee upfront
+                deposit_amount = delivery_fee
+                remaining_amount = total
+                
                 conn.execute(
-                    "INSERT INTO orders (id, user_id, total, county, constituency, street, deposit_amount, deposit_mpesa, status, created_at) VALUES (?,?,?,?,?,?,?,?,?,?)",
-                    (order_id, user["id"], total, data.get("county"), data.get("constituency"), data.get("street"), 
-                     float(data.get("depositAmount", 0)), data.get("depositMpesa"), "Placed", datetime.now(timezone.utc).isoformat())
+                    """INSERT INTO orders 
+                    (id, user_id, total, delivery_fee, deposit_amount, remaining_amount, payment_status, 
+                     county, constituency, street, deposit_mpesa, status, created_at) 
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                    (order_id, user["id"], total, delivery_fee, deposit_amount, remaining_amount, "Deposit Paid",
+                     data.get("county"), data.get("constituency"), data.get("street"), 
+                     data.get("depositMpesa"), "Placed", datetime.now(timezone.utc).isoformat())
                 )
                 conn.executemany("INSERT INTO order_items (order_id,product_id,name,price,qty,img) VALUES (?,?,?,?,?,?)", rows)
                 order = conn.execute("SELECT * FROM orders WHERE id = ?", (order_id,)).fetchone()
