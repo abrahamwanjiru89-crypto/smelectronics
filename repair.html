@@ -3,18 +3,14 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<meta name="description" content="S.M Dynamics Mobile Repair Services — Professional phone, tablet, and laptop repairs across Kenya. Screen replacement, battery, charging port, software fixes." />
-<title>S.M Dynamics - Mobile Repair Services</title>
+<meta name="description" content="S.M Dynamics Mobile Repair Services & Spare Parts — Professional phone, tablet, and laptop repairs across Kenya. Genuine spare parts available." />
+<title>S.M Dynamics - Repair Services & Spare Parts</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@600;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shop/styles.css">
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#0b1120">
-<meta name="application-name" content="SM Dynamics Repair">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="SM Repair">
 <link rel="icon" href="shop/brand logo.png">
 <style>
 /* Repair page specific styles */
@@ -31,14 +27,38 @@
     margin-bottom: 1rem;
 }
 
-.search-repair {
+.section-tabs {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin: 2rem 0;
+}
+
+.section-tab {
+    padding: 0.8rem 2rem;
+    border-radius: 40px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.section-tab.active {
+    background: linear-gradient(135deg, #00e5ff, #7c4dff);
+    color: #000;
+    border-color: transparent;
+}
+
+.search-bar {
     max-width: 500px;
-    margin: 2rem auto 0;
+    margin: 1.5rem auto 0;
     display: flex;
     gap: 0.5rem;
 }
 
-.search-repair input {
+.search-bar input {
     flex: 1;
     padding: 0.9rem 1.2rem;
     border-radius: 12px;
@@ -48,16 +68,12 @@
     font-size: 1rem;
 }
 
-.search-repair button {
-    padding: 0.9rem 1.5rem;
-}
-
 .repair-categories {
     display: flex;
     gap: 0.75rem;
     justify-content: center;
     flex-wrap: wrap;
-    margin: 2rem 0;
+    margin: 1.5rem 0;
 }
 
 .repair-cat-btn {
@@ -74,6 +90,30 @@
     background: linear-gradient(135deg, #00e5ff, #7c4dff);
     color: #000;
     border-color: transparent;
+}
+
+.brand-filters {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 2rem;
+}
+
+.brand-btn {
+    padding: 0.4rem 1rem;
+    border-radius: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.brand-btn.active {
+    background: var(--primary);
+    color: #000;
+    border-color: var(--primary);
 }
 
 .repair-grid {
@@ -134,46 +174,37 @@
     width: 100%;
     padding: 0.8rem;
     border-radius: 10px;
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    color: var(--text);
+    background: linear-gradient(135deg, #00e5ff, #7c4dff);
+    border: none;
+    color: #000;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s;
 }
 
 .repair-add-btn:hover {
-    background: linear-gradient(135deg, #00e5ff, #7c4dff);
-    color: #000;
-    border-color: transparent;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,229,255,0.3);
 }
 
-/* Phone brand filter */
-.brand-filters {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-    justify-content: center;
-    margin-bottom: 2rem;
-}
-
-.brand-btn {
-    padding: 0.4rem 1rem;
+.stock-badge {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
     border-radius: 20px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    font-size: 0.85rem;
-    cursor: pointer;
-    transition: all 0.2s;
+    font-size: 0.7rem;
+    margin-bottom: 0.5rem;
 }
 
-.brand-btn.active {
-    background: var(--primary);
-    color: #000;
-    border-color: var(--primary);
+.stock-in {
+    background: rgba(32,224,166,0.2);
+    color: #20e0a6;
 }
 
-/* Toast notification */
+.stock-low {
+    background: rgba(255,152,0,0.2);
+    color: #ff9800;
+}
+
 .toast-container {
     position: fixed;
     bottom: 20px;
@@ -194,11 +225,6 @@
     box-shadow: 0 4px 15px rgba(0,0,0,0.2);
 }
 
-.toast.success {
-    background: linear-gradient(135deg, #00e5ff, #7c4dff);
-    color: #000;
-}
-
 @keyframes slideIn {
     from {
         transform: translateX(100%);
@@ -210,74 +236,17 @@
     }
 }
 
-/* Booking form modal */
-.booking-modal {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.8);
-    backdrop-filter: blur(8px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.3s;
-}
-
-.booking-modal.open {
-    opacity: 1;
-    visibility: visible;
-}
-
-.booking-modal-content {
-    background: var(--bg-2);
-    border: 1px solid var(--border);
-    border-radius: 1.5rem;
-    padding: 2rem;
-    max-width: 500px;
-    width: 90%;
-    max-height: 85vh;
-    overflow-y: auto;
-}
-
-.booking-modal-content h3 {
-    font-family: var(--font-display);
-    margin-bottom: 1rem;
-}
-
-.booking-modal-content input,
-.booking-modal-content select,
-.booking-modal-content textarea {
-    width: 100%;
-    padding: 0.75rem;
-    margin: 0.5rem 0 1rem;
-    border-radius: 10px;
-    border: 1px solid var(--border);
-    background: var(--surface);
-    color: var(--text);
-}
-
-.booking-modal-content button {
-    width: 100%;
-    padding: 0.9rem;
-    margin-top: 0.5rem;
-}
-
-.modal-close {
-    float: right;
-    font-size: 1.5rem;
-    cursor: pointer;
-    color: var(--muted);
-}
-
-/* Responsive */
 @media (max-width: 640px) {
     .repair-grid {
         grid-template-columns: 1fr;
     }
-    .search-repair {
+    .section-tabs {
         flex-direction: column;
+        align-items: center;
+    }
+    .section-tab {
+        width: 80%;
+        text-align: center;
     }
 }
 </style>
@@ -293,18 +262,18 @@
     <span>🚀 New arrivals dropping weekly</span>
     <span>⚡ Free express shipping on orders over Kshs 10,000</span>
     <span>★ 30-day money-back guarantee</span>
-    <span>::$Quality mobile phone repairs</span>
+    <span>::$Quality mobile phone repairs & genuine spare parts</span>
   </div>
 </div>
 
 <!-- Navbar -->
 <header class="nav" id="nav">
   <div class="nav-inner">
-    <a href="index.html" class="brand" aria-label="S.M Dynamics home">
+    <a href="index.html" class="brand">
       <img src="shop/brand logo.png" alt="S.M Dynamics Electronics" class="brand-logo">
       <span class="brand-name">S.M Dynamics Electronics</span>
     </a>
-    <nav class="nav-links" aria-label="Primary">
+    <nav class="nav-links">
       <a href="index.html#home">Home</a>
       <a href="index.html#categories">Shop</a>
       <a href="repair.html">Repair Services</a>
@@ -321,18 +290,10 @@
       <button class="icon-btn menu-toggle" id="menuToggle" aria-label="Menu"><span></span><span></span><span></span></button>
     </div>
   </div>
-  <div class="search-panel" id="searchPanel" aria-hidden="true">
-    <div class="search-inner">
-      <svg viewBox="0 0 24 24" class="s-icon"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-      <input id="searchInput" type="search" placeholder="Search 1000+ premium products..." aria-label="Search products" />
-      <button class="ghost-btn" id="searchClose">Esc</button>
-    </div>
-    <div class="search-results" id="searchResults"></div>
-  </div>
 </header>
 
 <!-- Mobile menu -->
-<aside class="mobile-menu" id="mobileMenu" aria-hidden="true">
+<aside class="mobile-menu" id="mobileMenu">
   <a href="index.html#home">Home</a>
   <a href="index.html#categories">Shop</a>
   <a href="repair.html">Services</a>
@@ -346,18 +307,26 @@
   <!-- Repair Hero -->
   <section class="repair-hero">
     <div class="container">
-      <h1>🔧 <span class="grad">Mobile Repair Services</span></h1>
-      <p>Professional phone, tablet, and laptop repairs across Kenya<br>Free diagnosis • Quality parts • 3-month warranty</p>
-      <div class="search-repair">
-        <input type="text" id="searchRepair" placeholder="Search repair service... (e.g., screen replacement)">
-        <button class="btn primary" id="searchRepairBtn">Search</button>
+      <h1>🔧 <span class="grad">Repair Services & Spare Parts</span></h1>
+      <p>Professional phone, tablet, and laptop repairs • Genuine spare parts • Free diagnosis</p>
+      
+      <!-- Section Tabs -->
+      <div class="section-tabs">
+        <button class="section-tab active" data-section="repair">🔧 Repair Services</button>
+        <button class="section-tab" data-section="spare">🔩 Spare Parts</button>
+      </div>
+      
+      <!-- Search Bar -->
+      <div class="search-bar">
+        <input type="text" id="searchInput" placeholder="Search repair services or spare parts...">
+        <button class="btn primary" id="searchBtn2">Search</button>
       </div>
     </div>
   </section>
 
-  <!-- Repair Categories -->
-  <div class="container">
-    <div class="repair-categories">
+  <!-- Repair Categories (shown for repair section) -->
+  <div class="container" id="repairCategoriesContainer">
+    <div class="repair-categories" id="repairCategories">
       <button class="repair-cat-btn active" data-cat="all">All Services</button>
       <button class="repair-cat-btn" data-cat="screen">Screen Replacement</button>
       <button class="repair-cat-btn" data-cat="battery">Battery Replacement</button>
@@ -367,7 +336,7 @@
       <button class="repair-cat-btn" data-cat="water">Water Damage</button>
     </div>
 
-    <!-- Phone Brand Filters -->
+    <!-- Phone Brand Filters (shown for repair section) -->
     <div class="brand-filters" id="brandFilters">
       <button class="brand-btn active" data-brand="all">All Brands</button>
       <button class="brand-btn" data-brand="iPhone">iPhone</button>
@@ -377,13 +346,25 @@
       <button class="brand-btn" data-brand="Oppo">Oppo</button>
       <button class="brand-btn" data-brand="Xiaomi">Xiaomi</button>
       <button class="brand-btn" data-brand="Huawei">Huawei</button>
-      <button class="brand-btn" data-brand="Google">Google Pixel</button>
     </div>
   </div>
 
-  <!-- Repair Services Grid -->
+  <!-- Spare Parts Categories (shown for spare parts section) -->
+  <div class="container" id="spareCategoriesContainer" style="display: none;">
+    <div class="repair-categories" id="spareCategories">
+      <button class="repair-cat-btn active" data-spare-cat="all">All Parts</button>
+      <button class="repair-cat-btn" data-spare-cat="screen">Screens</button>
+      <button class="repair-cat-btn" data-spare-cat="battery">Batteries</button>
+      <button class="repair-cat-btn" data-spare-cat="charging">Charging Ports</button>
+      <button class="repair-cat-btn" data-spare-cat="speaker">Speakers</button>
+      <button class="repair-cat-btn" data-spare-cat="camera">Cameras</button>
+      <button class="repair-cat-btn" data-spare-cat="glass">Back Glass</button>
+    </div>
+  </div>
+
+  <!-- Items Grid -->
   <div class="container">
-    <div class="repair-grid" id="repairGrid"></div>
+    <div class="repair-grid" id="itemsGrid"></div>
   </div>
 
   <!-- Why Choose Us -->
@@ -391,7 +372,7 @@
     <div class="container">
       <header class="section-head reveal">
         <span class="eyebrow"><span class="dot"></span> Why Choose Us</span>
-        <h2>Quality <span class="grad">Repairs</span> You Can Trust</h2>
+        <h2>Quality <span class="grad">Service & Parts</span> You Can Trust</h2>
       </header>
       <div class="cats">
         <div class="cat reveal" data-color="cyan">
@@ -421,27 +402,25 @@
 
 <!-- CART SIDEBAR -->
 <div class="overlay" id="overlay"></div>
-<aside class="cart-side" id="cartSide" aria-hidden="true" aria-label="Shopping cart">
+<aside class="cart-side" id="cartSide">
   <header class="cart-head">
     <h3>Your Cart</h3>
-    <button class="icon-btn" id="cartClose" aria-label="Close cart">✕</button>
+    <button class="icon-btn" id="cartClose">✕</button>
   </header>
   <div class="cart-body">
     <div class="cart-items" id="cartItems"></div>
     <div class="cart-meta">
       <h4>Delivery details</h4>
       <label>County
-        <select id="county" autocomplete="address-level1" required>
+        <select id="county">
           <option value="">Choose county</option>
         </select>
       </label>
       <label>Sub-location
-        <input id="subLocation" list="sublocationsList" placeholder="Start typing area (e.g. Nakuru Town)" autocomplete="address-level2" required>
-        <datalist id="sublocationsList"></datalist>
+        <input id="subLocation" placeholder="Start typing area">
       </label>
       <label>Street / zone
-        <input id="street" type="text" list="streetsList" placeholder="e.g. 3rd Avenue, Kiamunyeki" autocomplete="street-address" required>
-        <datalist id="streetsList"></datalist>
+        <input id="street" placeholder="e.g. 3rd Avenue">
       </label>
       <div class="cart-fees">
         <span>Delivery fee</span><b id="deliveryFee">Kshs 0</b>
@@ -457,28 +436,6 @@
 <!-- Toast Container -->
 <div class="toast-container" id="toastContainer"></div>
 
-<!-- Booking Modal -->
-<div class="booking-modal" id="bookingModal">
-  <div class="booking-modal-content">
-    <span class="modal-close" id="modalClose">&times;</span>
-    <h3 id="bookingTitle">Book Repair Service</h3>
-    <form id="bookingForm">
-      <input type="text" placeholder="Your name" id="customerName" required>
-      <input type="tel" placeholder="Phone number" id="customerPhone" required>
-      <input type="email" placeholder="Email (optional)" id="customerEmail">
-      <select id="repairBrand" required>
-        <option value="">Select phone brand</option>
-        <option>iPhone</option><option>Samsung</option><option>Tecno</option>
-        <option>Infinix</option><option>Oppo</option><option>Xiaomi</option>
-        <option>Huawei</option><option>Google Pixel</option><option>Other</option>
-      </select>
-      <input type="text" placeholder="Phone model (e.g., iPhone 12)" id="repairModel" required>
-      <textarea placeholder="Additional notes / issue description" id="repairNotes" rows="3"></textarea>
-      <button type="submit" class="btn primary">Submit Booking Request</button>
-    </form>
-  </div>
-</div>
-
 <script>
 // ============== REPAIR SERVICES DATA ==============
 const repairServices = [
@@ -488,38 +445,51 @@ const repairServices = [
     { id: 4, name: "Screen Replacement", category: "screen", brand: "Infinix", price: 2000, desc: "Original quality LCD replacement" },
     { id: 5, name: "Screen Replacement", category: "screen", brand: "Oppo", price: 2800, desc: "Professional LCD replacement" },
     { id: 6, name: "Screen Replacement", category: "screen", brand: "Xiaomi", price: 3000, desc: "Professional LCD/AMOLED replacement" },
-    { id: 7, name: "Screen Replacement", category: "screen", brand: "Huawei", price: 3500, desc: "Original quality LCD replacement" },
-    { id: 8, name: "Screen Replacement", category: "screen", brand: "Google", price: 4500, desc: "Premium OLED replacement" },
+    { id: 7, name: "Battery Replacement", category: "battery", brand: "iPhone", price: 2500, desc: "Genuine battery with 1-year warranty" },
+    { id: 8, name: "Battery Replacement", category: "battery", brand: "Samsung", price: 2200, desc: "High-quality battery replacement" },
+    { id: 9, name: "Battery Replacement", category: "battery", brand: "Tecno", price: 1500, desc: "Original quality battery" },
+    { id: 10, name: "Charging Port Repair", category: "charging", brand: "All", price: 1800, desc: "Fix charging issues, loose port" },
+    { id: 11, name: "Speaker Repair", category: "speaker", brand: "All", price: 1500, desc: "Fix muffled or no sound" },
+    { id: 12, name: "Water Damage Repair", category: "water", brand: "All", price: 3000, desc: "Ultrasonic cleaning and repair" },
+    { id: 13, name: "Software Update/Reset", category: "software", brand: "All", price: 1000, desc: "OS update, factory reset" }
+];
+
+// ============== SPARE PARTS DATA ==============
+const spareParts = [
+    { id: 101, name: "iPhone 11 Screen", category: "screen", brand: "iPhone", price: 3500, stock: 15, desc: "Genuine LCD replacement screen with tools" },
+    { id: 102, name: "iPhone 12 Screen", category: "screen", brand: "iPhone", price: 4500, stock: 12, desc: "OLED display with True Tone" },
+    { id: 103, name: "iPhone 13 Screen", category: "screen", brand: "iPhone", price: 5500, stock: 8, desc: "Super Retina XDR display" },
+    { id: 104, name: "Samsung A12 Screen", category: "screen", brand: "Samsung", price: 3200, stock: 10, desc: "LCD display with frame" },
+    { id: 105, name: "Samsung A32 Screen", category: "screen", brand: "Samsung", price: 3800, stock: 7, desc: "Super AMOLED display" },
+    { id: 106, name: "Tecno Spark Screen", category: "screen", brand: "Tecno", price: 1800, stock: 20, desc: "Original quality LCD" },
+    { id: 107, name: "Infinix Hot Screen", category: "screen", brand: "Infinix", price: 1800, stock: 18, desc: "LCD display with digitizer" },
     
-    { id: 9, name: "Battery Replacement", category: "battery", brand: "iPhone", price: 2500, desc: "Genuine battery with 1-year warranty" },
-    { id: 10, name: "Battery Replacement", category: "battery", brand: "Samsung", price: 2200, desc: "High-quality battery replacement" },
-    { id: 11, name: "Battery Replacement", category: "battery", brand: "Tecno", price: 1500, desc: "Original quality battery" },
-    { id: 12, name: "Battery Replacement", category: "battery", brand: "Infinix", price: 1500, desc: "Original quality battery" },
-    { id: 13, name: "Battery Replacement", category: "battery", brand: "Other", price: 1800, desc: "Standard battery replacement" },
+    { id: 108, name: "iPhone 11 Battery", category: "battery", brand: "iPhone", price: 2200, stock: 25, desc: "3110mAh high-capacity battery" },
+    { id: 109, name: "iPhone 12 Battery", category: "battery", brand: "iPhone", price: 2500, stock: 20, desc: "2815mAh genuine battery" },
+    { id: 110, name: "Samsung A12 Battery", category: "battery", brand: "Samsung", price: 1800, stock: 15, desc: "5000mAh replacement battery" },
+    { id: 111, name: "Tecno Battery", category: "battery", brand: "Tecno", price: 1200, stock: 30, desc: "Original quality battery" },
+    { id: 112, name: "Infinix Battery", category: "battery", brand: "Infinix", price: 1200, stock: 28, desc: "High-capacity battery" },
     
-    { id: 14, name: "Charging Port Repair", category: "charging", brand: "All", price: 1800, desc: "Fix charging issues, loose port, or no connection" },
-    { id: 15, name: "Charging Port Replacement", category: "charging", brand: "All", price: 2200, desc: "Complete charging port board replacement" },
+    { id: 113, name: "iPhone Charging Port", category: "charging", brand: "iPhone", price: 1500, stock: 20, desc: "Lightning connector flex cable" },
+    { id: 114, name: "Samsung Charging Port", category: "charging", brand: "Samsung", price: 1200, stock: 18, desc: "USB-C charging port" },
+    { id: 115, name: "Type-C Charging Port", category: "charging", brand: "All", price: 800, stock: 40, desc: "Universal USB-C port" },
     
-    { id: 16, name: "Speaker Repair", category: "speaker", brand: "All", price: 1500, desc: "Fix muffled or no sound from speaker" },
-    { id: 17, name: "Microphone Repair", category: "speaker", brand: "All", price: 1500, desc: "Fix microphone not working during calls" },
-    { id: 18, name: "Earpiece Repair", category: "speaker", brand: "All", price: 1200, desc: "Fix no sound during calls" },
+    { id: 116, name: "iPhone Speaker", category: "speaker", brand: "iPhone", price: 1200, stock: 15, desc: "Loudspeaker replacement" },
+    { id: 117, name: "Samsung Speaker", category: "speaker", brand: "Samsung", price: 1000, stock: 12, desc: "Bottom speaker module" },
     
-    { id: 19, name: "Software Update/Reset", category: "software", brand: "All", price: 1000, desc: "OS update, factory reset, or software optimization" },
-    { id: 20, name: "Virus/Malware Removal", category: "software", brand: "All", price: 1500, desc: "Remove malicious software and optimize performance" },
-    { id: 21, name: "Phone Unlocking", category: "software", brand: "All", price: 2000, desc: "Network/unlock any carrier lock" },
+    { id: 118, name: "iPhone Back Glass", category: "glass", brand: "iPhone", price: 2500, stock: 10, desc: "Pre-installed with adhesive" },
+    { id: 119, name: "Samsung Back Glass", category: "glass", brand: "Samsung", price: 2000, stock: 8, desc: "Original quality back glass" },
     
-    { id: 22, name: "Water Damage Repair", category: "water", brand: "All", price: 3000, desc: "Ultrasonic cleaning and component repair" },
-    { id: 23, name: "Water Damage Assessment", category: "water", brand: "All", price: 1000, desc: "Full diagnostic for water-damaged device" },
-    
-    { id: 24, name: "Back Glass Replacement", category: "screen", brand: "iPhone", price: 3500, desc: "Professional back glass replacement" },
-    { id: 25, name: "Back Glass Replacement", category: "screen", brand: "Samsung", price: 3000, desc: "Professional back glass replacement" },
-    
-    { id: 26, name: "Camera Repair", category: "other", brand: "All", price: 2000, desc: "Fix blurry or non-working camera" },
-    { id: 27, name: "Vibration Motor Repair", category: "other", brand: "All", price: 1200, desc: "Fix vibration not working" },
-    { id: 28, name: "Volume/Power Button Repair", category: "other", brand: "All", price: 1500, desc: "Fix stuck or broken hardware buttons" }
+    { id: 120, name: "iPhone Camera Lens", category: "camera", brand: "iPhone", price: 1800, stock: 12, desc: "Rear camera replacement" }
 ];
 
 // ============== CART FUNCTIONS ==============
+let currentSection = 'repair';
+let currentRepairCat = 'all';
+let currentBrand = 'all';
+let currentSpareCat = 'all';
+let currentSearch = '';
+
 function getCart() {
     return JSON.parse(localStorage.getItem('cart')) || [];
 }
@@ -537,25 +507,16 @@ function updateCartCount() {
     if (cartCountElement) cartCountElement.textContent = count;
 }
 
-function addToCart(serviceName, price, brand, model) {
+function addToCart(item) {
     const cart = getCart();
-    const itemName = `${serviceName} - ${brand} ${model || ''}`.trim();
-    
-    const existingItem = cart.find(item => item.name === itemName && item.type === 'repair');
+    const existingItem = cart.find(cartItem => cartItem.id === item.id);
     
     if (existingItem) {
         existingItem.quantity += 1;
-        showToast(`Added another ${serviceName} to cart`, 'success');
+        showToast(`Added another ${item.name} to cart`, 'success');
     } else {
-        cart.push({
-            id: `repair_${Date.now()}`,
-            name: itemName,
-            price: price,
-            quantity: 1,
-            type: 'repair',
-            image: 'shop/repair-icon.png'
-        });
-        showToast(`${serviceName} added to cart!`, 'success');
+        cart.push({ ...item, quantity: 1 });
+        showToast(`${item.name} added to cart!`, 'success');
     }
     
     saveCart(cart);
@@ -563,9 +524,10 @@ function addToCart(serviceName, price, brand, model) {
 
 function removeFromCart(index) {
     const cart = getCart();
+    const removedItem = cart[index];
     cart.splice(index, 1);
     saveCart(cart);
-    showToast('Item removed from cart', 'info');
+    showToast(`${removedItem.name} removed from cart`, 'info');
 }
 
 function updateQuantity(index, change) {
@@ -607,7 +569,6 @@ function displayCartItems() {
         
         html += `
             <div class="cart-item">
-                <img src="${item.image || 'shop/default-product.png'}" alt="${item.name}" onerror="this.src='shop/brand logo.png'">
                 <div>
                     <div class="ci-title">${escapeHtml(item.name)}</div>
                     <div class="ci-price">KES ${item.price.toLocaleString()}</div>
@@ -650,171 +611,178 @@ function showToast(message, type = 'success') {
     }, 3000);
 }
 
-// ============== DISPLAY REPAIR SERVICES ==============
-let currentCategory = 'all';
-let currentBrand = 'all';
-let currentSearch = '';
-
-function displayRepairServices() {
-    const grid = document.getElementById('repairGrid');
+// ============== DISPLAY FUNCTIONS ==============
+function displayItems() {
+    const grid = document.getElementById('itemsGrid');
     if (!grid) return;
     
-    let filtered = [...repairServices];
+    let items = [];
     
-    // Filter by category
-    if (currentCategory !== 'all') {
-        filtered = filtered.filter(s => s.category === currentCategory);
+    if (currentSection === 'repair') {
+        items = [...repairServices];
+        
+        if (currentRepairCat !== 'all') {
+            items = items.filter(i => i.category === currentRepairCat);
+        }
+        if (currentBrand !== 'all') {
+            items = items.filter(i => i.brand === currentBrand || i.brand === 'All');
+        }
+    } else {
+        items = [...spareParts];
+        
+        if (currentSpareCat !== 'all') {
+            items = items.filter(i => i.category === currentSpareCat);
+        }
+        if (currentBrand !== 'all') {
+            items = items.filter(i => i.brand === currentBrand || i.brand === 'All');
+        }
     }
     
-    // Filter by brand
-    if (currentBrand !== 'all') {
-        filtered = filtered.filter(s => s.brand === currentBrand || s.brand === 'All');
-    }
-    
-    // Filter by search
     if (currentSearch) {
         const searchLower = currentSearch.toLowerCase();
-        filtered = filtered.filter(s => 
-            s.name.toLowerCase().includes(searchLower) || 
-            s.brand.toLowerCase().includes(searchLower) ||
-            s.desc.toLowerCase().includes(searchLower)
+        items = items.filter(i => 
+            i.name.toLowerCase().includes(searchLower) || 
+            i.brand.toLowerCase().includes(searchLower) ||
+            i.desc.toLowerCase().includes(searchLower)
         );
     }
     
-    if (filtered.length === 0) {
-        grid.innerHTML = '<div style="text-align:center; padding:3rem; color:var(--muted);">No repair services found. Try another search or category.</div>';
+    if (items.length === 0) {
+        grid.innerHTML = '<div style="text-align:center; padding:3rem; color:var(--muted);">No items found. Try another search or category.</div>';
         return;
     }
     
-    grid.innerHTML = filtered.map(service => `
-        <div class="repair-card">
-            <div class="repair-card-header">
-                <div class="icon">${getServiceIcon(service.category)}</div>
-                <h3>${escapeHtml(service.name)}</h3>
+    grid.innerHTML = items.map(item => {
+        const stockStatus = item.stock ? (item.stock > 5 ? 'in-stock' : 'low-stock') : null;
+        const stockText = item.stock ? (item.stock > 5 ? `In Stock: ${item.stock}` : `Low Stock: ${item.stock} left`) : '';
+        
+        return `
+            <div class="repair-card">
+                <div class="repair-card-header">
+                    <div class="icon">${getIcon(item.category, currentSection)}</div>
+                    <h3>${escapeHtml(item.name)}</h3>
+                </div>
+                <div class="repair-card-body">
+                    ${item.stock ? `<div class="stock-badge ${item.stock > 5 ? 'stock-in' : 'stock-low'}">${stockText}</div>` : ''}
+                    <div class="repair-price">KES ${item.price.toLocaleString()}</div>
+                    <div class="repair-desc">${escapeHtml(item.desc)}</div>
+                    <div class="repair-desc" style="font-size:0.75rem; color:var(--primary);">${item.brand}</div>
+                    <button class="repair-add-btn" onclick='addToCart(${JSON.stringify(item)})'>
+                        🛒 Add to Cart
+                    </button>
+                </div>
             </div>
-            <div class="repair-card-body">
-                <div class="repair-price">KES ${service.price.toLocaleString()}</div>
-                <div class="repair-desc">${escapeHtml(service.desc)}</div>
-                <div class="repair-desc" style="font-size:0.75rem; color:var(--primary);">${service.brand}</div>
-                <button class="repair-add-btn" onclick="openBookingModal('${service.name}', ${service.price}, '${service.brand}')">
-                    📞 Book Repair
-                </button>
-            </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
-function getServiceIcon(category) {
+function getIcon(category, section) {
     const icons = {
-        screen: '📱',
-        battery: '🔋',
-        charging: '🔌',
-        speaker: '🔊',
-        software: '💻',
-        water: '💧',
-        other: '🔧'
+        screen: '📱', battery: '🔋', charging: '🔌', speaker: '🔊',
+        software: '💻', water: '💧', camera: '📷', glass: '🔲'
     };
-    return icons[category] || '🔧';
+    return icons[category] || (section === 'repair' ? '🔧' : '🔩');
 }
 
-// ============== BOOKING MODAL ==============
-let currentService = null;
-
-function openBookingModal(serviceName, price, brand) {
-    currentService = { serviceName, price, brand };
-    const modal = document.getElementById('bookingModal');
-    const title = document.getElementById('bookingTitle');
-    if (title) title.textContent = `Book: ${serviceName} - ${brand}`;
-    if (modal) modal.classList.add('open');
-}
-
-function closeBookingModal() {
-    const modal = document.getElementById('bookingModal');
-    if (modal) modal.classList.remove('open');
-    document.getElementById('bookingForm')?.reset();
-}
-
-document.getElementById('bookingForm')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
+// ============== SECTION SWITCHING ==============
+function switchSection(section) {
+    currentSection = section;
     
-    const name = document.getElementById('customerName')?.value;
-    const phone = document.getElementById('customerPhone')?.value;
-    const email = document.getElementById('customerEmail')?.value;
-    const brand = document.getElementById('repairBrand')?.value;
-    const model = document.getElementById('repairModel')?.value;
-    const notes = document.getElementById('repairNotes')?.value;
-    
-    if (!name || !phone || !brand || !model) {
-        showToast('Please fill in all required fields', 'error');
-        return;
-    }
-    
-    // Add to cart
-    if (currentService) {
-        addToCart(currentService.serviceName, currentService.price, currentService.brand, model);
-    }
-    
-    // Send booking request (optional - replace with your backend)
-    const bookingData = {
-        name, phone, email, brand, model, notes,
-        service: currentService?.serviceName,
-        price: currentService?.price,
-        date: new Date().toISOString()
-    };
-    
-    console.log('Booking submitted:', bookingData);
-    
-    // You can send to your backend here
-    // await fetch('/api/repair-booking', { method: 'POST', body: JSON.stringify(bookingData) });
-    
-    showToast(`Booking request sent! We'll call you within 24 hours.`, 'success');
-    closeBookingModal();
-});
-
-document.getElementById('modalClose')?.addEventListener('click', closeBookingModal);
-document.getElementById('bookingModal')?.addEventListener('click', (e) => {
-    if (e.target === document.getElementById('bookingModal')) closeBookingModal();
-});
-
-// ============== FILTER EVENT LISTENERS ==============
-document.querySelectorAll('.repair-cat-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        document.querySelectorAll('.repair-cat-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        currentCategory = btn.getAttribute('data-cat');
-        displayRepairServices();
+    // Update tabs
+    document.querySelectorAll('.section-tab').forEach(tab => {
+        if (tab.getAttribute('data-section') === section) {
+            tab.classList.add('active');
+        } else {
+            tab.classList.remove('active');
+        }
     });
-});
-
-document.querySelectorAll('.brand-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        document.querySelectorAll('.brand-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        currentBrand = btn.getAttribute('data-brand');
-        displayRepairServices();
-    });
-});
-
-document.getElementById('searchRepairBtn')?.addEventListener('click', () => {
-    const input = document.getElementById('searchRepair');
-    currentSearch = input?.value || '';
-    displayRepairServices();
-});
-
-document.getElementById('searchRepair')?.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-        currentSearch = e.target.value;
-        displayRepairServices();
+    
+    // Show/hide containers
+    const repairContainer = document.getElementById('repairCategoriesContainer');
+    const spareContainer = document.getElementById('spareCategoriesContainer');
+    
+    if (section === 'repair') {
+        if (repairContainer) repairContainer.style.display = 'block';
+        if (spareContainer) spareContainer.style.display = 'none';
+    } else {
+        if (repairContainer) repairContainer.style.display = 'none';
+        if (spareContainer) spareContainer.style.display = 'block';
     }
-});
+    
+    // Reset filters
+    currentRepairCat = 'all';
+    currentSpareCat = 'all';
+    currentBrand = 'all';
+    currentSearch = '';
+    document.getElementById('searchInput').value = '';
+    
+    // Update active buttons
+    document.querySelectorAll('.repair-cat-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.repair-cat-btn[data-cat="all"], .repair-cat-btn[data-spare-cat="all"]').forEach(btn => btn.classList.add('active'));
+    document.querySelectorAll('.brand-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.brand-btn[data-brand="all"]').forEach(btn => btn.classList.add('active'));
+    
+    displayItems();
+}
 
-// ============== INITIALIZE ==============
+// ============== EVENT LISTENERS ==============
 document.addEventListener('DOMContentLoaded', () => {
-    displayRepairServices();
+    displayItems();
     updateCartCount();
     displayCartItems();
     
-    // Cart sidebar controls
+    // Section tabs
+    document.querySelectorAll('.section-tab').forEach(tab => {
+        tab.addEventListener('click', () => switchSection(tab.getAttribute('data-section')));
+    });
+    
+    // Repair category filters
+    document.querySelectorAll('#repairCategories .repair-cat-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('#repairCategories .repair-cat-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentRepairCat = btn.getAttribute('data-cat');
+            displayItems();
+        });
+    });
+    
+    // Spare parts category filters
+    document.querySelectorAll('#spareCategories .repair-cat-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('#spareCategories .repair-cat-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentSpareCat = btn.getAttribute('data-spare-cat');
+            displayItems();
+        });
+    });
+    
+    // Brand filters
+    document.querySelectorAll('.brand-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.brand-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentBrand = btn.getAttribute('data-brand');
+            displayItems();
+        });
+    });
+    
+    // Search
+    const searchBtn = document.getElementById('searchBtn2');
+    const searchInput = document.getElementById('searchInput');
+    
+    searchBtn?.addEventListener('click', () => {
+        currentSearch = searchInput.value;
+        displayItems();
+    });
+    
+    searchInput?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            currentSearch = searchInput.value;
+            displayItems();
+        }
+    });
+    
+    // Cart sidebar
     const cartBtn = document.getElementById('cartBtn');
     const cartSide = document.getElementById('cartSide');
     const cartClose = document.getElementById('cartClose');
@@ -857,18 +825,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// Sync cart across pages
-window.addEventListener('storage', (e) => {
-    if (e.key === 'cart') {
-        updateCartCount();
-        displayCartItems();
-    }
-});
+// Make functions global for onclick
+window.addToCart = addToCart;
+window.removeFromCart = removeFromCart;
+window.updateQuantity = updateQuantity;
 </script>
 
-<!-- Toasts container -->
-<div class="toasts" id="toasts" aria-live="polite"></div>
-
-<script src="shop/app.js" defer></script>
 </body>
 </html>
