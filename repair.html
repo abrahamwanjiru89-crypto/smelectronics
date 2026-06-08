@@ -398,8 +398,8 @@
   <!-- Navigation Buttons -->
   <div class="container">
     <div class="repair-nav-buttons">
-      <button class="nav-section-btn active" id="navRepairBtn" onclick="showSection('repair')">🔧 Repair Services</button>
-      <button class="nav-section-btn" id="navSpareBtn" onclick="showSection('spare')">🔩 Spare Parts</button>
+      <button class="nav-section-btn active" id="navRepairBtn">🔧 Repair Services</button>
+      <button class="nav-section-btn" id="navSpareBtn">🔩 Spare Parts</button>
     </div>
   </div>
 
@@ -528,6 +528,7 @@ function saveNovaCart(cart) {
 
 // FIXED: Add spare part to Nova Cart - proper format for main page
 function addToNovaCart(item) {
+    console.log('Adding to cart:', item);
     const cart = getNovaCart();
     
     // Use original ID from server
@@ -551,6 +552,7 @@ function addToNovaCart(item) {
     }
     
     saveNovaCart(cart);
+    console.log('Cart after add:', getNovaCart());
 }
 
 function removeFromNovaCart(index) {
@@ -614,8 +616,7 @@ function updateCartQuantity(index, change) {
     saveNovaCart(cart);
 }
 
-function showToast(message) {
-    // Use existing toast system if available, or create simple one
+function showToast(message, type = 'info') {
     let toasts = document.getElementById('toasts');
     if (!toasts) {
         toasts = document.createElement('div');
@@ -624,7 +625,7 @@ function showToast(message) {
         document.body.appendChild(toasts);
     }
     const t = document.createElement('div');
-    t.className = 'toast info';
+    t.className = `toast ${type}`;
     t.textContent = message;
     toasts.appendChild(t);
     setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateX(50%)'; }, 2800);
@@ -655,7 +656,6 @@ async function fetchRepairServices() {
             repairServices = data.services || [];
             displayRepairServices();
         } else {
-            // Fallback to default services
             repairServices = getDefaultRepairServices();
             displayRepairServices();
         }
@@ -679,13 +679,12 @@ function getDefaultRepairServices() {
     ];
 }
 
-// FIXED: Fetch spare parts - NO caching, always fresh from server
+// Fetch spare parts - always fresh from server
 async function fetchSpareParts() {
     const grid = document.getElementById('spareGrid');
     if (grid) grid.innerHTML = '<div class="loading-spinner">Loading spare parts from server...</div>';
     
     try {
-        // Always fetch fresh from server - no localStorage fallback
         const response = await fetch('/api/spare-parts', {
             credentials: 'include',
             cache: 'no-cache',
@@ -727,7 +726,7 @@ function displayRepairServices() {
     }
     
     grid.innerHTML = filtered.map(s => `
-        <div class="repair-card" onclick='openBookingModal(${JSON.stringify(s)})'>
+        <div class="repair-card" data-service='${JSON.stringify(s)}'>
             <div class="repair-card-header">
                 <div class="icon">${getServiceIcon(s.category)}</div>
                 <h3>${escapeHtml(s.title)}</h3>
@@ -739,6 +738,18 @@ function displayRepairServices() {
             </div>
         </div>
     `).join('');
+    
+    // Add click handlers to repair cards
+    document.querySelectorAll('.repair-card').forEach(card => {
+        card.addEventListener('click', (e) => {
+            // Don't trigger if clicking on a button inside
+            if (e.target.tagName === 'BUTTON') return;
+            const serviceData = card.getAttribute('data-service');
+            if (serviceData) {
+                openBookingModal(JSON.parse(serviceData));
+            }
+        });
+    });
 }
 
 function getServiceIcon(category) {
@@ -773,7 +784,6 @@ function displaySpareParts() {
     }
     
     grid.innerHTML = filtered.map(p => {
-        // Fix image path
         let imageUrl = p.image || p.image_path || '/shop/hero-phone.jpg';
         if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('/')) {
             imageUrl = '/' + imageUrl;
@@ -791,13 +801,24 @@ function displaySpareParts() {
                     </div>
                     <div class="repair-price">KES ${(p.price || 0).toLocaleString()}</div>
                     <div class="repair-desc">${escapeHtml(p.description || 'Genuine replacement part')}</div>
-                    <button class="repair-add-btn" onclick="event.stopPropagation(); addToNovaCart(${JSON.stringify(p)})">
+                    <button class="repair-add-btn" data-part='${JSON.stringify(p)}'>
                         🛒 Add to Cart (Nova Cart)
                     </button>
                 </div>
             </div>
         `;
     }).join('');
+    
+    // Add click handlers to add to cart buttons
+    document.querySelectorAll('.repair-add-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const partData = btn.getAttribute('data-part');
+            if (partData) {
+                addToNovaCart(JSON.parse(partData));
+            }
+        });
+    });
 }
 
 // ============== BOOKING FUNCTIONS ==============
@@ -865,22 +886,18 @@ function showSection(section) {
         spareSection.classList.remove('hidden-section');
         navRepairBtn.classList.remove('active');
         navSpareBtn.classList.add('active');
-        // Refresh spare parts when switching to spare section
         fetchSpareParts();
     }
 }
 
-// ============== REFRESH FUNCTION ==============
-function refreshData() {
-    fetchRepairServices();
-    fetchSpareParts();
-}
-
 // ============== EVENT LISTENERS ==============
 document.addEventListener('DOMContentLoaded', () => {
-    // Load data
     fetchRepairServices();
     fetchSpareParts();
+    
+    // Section buttons
+    document.getElementById('navRepairBtn')?.addEventListener('click', () => showSection('repair'));
+    document.getElementById('navSpareBtn')?.addEventListener('click', () => showSection('spare'));
     
     // Category filters
     document.querySelectorAll('#repairCategories .repair-cat-btn').forEach(btn => {
@@ -937,7 +954,7 @@ document.addEventListener('DOMContentLoaded', () => {
         overlay?.classList.remove('show');
     });
     
-    // Checkout button - redirect to main page cart
+    // Checkout button
     document.getElementById('checkoutBtn')?.addEventListener('click', () => {
         window.location.href = 'index.html';
     });
@@ -961,10 +978,9 @@ document.addEventListener('DOMContentLoaded', () => {
         mobile?.classList.toggle('open');
     });
     
-    // Initialize cart count
     updateCartUI();
     
-    // Refresh data every 30 seconds to show latest spare parts
+    // Refresh spare parts every 30 seconds
     setInterval(() => {
         if (document.getElementById('spareSection') && !document.getElementById('spareSection').classList.contains('hidden-section')) {
             fetchSpareParts();
@@ -972,13 +988,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 30000);
 });
 
-// Make functions global for onclick handlers
-window.showSection = showSection;
+// Make functions global
 window.addToNovaCart = addToNovaCart;
 window.removeFromNovaCart = removeFromNovaCart;
 window.updateCartQuantity = updateCartQuantity;
-window.openBookingModal = openBookingModal;
-window.refreshData = refreshData;
 </script>
 
 <!-- Toast container -->
