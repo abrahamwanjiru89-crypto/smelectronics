@@ -329,30 +329,19 @@
   </div>
 </div>
 
-<div class="overlay" id="overlay"></div>
-<aside class="cart-side" id="cartSide" aria-hidden="true">
-  <header class="cart-head">
-    <h3>Your Cart</h3>
-    <button class="icon-btn" id="cartClose">✕</button>
-  </header>
-  <div class="cart-body">
-    <div class="cart-items" id="cartItems"></div>
-  </div>
-  <footer class="cart-foot">
-    <div class="cart-total"><span>Total</span><b id="cartTotal">Kshs 0</b></div>
-    <button class="btn primary block" id="checkoutBtn">Proceed to Checkout</button>
-  </footer>
-</aside>
+<!-- Toast container for repair page -->
+<div class="toasts" id="toasts"></div>
 
 <script>
-// ============== GLOBAL ==============
+// ============== REPAIR PAGE SCRIPT ==============
 let repairServices = [];
 let spareParts = [];
 let currentCat = 'all';
 let spareSearchTerm = '';
 let selectedService = null;
 
-// ============== NOVA CART FUNCTIONS (MATCHES MAIN PAGE) ==============
+// ============== CART FUNCTIONS (Matches main page app.js) ==============
+// Main page uses 'nova_cart' with {id, qty} format
 function getNovaCart() {
     try {
         return JSON.parse(localStorage.getItem('nova_cart')) || [];
@@ -361,14 +350,34 @@ function getNovaCart() {
 
 function saveNovaCart(cart) {
     localStorage.setItem('nova_cart', JSON.stringify(cart));
-    updateCartUI();
-    // Trigger storage event for main page
-    window.dispatchEvent(new Event('storage'));
+    updateCartCount();
+    // Dispatch storage event so main page updates if open
+    window.dispatchEvent(new StorageEvent('storage', { key: 'nova_cart' }));
 }
 
-// FIXED: Add to cart - stores product info directly in cart (self-contained)
+// Update cart badge count
+function updateCartCount() {
+    const cart = getNovaCart();
+    const count = cart.reduce((sum, item) => sum + (item.qty || 1), 0);
+    const countEl = document.getElementById('cartCount');
+    if (countEl) countEl.textContent = count;
+}
+
+// Add spare part to Nova Cart (using same format as main page: {id, qty})
+// ALSO store spare part details in a separate localStorage so main page can display them
 function addToNovaCart(item) {
     console.log('Adding to Nova Cart:', item);
+    
+    // Store spare part details separately for main page to read
+    const sparePartsStore = JSON.parse(localStorage.getItem('nova_spare_parts') || '{}');
+    sparePartsStore[item.id] = {
+        name: item.name,
+        price: item.price,
+        img: item.image || item.image_path || '/shop/hero-phone.jpg'
+    };
+    localStorage.setItem('nova_spare_parts', JSON.stringify(sparePartsStore));
+    
+    // Add to cart using same format as main page
     const cart = getNovaCart();
     const existing = cart.find(i => i.id === item.id);
     
@@ -376,77 +385,28 @@ function addToNovaCart(item) {
         existing.qty = (existing.qty || 1) + 1;
         showToast(`✓ Added another ${item.name} to cart`);
     } else {
-        cart.push({
-            id: item.id,
-            name: item.name,
-            price: item.price,
-            qty: 1,
-            img: item.image || item.image_path || '/shop/hero-phone.jpg'
-        });
+        cart.push({ id: item.id, qty: 1 });
         showToast(`✓ ${item.name} added to cart`);
     }
     
     saveNovaCart(cart);
-    console.log('Cart now has:', getNovaCart().length, 'items');
+    console.log('Cart now has:', getNovaCart());
 }
 
-function removeFromCart(index) {
-    const cart = getNovaCart();
-    cart.splice(index, 1);
-    saveNovaCart(cart);
-    showToast('Item removed');
-}
-
-function updateQuantity(index, change) {
-    const cart = getNovaCart();
-    const newQty = (cart[index].qty || 1) + change;
-    if (newQty <= 0) {
-        cart.splice(index, 1);
-    } else {
-        cart[index].qty = newQty;
+function showToast(message) {
+    let toasts = document.getElementById('toasts');
+    if (!toasts) {
+        toasts = document.createElement('div');
+        toasts.id = 'toasts';
+        toasts.className = 'toasts';
+        document.body.appendChild(toasts);
     }
-    saveNovaCart(cart);
-}
-
-function updateCartUI() {
-    const cart = getNovaCart();
-    const container = document.getElementById('cartItems');
-    const totalEl = document.getElementById('cartTotal');
-    const countEl = document.getElementById('cartCount');
-    
-    if (!container) return;
-    
-    const itemCount = cart.reduce((sum, item) => sum + (item.qty || 1), 0);
-    if (countEl) countEl.textContent = itemCount;
-    
-    if (cart.length === 0) {
-        container.innerHTML = '<div class="cart-empty"><div>🛒</div><p>Your cart is empty</p></div>';
-        if (totalEl) totalEl.textContent = 'Kshs 0';
-        return;
-    }
-    
-    let html = '', subtotal = 0;
-    cart.forEach((item, idx) => {
-        const qty = item.qty || 1;
-        subtotal += (item.price || 0) * qty;
-        html += `
-            <div class="cart-item">
-                <img src="${item.img || '/shop/hero-phone.jpg'}" alt="${escapeHtml(item.name)}" onerror="this.src='/shop/hero-phone.jpg'">
-                <div>
-                    <div class="ci-title">${escapeHtml(item.name)}</div>
-                    <div class="ci-price">Kshs ${(item.price || 0).toLocaleString()}</div>
-                    <div class="ci-qty">
-                        <button onclick="updateQuantity(${idx}, -1)">-</button>
-                        <span>${qty}</span>
-                        <button onclick="updateQuantity(${idx}, 1)">+</button>
-                    </div>
-                </div>
-                <button class="ci-rm" onclick="removeFromCart(${idx})">✕</button>
-            </div>
-        `;
-    });
-    container.innerHTML = html;
-    if (totalEl) totalEl.textContent = `Kshs ${subtotal.toLocaleString()}`;
+    const t = document.createElement('div');
+    t.className = 'toast success';
+    t.textContent = message;
+    toasts.appendChild(t);
+    setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateX(50%)'; }, 2800);
+    setTimeout(() => t.remove(), 3300);
 }
 
 // ============== API FUNCTIONS ==============
@@ -514,7 +474,7 @@ function displayRepairServices() {
     }
     
     grid.innerHTML = filtered.map(s => `
-        <div class="repair-card" data-id="${s.id}" data-title="${escapeHtml(s.title)}" data-price="${s.price}" data-category="${s.category}" data-desc="${escapeHtml(s.description)}">
+        <div class="repair-card" data-id="${s.id}" data-title="${escapeHtml(s.title)}" data-price="${s.price}" data-desc="${escapeHtml(s.description)}">
             <div class="repair-card-header">
                 <div class="icon">${getIcon(s.category)}</div>
                 <h3>${escapeHtml(s.title)}</h3>
@@ -527,15 +487,13 @@ function displayRepairServices() {
         </div>
     `).join('');
     
-    // Add click handlers
     document.querySelectorAll('.repair-card').forEach(card => {
         card.addEventListener('click', () => {
             openBookingModal({
                 id: card.dataset.id,
                 title: card.dataset.title,
                 price: parseInt(card.dataset.price),
-                description: card.dataset.desc,
-                category: card.dataset.category
+                description: card.dataset.desc
             });
         });
     });
@@ -585,7 +543,6 @@ function displaySpareParts() {
         `;
     }).join('');
     
-    // Add click handlers for Add to Cart buttons
     document.querySelectorAll('.repair-add-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -640,27 +597,11 @@ async function submitBooking(formData) {
             closeBookingModal();
         } else {
             const error = await response.json();
-            showToast('❌ Booking failed: ' + (error.error || 'Unknown error'), 'error');
+            showToast('❌ Booking failed: ' + (error.error || 'Unknown error'));
         }
     } catch(err) {
-        showToast('❌ Could not connect to server. Please try again.', 'error');
+        showToast('❌ Could not connect to server. Please try again.');
     }
-}
-
-function showToast(message, type = 'success') {
-    let toasts = document.getElementById('toasts');
-    if (!toasts) {
-        toasts = document.createElement('div');
-        toasts.id = 'toasts';
-        toasts.className = 'toasts';
-        document.body.appendChild(toasts);
-    }
-    const t = document.createElement('div');
-    t.className = `toast ${type}`;
-    t.textContent = message;
-    toasts.appendChild(t);
-    setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateX(50%)'; }, 2800);
-    setTimeout(() => t.remove(), 3300);
 }
 
 function escapeHtml(str) {
@@ -697,7 +638,7 @@ function showSection(section) {
 document.addEventListener('DOMContentLoaded', () => {
     fetchRepairServices();
     fetchSpareParts();
-    updateCartUI();
+    updateCartCount();
     
     document.getElementById('navRepairBtn')?.addEventListener('click', () => showSection('repair'));
     document.getElementById('navSpareBtn')?.addEventListener('click', () => showSection('spare'));
@@ -732,26 +673,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target === document.getElementById('bookingModal')) closeBookingModal();
     });
     
+    // Cart button - redirect to main page cart
     const cartBtn = document.getElementById('cartBtn');
-    const cartSide = document.getElementById('cartSide');
-    const cartClose = document.getElementById('cartClose');
-    const overlay = document.getElementById('overlay');
-    
     cartBtn?.addEventListener('click', () => {
-        updateCartUI();
-        cartSide?.classList.add('open');
-        overlay?.classList.add('show');
-    });
-    cartClose?.addEventListener('click', () => {
-        cartSide?.classList.remove('open');
-        overlay?.classList.remove('show');
-    });
-    overlay?.addEventListener('click', () => {
-        cartSide?.classList.remove('open');
-        overlay?.classList.remove('show');
-    });
-    
-    document.getElementById('checkoutBtn')?.addEventListener('click', () => {
         window.location.href = 'index.html';
     });
     
@@ -773,12 +697,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// Global functions for onclick
+// Global functions
 window.addToNovaCart = addToNovaCart;
-window.removeFromCart = removeFromCart;
-window.updateQuantity = updateQuantity;
 </script>
-
-<div class="toasts" id="toasts"></div>
 </body>
 </html>
