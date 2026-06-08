@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <meta name="description" content="S.M Dynamics Mobile Repair Services — Professional phone, tablet, and laptop repairs across Kenya. Screen replacement, battery, charging port, software fixes." />
-<title>S.M Dynamics - Mobile Repair Services</title>
+<title>S.M Dynamics - Mobile Repair Services & Spare Parts</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@600;800&display=swap" rel="stylesheet">
@@ -14,6 +14,37 @@
 <link rel="icon" href="shop/brand logo.png">
 <style>
 /* Repair page specific styles */
+.repair-nav-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin: 2rem 0 1rem;
+    flex-wrap: wrap;
+}
+
+.nav-section-btn {
+    padding: 0.8rem 2rem;
+    border-radius: 40px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 1rem;
+}
+
+.nav-section-btn:hover {
+    border-color: var(--primary);
+    transform: translateY(-2px);
+}
+
+.nav-section-btn.active {
+    background: linear-gradient(135deg, #00e5ff, #7c4dff);
+    color: #000;
+    border-color: transparent;
+}
+
 .repair-categories {
     display: flex;
     gap: 0.75rem;
@@ -69,6 +100,38 @@
     background: var(--primary);
     color: #000;
     border-color: var(--primary);
+}
+
+.search-container {
+    max-width: 500px;
+    margin: 1.5rem auto;
+    display: flex;
+    gap: 0.5rem;
+}
+
+.search-container input {
+    flex: 1;
+    padding: 0.8rem 1.2rem;
+    border-radius: 40px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 0.9rem;
+}
+
+.search-container input:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.search-container button {
+    padding: 0.8rem 1.5rem;
+    border-radius: 40px;
+    background: linear-gradient(135deg, #00e5ff, #7c4dff);
+    border: none;
+    color: #000;
+    font-weight: 600;
+    cursor: pointer;
 }
 
 .repair-grid {
@@ -155,13 +218,17 @@
     box-shadow: 0 5px 15px rgba(0,229,255,0.3);
 }
 
-.section-tag {
+.section-header {
     text-align: center;
-    margin: 3rem 0 1rem;
+    margin: 2rem 0 1rem;
 }
 
-.section-tag .eyebrow {
+.section-header .eyebrow {
     display: inline-flex;
+}
+
+.hidden-section {
+    display: none;
 }
 
 /* Toast notification */
@@ -201,6 +268,10 @@
         padding: 0.4rem 0.8rem;
         font-size: 0.75rem;
     }
+    .nav-section-btn {
+        padding: 0.6rem 1.2rem;
+        font-size: 0.85rem;
+    }
 }
 </style>
 </head>
@@ -215,7 +286,7 @@
     <span>🚀 New arrivals dropping weekly</span>
     <span>⚡ Free express shipping on orders over Kshs 10,000</span>
     <span>★ 30-day money-back guarantee</span>
-    <span>::$Quality mobile phone repairs</span>
+    <span>::$Quality mobile phone repairs & genuine spare parts</span>
   </div>
 </div>
 
@@ -264,8 +335,8 @@
         <h1 class="display">Fix It Fast, <span class="grad">Fix It Right.</span></h1>
         <p class="lede">Expert phone, tablet, and laptop repairs using genuine parts. Free diagnosis, 3-month warranty, same-day service in Nakuru.</p>
         <div class="hero-cta">
-          <a href="#repairServices" class="btn primary">Book a Repair <span>→</span></a>
-          <a href="#spareParts" class="btn ghost">Buy Spare Parts</a>
+          <button onclick="showSection('repair')" class="btn primary">🔧 Repair Services</button>
+          <button onclick="showSection('spare')" class="btn ghost">🔩 Spare Parts</button>
         </div>
         <div class="hero-stats">
           <div><b>5000+</b><span>Repairs Done</span></div>
@@ -282,26 +353,34 @@
     </div>
   </section>
 
-  <!-- Repair Services Section -->
-  <div class="container" id="repairServices">
-    <div class="section-tag">
+  <!-- Navigation Buttons -->
+  <div class="container">
+    <div class="repair-nav-buttons">
+      <button class="nav-section-btn active" id="navRepairBtn" onclick="showSection('repair')">🔧 Repair Services</button>
+      <button class="nav-section-btn" id="navSpareBtn" onclick="showSection('spare')">🔩 Spare Parts</button>
+    </div>
+  </div>
+
+  <!-- REPAIR SERVICES SECTION -->
+  <div id="repairSection" class="container">
+    <div class="section-header">
       <span class="eyebrow"><span class="dot"></span> What We Fix</span>
     </div>
     <h2 class="section-head" style="text-align: center; margin-bottom: 0;">Repair <span class="grad">Services</span></h2>
     
-    <!-- Categories -->
+    <!-- Repair Categories -->
     <div class="repair-categories" id="repairCategories">
       <button class="repair-cat-btn active" data-cat="all">All</button>
-      <button class="repair-cat-btn" data-cat="screen">Screen</button>
-      <button class="repair-cat-btn" data-cat="battery">Battery</button>
-      <button class="repair-cat-btn" data-cat="charging">Charging Port</button>
-      <button class="repair-cat-btn" data-cat="speaker">Speaker/Mic</button>
-      <button class="repair-cat-btn" data-cat="software">Software</button>
-      <button class="repair-cat-btn" data-cat="water">Water Damage</button>
+      <button class="repair-cat-btn" data-cat="screen">📱 Screen</button>
+      <button class="repair-cat-btn" data-cat="battery">🔋 Battery</button>
+      <button class="repair-cat-btn" data-cat="charging">🔌 Charging Port</button>
+      <button class="repair-cat-btn" data-cat="speaker">🔊 Speaker/Mic</button>
+      <button class="repair-cat-btn" data-cat="software">💻 Software</button>
+      <button class="repair-cat-btn" data-cat="water">💧 Water Damage</button>
     </div>
 
-    <!-- Brand Filters -->
-    <div class="brand-filters" id="brandFilters">
+    <!-- Repair Brand Filters -->
+    <div class="brand-filters" id="repairBrandFilters">
       <button class="brand-btn active" data-brand="all">All Brands</button>
       <button class="brand-btn" data-brand="iPhone">iPhone</button>
       <button class="brand-btn" data-brand="Samsung">Samsung</button>
@@ -316,12 +395,40 @@
     <div class="repair-grid" id="repairGrid"></div>
   </div>
 
-  <!-- Spare Parts Section -->
-  <div class="container" id="spareParts" style="margin-top: 4rem;">
-    <div class="section-tag">
+  <!-- SPARE PARTS SECTION (hidden by default) -->
+  <div id="spareSection" class="container hidden-section">
+    <div class="section-header">
       <span class="eyebrow"><span class="dot"></span> Genuine Parts</span>
     </div>
     <h2 class="section-head" style="text-align: center; margin-bottom: 0;">Spare <span class="grad">Parts</span></h2>
+    
+    <!-- Spare Parts Search -->
+    <div class="search-container">
+      <input type="text" id="spareSearchInput" placeholder="Search spare parts... (e.g., iPhone screen, battery)">
+      <button id="spareSearchBtn">🔍 Search</button>
+    </div>
+    
+    <!-- Spare Parts Categories -->
+    <div class="repair-categories" id="spareCategories">
+      <button class="repair-cat-btn active" data-spare-cat="all">All Parts</button>
+      <button class="repair-cat-btn" data-spare-cat="screen">📱 Screens</button>
+      <button class="repair-cat-btn" data-spare-cat="battery">🔋 Batteries</button>
+      <button class="repair-cat-btn" data-spare-cat="charging">🔌 Charging Ports</button>
+      <button class="repair-cat-btn" data-spare-cat="speaker">🔊 Speakers</button>
+      <button class="repair-cat-btn" data-spare-cat="glass">🔲 Back Glass</button>
+    </div>
+
+    <!-- Spare Parts Brand Filters -->
+    <div class="brand-filters" id="spareBrandFilters">
+      <button class="brand-btn active" data-spare-brand="all">All Brands</button>
+      <button class="brand-btn" data-spare-brand="iPhone">iPhone</button>
+      <button class="brand-btn" data-spare-brand="Samsung">Samsung</button>
+      <button class="brand-btn" data-spare-brand="Tecno">Tecno</button>
+      <button class="brand-btn" data-spare-brand="Infinix">Infinix</button>
+      <button class="brand-btn" data-spare-brand="All">Universal</button>
+    </div>
+
+    <!-- Spare Parts Grid -->
     <div class="repair-grid" id="spareGrid"></div>
   </div>
 
@@ -400,14 +507,43 @@ const repairServices = [
 const spareParts = [
     { id: 101, name: "iPhone 11 Screen", category: "screen", brand: "iPhone", price: 3500, stock: 12, desc: "Genuine LCD with tools" },
     { id: 102, name: "iPhone 12 Screen", category: "screen", brand: "iPhone", price: 4500, stock: 8, desc: "OLED with True Tone" },
-    { id: 103, name: "Samsung A12 Screen", category: "screen", brand: "Samsung", price: 3200, stock: 10, desc: "LCD with frame" },
-    { id: 104, name: "Tecno Screen", category: "screen", brand: "Tecno", price: 1800, stock: 15, desc: "Original quality LCD" },
-    { id: 105, name: "iPhone 11 Battery", category: "battery", brand: "iPhone", price: 2200, stock: 20, desc: "3110mAh high capacity" },
-    { id: 106, name: "Samsung Battery", category: "battery", brand: "Samsung", price: 1800, stock: 15, desc: "5000mAh replacement" },
-    { id: 107, name: "iPhone Charging Port", category: "charging", brand: "iPhone", price: 1500, stock: 18, desc: "Lightning flex cable" },
-    { id: 108, name: "iPhone Back Glass", category: "glass", brand: "iPhone", price: 2500, stock: 8, desc: "Pre-installed adhesive" },
-    { id: 109, name: "Type-C Port", category: "charging", brand: "All", price: 800, stock: 30, desc: "Universal USB-C port" }
+    { id: 103, name: "iPhone 13 Screen", category: "screen", brand: "iPhone", price: 5500, stock: 5, desc: "Super Retina XDR display" },
+    { id: 104, name: "Samsung A12 Screen", category: "screen", brand: "Samsung", price: 3200, stock: 10, desc: "LCD with frame" },
+    { id: 105, name: "Samsung A32 Screen", category: "screen", brand: "Samsung", price: 3800, stock: 7, desc: "Super AMOLED display" },
+    { id: 106, name: "Tecno Spark Screen", category: "screen", brand: "Tecno", price: 1800, stock: 15, desc: "Original quality LCD" },
+    { id: 107, name: "Infinix Hot Screen", category: "screen", brand: "Infinix", price: 1800, stock: 18, desc: "LCD with digitizer" },
+    { id: 108, name: "iPhone 11 Battery", category: "battery", brand: "iPhone", price: 2200, stock: 25, desc: "3110mAh high capacity" },
+    { id: 109, name: "iPhone 12 Battery", category: "battery", brand: "iPhone", price: 2500, stock: 20, desc: "2815mAh genuine" },
+    { id: 110, name: "Samsung A12 Battery", category: "battery", brand: "Samsung", price: 1800, stock: 15, desc: "5000mAh replacement" },
+    { id: 111, name: "Tecno Battery", category: "battery", brand: "Tecno", price: 1200, stock: 30, desc: "Original quality" },
+    { id: 112, name: "iPhone Charging Port", category: "charging", brand: "iPhone", price: 1500, stock: 18, desc: "Lightning flex cable" },
+    { id: 113, name: "Samsung Charging Port", category: "charging", brand: "Samsung", price: 1200, stock: 15, desc: "USB-C port" },
+    { id: 114, name: "Type-C Port", category: "charging", brand: "All", price: 800, stock: 30, desc: "Universal USB-C" },
+    { id: 115, name: "iPhone Speaker", category: "speaker", brand: "iPhone", price: 1200, stock: 12, desc: "Loudspeaker replacement" },
+    { id: 116, name: "iPhone Back Glass", category: "glass", brand: "iPhone", price: 2500, stock: 8, desc: "Pre-installed adhesive" },
+    { id: 117, name: "Samsung Back Glass", category: "glass", brand: "Samsung", price: 2000, stock: 6, desc: "Original quality" }
 ];
+
+// ============== SECTION TOGGLE ==============
+function showSection(section) {
+    const repairSection = document.getElementById('repairSection');
+    const spareSection = document.getElementById('spareSection');
+    const navRepairBtn = document.getElementById('navRepairBtn');
+    const navSpareBtn = document.getElementById('navSpareBtn');
+    
+    if (section === 'repair') {
+        repairSection.classList.remove('hidden-section');
+        spareSection.classList.add('hidden-section');
+        navRepairBtn.classList.add('active');
+        navSpareBtn.classList.remove('active');
+    } else {
+        repairSection.classList.add('hidden-section');
+        spareSection.classList.remove('hidden-section');
+        navRepairBtn.classList.remove('active');
+        navSpareBtn.classList.add('active');
+        displaySpareParts(); // Refresh spare parts when shown
+    }
+}
 
 // ============== CART FUNCTIONS ==============
 function getCart() {
@@ -502,17 +638,17 @@ function displayCartItems() {
     if (totalEl) totalEl.textContent = `Kshs ${total.toLocaleString()}`;
 }
 
-// ============== DISPLAY ==============
-let currentCat = 'all';
-let currentBrand = 'all';
+// ============== DISPLAY REPAIR SERVICES ==============
+let currentRepairCat = 'all';
+let currentRepairBrand = 'all';
 
 function displayRepairs() {
     const grid = document.getElementById('repairGrid');
     if (!grid) return;
     
     let filtered = repairServices.filter(s => {
-        if (currentCat !== 'all' && s.category !== currentCat) return false;
-        if (currentBrand !== 'all' && s.brand !== currentBrand && s.brand !== 'All') return false;
+        if (currentRepairCat !== 'all' && s.category !== currentRepairCat) return false;
+        if (currentRepairBrand !== 'all' && s.brand !== currentRepairBrand && s.brand !== 'All') return false;
         return true;
     });
     
@@ -532,14 +668,31 @@ function displayRepairs() {
     `).join('');
 }
 
+// ============== DISPLAY SPARE PARTS ==============
+let currentSpareCat = 'all';
+let currentSpareBrand = 'all';
+let spareSearchTerm = '';
+
 function displaySpareParts() {
     const grid = document.getElementById('spareGrid');
     if (!grid) return;
     
-    grid.innerHTML = spareParts.map(p => `
+    let filtered = spareParts.filter(p => {
+        if (currentSpareCat !== 'all' && p.category !== currentSpareCat) return false;
+        if (currentSpareBrand !== 'all' && p.brand !== currentSpareBrand && p.brand !== 'All') return false;
+        if (spareSearchTerm && !p.name.toLowerCase().includes(spareSearchTerm.toLowerCase())) return false;
+        return true;
+    });
+    
+    if (filtered.length === 0) {
+        grid.innerHTML = '<div style="text-align:center; padding:3rem; color:var(--muted);">No spare parts found. Try another search.</div>';
+        return;
+    }
+    
+    grid.innerHTML = filtered.map(p => `
         <div class="repair-card">
             <div class="repair-card-header">
-                <div class="icon">${p.category === 'screen' ? '📱' : p.category === 'battery' ? '🔋' : '🔌'}</div>
+                <div class="icon">${p.category === 'screen' ? '📱' : p.category === 'battery' ? '🔋' : p.category === 'charging' ? '🔌' : '🔊'}</div>
                 <h3>${p.name}</h3>
             </div>
             <div class="repair-card-body">
@@ -553,31 +706,65 @@ function displaySpareParts() {
     `).join('');
 }
 
-// ============== INIT ==============
+function searchSpareParts() {
+    const input = document.getElementById('spareSearchInput');
+    spareSearchTerm = input.value;
+    displaySpareParts();
+}
+
+// ============== INITIALIZE ==============
 document.addEventListener('DOMContentLoaded', () => {
     displayRepairs();
     displaySpareParts();
     updateCartCount();
     displayCartItems();
     
-    // Category filters
+    // Repair category filters
     document.querySelectorAll('#repairCategories .repair-cat-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('#repairCategories .repair-cat-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            currentCat = btn.getAttribute('data-cat');
+            currentRepairCat = btn.getAttribute('data-cat');
             displayRepairs();
         });
     });
     
-    // Brand filters
-    document.querySelectorAll('.brand-btn').forEach(btn => {
+    // Repair brand filters
+    document.querySelectorAll('#repairBrandFilters .brand-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-            document.querySelectorAll('.brand-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('#repairBrandFilters .brand-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            currentBrand = btn.getAttribute('data-brand');
+            currentRepairBrand = btn.getAttribute('data-brand');
             displayRepairs();
         });
+    });
+    
+    // Spare parts category filters
+    document.querySelectorAll('#spareCategories .repair-cat-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('#spareCategories .repair-cat-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentSpareCat = btn.getAttribute('data-spare-cat');
+            displaySpareParts();
+        });
+    });
+    
+    // Spare parts brand filters
+    document.querySelectorAll('#spareBrandFilters .brand-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('#spareBrandFilters .brand-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentSpareBrand = btn.getAttribute('data-spare-brand');
+            displaySpareParts();
+        });
+    });
+    
+    // Search buttons
+    const searchBtn = document.getElementById('spareSearchBtn');
+    const searchInput = document.getElementById('spareSearchInput');
+    searchBtn?.addEventListener('click', searchSpareParts);
+    searchInput?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') searchSpareParts();
     });
     
     // Cart sidebar
@@ -600,7 +787,7 @@ document.addEventListener('DOMContentLoaded', () => {
         overlay?.classList.remove('show');
     });
     
-    // Theme
+    // Theme toggle
     const themeBtn = document.getElementById('themeBtn');
     const html = document.documentElement;
     themeBtn?.addEventListener('click', () => {
@@ -620,9 +807,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+// Make functions global
 window.addToCart = addToCart;
 window.removeFromCart = removeFromCart;
 window.updateQuantity = updateQuantity;
+window.showSection = showSection;
+window.searchSpareParts = searchSpareParts;
 </script>
 
 </body>
