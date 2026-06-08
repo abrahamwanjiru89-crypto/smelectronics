@@ -16,7 +16,7 @@ from pathlib import Path
 from urllib.parse import unquote, urlparse, parse_qs, urlencode
 import urllib.request
 
-ROOT = Path(__file__parent__).resolve()
+ROOT = Path(__file__).parent.resolve()
 DB_PATH = ROOT / "shop.db"
 UPLOAD_DIR = ROOT / "uploads"
 UPLOAD_DIR.mkdir(exist_ok=True)
