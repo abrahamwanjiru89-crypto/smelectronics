@@ -71,6 +71,24 @@
     margin-bottom: 0.5rem;
 }
 
+.repair-add-btn {
+    margin-top: 0.75rem;
+    padding: 0.6rem 1.2rem;
+    border-radius: 2rem;
+    background: linear-gradient(135deg, #00e5ff, #7c4dff);
+    border: none;
+    color: #000;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    width: 100%;
+}
+
+.repair-add-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,229,255,0.3);
+}
+
 /* Booking Modal */
 .booking-modal {
     position: fixed;
@@ -183,32 +201,6 @@
     box-shadow: 0 5px 15px rgba(0,229,255,0.3);
 }
 
-/* Toast notification */
-.toast-notification {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background: linear-gradient(135deg, #00e5ff, #7c4dff);
-    color: #000;
-    padding: 12px 20px;
-    border-radius: 12px;
-    font-weight: 600;
-    z-index: 10000;
-    animation: toastSlide 0.3s ease;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-}
-
-@keyframes toastSlide {
-    from {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
-}
-
 .hidden-section {
     display: none;
 }
@@ -294,6 +286,25 @@
     color: #000;
     font-weight: 600;
     cursor: pointer;
+}
+
+/* Loading spinner */
+.loading-spinner {
+    text-align: center;
+    padding: 3rem;
+    color: var(--muted);
+}
+
+.loading-spinner::after {
+    content: "⏳";
+    animation: spin 1s linear infinite;
+    display: inline-block;
+    margin-left: 0.5rem;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
 
 @media (max-width: 640px) {
@@ -385,7 +396,7 @@
     </div>
   </div>
 
-  <!-- REPAIR SERVICES SECTION - Clickable Cards -->
+  <!-- REPAIR SERVICES SECTION -->
   <div id="repairSection" class="container">
     <div class="section-header" style="text-align: center;">
       <span class="eyebrow"><span class="dot"></span> What We Fix</span>
@@ -402,7 +413,9 @@
       <button class="repair-cat-btn" data-cat="water">💧 Water Damage</button>
     </div>
 
-    <div class="repair-grid" id="repairGrid"></div>
+    <div class="repair-grid" id="repairGrid">
+      <div class="loading-spinner">Loading repair services...</div>
+    </div>
   </div>
 
   <!-- SPARE PARTS SECTION -->
@@ -410,6 +423,7 @@
     <div class="section-header" style="text-align: center;">
       <span class="eyebrow"><span class="dot"></span> Genuine Parts</span>
       <h2>Spare <span class="grad">Parts</span></h2>
+      <p>Add spare parts to your cart and checkout with the main store</p>
     </div>
     
     <div class="search-container">
@@ -417,7 +431,9 @@
       <button id="spareSearchBtn">🔍 Search</button>
     </div>
     
-    <div class="repair-grid" id="spareGrid"></div>
+    <div class="repair-grid" id="spareGrid">
+      <div class="loading-spinner">Loading spare parts...</div>
+    </div>
   </div>
 </main>
 
@@ -441,8 +457,8 @@
       <label>Phone Brand *</label>
       <select id="phoneBrand" required>
         <option value="">Select brand</option>
-        <option>iPhone</option>
         <option>Samsung</option>
+        <option>Apple/iPhone</option>
         <option>Tecno</option>
         <option>Infinix</option>
         <option>Oppo</option>
@@ -463,22 +479,15 @@
   </div>
 </div>
 
-<!-- CART SIDEBAR -->
+<!-- CART SIDEBAR (Uses Nova Cart from main page) -->
 <div class="overlay" id="overlay"></div>
 <aside class="cart-side" id="cartSide" aria-hidden="true">
   <header class="cart-head">
-    <h3>Your Cart</h3>
+    <h3>Your Cart (Nova Cart)</h3>
     <button class="icon-btn" id="cartClose">✕</button>
   </header>
   <div class="cart-body">
     <div class="cart-items" id="cartItems"></div>
-    <div class="cart-meta">
-      <h4>Delivery details</h4>
-      <label>County <select id="county"><option>Choose county</option></select></label>
-      <label>Sub-location <input id="subLocation" placeholder="Start typing area"></label>
-      <label>Street / zone <input id="street" placeholder="e.g. 3rd Avenue"></label>
-      <div class="cart-fees"><span>Delivery fee</span><b id="deliveryFee">Kshs 200</b></div>
-    </div>
   </div>
   <footer class="cart-foot">
     <div class="cart-total"><span>Total</span><b id="cartTotal">Kshs 0</b></div>
@@ -487,30 +496,357 @@
 </aside>
 
 <script>
-// ============== REPAIR SERVICES DATA ==============
-const repairServices = [
-    { id: 1, name: "Screen Replacement", category: "screen", price: 3500, desc: "Professional LCD/OLED screen replacement" },
-    { id: 2, name: "Battery Replacement", category: "battery", price: 2500, desc: "Genuine battery with 1-year warranty" },
-    { id: 3, name: "Charging Port Repair", category: "charging", price: 1800, desc: "Fix charging issues & loose port" },
-    { id: 4, name: "Speaker Repair", category: "speaker", price: 1500, desc: "Fix muffled or no sound" },
-    { id: 5, name: "Microphone Repair", category: "speaker", price: 1500, desc: "Fix microphone not working" },
-    { id: 6, name: "Water Damage Repair", category: "water", price: 3000, desc: "Ultrasonic cleaning & repair" },
-    { id: 7, name: "Software Update/Reset", category: "software", price: 1000, desc: "OS update or factory reset" },
-    { id: 8, name: "Back Glass Replacement", category: "glass", price: 3500, desc: "Professional back glass replacement" },
-    { id: 9, name: "Camera Repair", category: "camera", price: 2000, desc: "Fix blurry or non-working camera" }
-];
+// ============== GLOBAL VARIABLES ==============
+let repairServices = [];
+let spareParts = [];
+let currentCat = 'all';
+let spareSearchTerm = '';
+let selectedService = null;
 
-// ============== SPARE PARTS DATA ==============
-const spareParts = [
-    { id: 101, name: "iPhone 11 Screen", price: 3500, stock: 12, desc: "Genuine LCD with tools", brand: "iPhone" },
-    { id: 102, name: "iPhone 12 Screen", price: 4500, stock: 8, desc: "OLED with True Tone", brand: "iPhone" },
-    { id: 103, name: "Samsung A12 Screen", price: 3200, stock: 10, desc: "LCD with frame", brand: "Samsung" },
-    { id: 104, name: "Tecno Spark Screen", price: 1800, stock: 15, desc: "Original quality LCD", brand: "Tecno" },
-    { id: 105, name: "iPhone 11 Battery", price: 2200, stock: 25, desc: "3110mAh high capacity", brand: "iPhone" },
-    { id: 106, name: "Samsung Battery", price: 1800, stock: 15, desc: "5000mAh replacement", brand: "Samsung" },
-    { id: 107, name: "iPhone Charging Port", price: 1500, stock: 18, desc: "Lightning flex cable", brand: "iPhone" },
-    { id: 108, name: "Type-C Port", price: 800, stock: 30, desc: "Universal USB-C", brand: "Universal" }
-];
+// Helper: Nova Cart Functions (from main page app.js)
+function getNovaCart() {
+    try {
+        return JSON.parse(localStorage.getItem('nova_cart')) || [];
+    } catch(e) {
+        return [];
+    }
+}
+
+function saveNovaCart(cart) {
+    localStorage.setItem('nova_cart', JSON.stringify(cart));
+    updateCartUI();
+}
+
+// Add spare part to Nova Cart (same cart as main page)
+function addToNovaCart(item) {
+    const cart = getNovaCart();
+    const existing = cart.find(i => i.id === `spare_${item.id}`);
+    
+    if (existing) {
+        existing.qty = (existing.qty || 1) + 1;
+        showToast(`✓ Added another ${item.name} to cart`);
+    } else {
+        cart.push({
+            id: `spare_${item.id}`,
+            originalId: item.id,
+            name: item.name,
+            price: item.price,
+            qty: 1,
+            img: item.image || '/shop/hero-phone.jpg',
+            type: 'spare_part'
+        });
+        showToast(`✓ ${item.name} added to cart`);
+    }
+    
+    saveNovaCart(cart);
+}
+
+function removeFromNovaCart(index) {
+    const cart = getNovaCart();
+    cart.splice(index, 1);
+    saveNovaCart(cart);
+    showToast('Item removed from cart');
+}
+
+function updateCartUI() {
+    const cart = getNovaCart();
+    const container = document.getElementById('cartItems');
+    const totalEl = document.getElementById('cartTotal');
+    const countEl = document.getElementById('cartCount');
+    
+    if (!container) return;
+    
+    // Update cart count badge
+    const itemCount = cart.reduce((sum, item) => sum + (item.qty || 1), 0);
+    if (countEl) countEl.textContent = itemCount;
+    
+    if (cart.length === 0) {
+        container.innerHTML = '<div class="cart-empty"><div>🛒</div><p>Your cart is empty</p><small style="color:var(--muted)">Add spare parts from the Spare Parts section</small></div>';
+        if (totalEl) totalEl.textContent = 'Kshs 0';
+        return;
+    }
+    
+    let html = '', subtotal = 0;
+    cart.forEach((item, idx) => {
+        const qty = item.qty || 1;
+        subtotal += item.price * qty;
+        html += `
+            <div class="cart-item">
+                <img src="${item.img || '/shop/hero-phone.jpg'}" alt="${item.name}" onerror="this.src='/shop/hero-phone.jpg'">
+                <div>
+                    <div class="ci-title">${escapeHtml(item.name)}</div>
+                    <div class="ci-price">Kshs ${(item.price).toLocaleString()}</div>
+                    <div class="ci-qty">
+                        <button onclick="updateCartQuantity(${idx}, -1)">-</button>
+                        <span>${qty}</span>
+                        <button onclick="updateCartQuantity(${idx}, 1)">+</button>
+                    </div>
+                </div>
+                <button class="ci-rm" onclick="removeFromNovaCart(${idx})">✕</button>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+    if (totalEl) totalEl.textContent = `Kshs ${subtotal.toLocaleString()}`;
+}
+
+function updateCartQuantity(index, change) {
+    const cart = getNovaCart();
+    const newQty = (cart[index].qty || 1) + change;
+    if (newQty <= 0) {
+        cart.splice(index, 1);
+    } else {
+        cart[index].qty = newQty;
+    }
+    saveNovaCart(cart);
+}
+
+function showToast(message) {
+    // Use existing toast system if available, or create simple one
+    const t = document.createElement('div');
+    t.className = 'toast info';
+    t.textContent = message;
+    const toasts = document.getElementById('toasts');
+    if (toasts) {
+        toasts.appendChild(t);
+        setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateX(50%)'; }, 2800);
+        setTimeout(() => t.remove(), 3300);
+    } else {
+        // Fallback alert
+        alert(message);
+    }
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>"']/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        if (m === '"') return '&quot;';
+        return '&#39;';
+    });
+}
+
+// ============== API FUNCTIONS ==============
+async function fetchRepairServices() {
+    const grid = document.getElementById('repairGrid');
+    try {
+        const response = await fetch('/api/management/repair-services', {
+            credentials: 'include'
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            repairServices = data.services || [];
+            displayRepairServices();
+        } else {
+            // Fallback to default services
+            repairServices = getDefaultRepairServices();
+            displayRepairServices();
+        }
+    } catch (err) {
+        console.warn('Using fallback repair services');
+        repairServices = getDefaultRepairServices();
+        displayRepairServices();
+    }
+}
+
+function getDefaultRepairServices() {
+    return [
+        { id: 1, name: "Screen Replacement", category: "screen", price: 3500, desc: "Professional LCD/OLED screen replacement", available: true },
+        { id: 2, name: "Battery Replacement", category: "battery", price: 2500, desc: "Genuine battery with 1-year warranty", available: true },
+        { id: 3, name: "Charging Port Repair", category: "charging", price: 1800, desc: "Fix charging issues & loose port", available: true },
+        { id: 4, name: "Speaker/Mic Repair", category: "speaker", price: 1500, desc: "Fix muffled or no sound", available: true },
+        { id: 5, name: "Water Damage Repair", category: "water", price: 3000, desc: "Ultrasonic cleaning & repair", available: true },
+        { id: 6, name: "Software Update/Reset", category: "software", price: 1000, desc: "OS update or factory reset", available: true },
+        { id: 7, name: "Back Glass Replacement", category: "glass", price: 3500, desc: "Professional back glass replacement", available: true },
+        { id: 8, name: "Camera Repair", category: "camera", price: 2000, desc: "Fix blurry or non-working camera", available: true }
+    ];
+}
+
+async function fetchSpareParts() {
+    const grid = document.getElementById('spareGrid');
+    if (grid) grid.innerHTML = '<div class="loading-spinner">Loading spare parts...</div>';
+    
+    try {
+        const response = await fetch('/api/spare-parts', {
+            credentials: 'include'
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            spareParts = data.spares || [];
+            displaySpareParts();
+        } else {
+            // Try localStorage as fallback (from management page)
+            const stored = localStorage.getItem('spare_parts');
+            if (stored) {
+                spareParts = JSON.parse(stored);
+                displaySpareParts();
+            } else {
+                spareParts = getDefaultSpareParts();
+                displaySpareParts();
+            }
+        }
+    } catch (err) {
+        console.warn('Using fallback spare parts');
+        const stored = localStorage.getItem('spare_parts');
+        if (stored) {
+            spareParts = JSON.parse(stored);
+        } else {
+            spareParts = getDefaultSpareParts();
+        }
+        displaySpareParts();
+    }
+}
+
+function getDefaultSpareParts() {
+    return [
+        { id: 101, name: "iPhone 11 Screen", price: 3500, stock: 12, desc: "Genuine LCD with tools", brand: "Apple", category: "Screen", image: "/shop/hero-phone.jpg" },
+        { id: 102, name: "iPhone 12 Screen", price: 4500, stock: 8, desc: "OLED with True Tone", brand: "Apple", category: "Screen", image: "/shop/hero-phone.jpg" },
+        { id: 103, name: "Samsung A12 Screen", price: 3200, stock: 10, desc: "LCD with frame", brand: "Samsung", category: "Screen", image: "/shop/hero-phone.jpg" },
+        { id: 104, name: "iPhone 11 Battery", price: 2200, stock: 25, desc: "3110mAh high capacity", brand: "Apple", category: "Battery", image: "/shop/hero-phone.jpg" },
+        { id: 105, name: "Samsung Battery 5000mAh", price: 1800, stock: 15, desc: "Original quality battery", brand: "Samsung", category: "Battery", image: "/shop/hero-phone.jpg" },
+        { id: 106, name: "iPhone Charging Port", price: 1500, stock: 18, desc: "Lightning flex cable", brand: "Apple", category: "Charging Port", image: "/shop/hero-phone.jpg" },
+        { id: 107, name: "USB-C Charging Port", price: 800, stock: 30, desc: "Universal Type-C port", brand: "Universal", category: "Charging Port", image: "/shop/hero-phone.jpg" }
+    ];
+}
+
+// ============== DISPLAY FUNCTIONS ==============
+function displayRepairServices() {
+    const grid = document.getElementById('repairGrid');
+    if (!grid) return;
+    
+    let filtered = repairServices.filter(s => {
+        if (currentCat !== 'all' && s.category !== currentCat) return false;
+        return s.available !== false;
+    });
+    
+    if (filtered.length === 0) {
+        grid.innerHTML = '<div style="text-align:center; padding:3rem; color:var(--muted);">No repair services found.</div>';
+        return;
+    }
+    
+    grid.innerHTML = filtered.map(s => `
+        <div class="repair-card" onclick='openBookingModal(${JSON.stringify(s)})'>
+            <div class="repair-card-header">
+                <div class="icon">${getServiceIcon(s.category)}</div>
+                <h3>${escapeHtml(s.title || s.name)}</h3>
+            </div>
+            <div class="repair-card-body">
+                <div class="repair-price">KES ${(s.price || 0).toLocaleString()}</div>
+                <div class="repair-desc">${escapeHtml(s.description || s.desc || 'Professional repair service')}</div>
+                <div style="margin-top: 0.5rem; color: var(--primary); font-size: 0.8rem;">📞 Click to book</div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function getServiceIcon(category) {
+    const icons = {
+        'screen': '📱',
+        'battery': '🔋',
+        'charging': '🔌',
+        'speaker': '🔊',
+        'water': '💧',
+        'software': '💻',
+        'glass': '🔧',
+        'camera': '📷'
+    };
+    return icons[category] || '🔧';
+}
+
+function displaySpareParts() {
+    const grid = document.getElementById('spareGrid');
+    if (!grid) return;
+    
+    let filtered = spareParts.filter(p => {
+        if (spareSearchTerm && !p.name.toLowerCase().includes(spareSearchTerm.toLowerCase()) && 
+            !(p.brand && p.brand.toLowerCase().includes(spareSearchTerm.toLowerCase()))) {
+            return false;
+        }
+        return true;
+    });
+    
+    if (filtered.length === 0) {
+        grid.innerHTML = '<div style="text-align:center; padding:3rem; color:var(--muted);">No spare parts found.</div>';
+        return;
+    }
+    
+    grid.innerHTML = filtered.map(p => `
+        <div class="repair-card">
+            <div class="repair-card-header">
+                <div class="icon">${p.name.includes('Screen') ? '📱' : p.name.includes('Battery') ? '🔋' : '🔌'}</div>
+                <h3>${escapeHtml(p.name)}</h3>
+            </div>
+            <div class="repair-card-body">
+                <div style="display:inline-block; padding:0.2rem 0.6rem; border-radius:20px; font-size:0.7rem; background:rgba(32,224,166,0.2); color:#20e0a6;">
+                    ${p.brand || 'Generic'} · Stock: ${p.stock || 0}
+                </div>
+                <div class="repair-price">KES ${(p.price || 0).toLocaleString()}</div>
+                <div class="repair-desc">${escapeHtml(p.description || p.desc || 'Genuine replacement part')}</div>
+                <button class="repair-add-btn" onclick="event.stopPropagation(); addToNovaCart(${JSON.stringify(p)})">
+                    🛒 Add to Cart (Nova Cart)
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+// ============== BOOKING FUNCTIONS ==============
+function openBookingModal(service) {
+    selectedService = service;
+    document.getElementById('modalServiceName').textContent = service.title || service.name;
+    document.getElementById('modalServicePrice').innerHTML = `KES ${(service.price || 0).toLocaleString()}`;
+    document.getElementById('bookingModal').classList.add('open');
+}
+
+function closeBookingModal() {
+    document.getElementById('bookingModal').classList.remove('open');
+    document.getElementById('bookingForm').reset();
+    selectedService = null;
+}
+
+async function submitBooking(formData) {
+    const bookingData = {
+        name: formData.get('name'),
+        phone: formData.get('phone'),
+        email: formData.get('email') || '',
+        brand: formData.get('brand'),
+        model: formData.get('model'),
+        repairServiceId: selectedService?.id || null,
+        repairType: selectedService?.title || selectedService?.name || 'General Repair',
+        description: formData.get('notes') || '',
+        pickupDropoff: 'Dropoff',
+        preferredAt: new Date().toISOString().split('T')[0]
+    };
+    
+    try {
+        const response = await fetch('/api/repair/bookings', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(bookingData)
+        });
+        
+        if (response.ok) {
+            showToast('✓ Booking request sent! Our team will contact you within 24 hours.');
+            closeBookingModal();
+        } else {
+            const error = await response.json();
+            showToast('❌ Booking failed: ' + (error.error || 'Unknown error'));
+        }
+    } catch (err) {
+        // Save booking locally as fallback
+        const offlineBookings = JSON.parse(localStorage.getItem('offline_repair_bookings') || '[]');
+        offlineBookings.push({ ...bookingData, createdAt: new Date().toISOString() });
+        localStorage.setItem('offline_repair_bookings', JSON.stringify(offlineBookings));
+        showToast('✓ Booking saved locally! We\'ll process it when online.');
+        closeBookingModal();
+    }
+}
 
 // ============== SECTION TOGGLE ==============
 function showSection(section) {
@@ -529,227 +865,15 @@ function showSection(section) {
         spareSection.classList.remove('hidden-section');
         navRepairBtn.classList.remove('active');
         navSpareBtn.classList.add('active');
-        displaySpareParts();
+        if (spareParts.length === 0) fetchSpareParts();
     }
 }
 
-// ============== BOOKING MODAL ==============
-let selectedService = null;
-
-function openBookingModal(service) {
-    selectedService = service;
-    document.getElementById('modalServiceName').textContent = service.name;
-    document.getElementById('modalServicePrice').textContent = `KES ${service.price.toLocaleString()}`;
-    document.getElementById('bookingModal').classList.add('open');
-}
-
-function closeBookingModal() {
-    document.getElementById('bookingModal').classList.remove('open');
-    document.getElementById('bookingForm').reset();
-    selectedService = null;
-}
-
-function showToast(message) {
-    const toast = document.createElement('div');
-    toast.className = 'toast-notification';
-    toast.textContent = message;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
-}
-
-// Submit booking
-document.getElementById('bookingForm')?.addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const name = document.getElementById('customerName').value;
-    const phone = document.getElementById('customerPhone').value;
-    const email = document.getElementById('customerEmail').value;
-    const brand = document.getElementById('phoneBrand').value;
-    const model = document.getElementById('phoneModel').value;
-    const notes = document.getElementById('bookingNotes').value;
-    
-    if (!name || !phone || !brand || !model) {
-        showToast('Please fill in all required fields');
-        return;
-    }
-    
-    // Create booking message
-    const bookingDetails = {
-        service: selectedService?.name,
-        price: selectedService?.price,
-        customer: { name, phone, email, brand, model, notes },
-        date: new Date().toISOString()
-    };
-    
-    console.log('Booking submitted:', bookingDetails);
-    
-    // Here you can send to your backend or WhatsApp
-    // Example: window.open(`https://wa.me/254717043977?text=${encodeURIComponent(message)}`, '_blank');
-    
-    showToast(`✓ Booking request sent! We'll call you within 24 hours.`);
-    closeBookingModal();
-});
-
-document.getElementById('modalClose')?.addEventListener('click', closeBookingModal);
-document.getElementById('bookingModal')?.addEventListener('click', (e) => {
-    if (e.target === document.getElementById('bookingModal')) closeBookingModal();
-});
-
-// ============== CART FUNCTIONS ==============
-function getCart() {
-    return JSON.parse(localStorage.getItem('cart')) || [];
-}
-
-function saveCart(cart) {
-    localStorage.setItem('cart', JSON.stringify(cart));
-    updateCartCount();
-    displayCartItems();
-}
-
-function updateCartCount() {
-    const cart = getCart();
-    const count = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
-    const el = document.getElementById('cartCount');
-    if (el) el.textContent = count;
-}
-
-function addSpareToCart(item) {
-    const cart = getCart();
-    const existing = cart.find(i => i.id === item.id);
-    if (existing) {
-        existing.quantity = (existing.quantity || 1) + 1;
-        showToast(`✓ Added another ${item.name}`);
-    } else {
-        cart.push({ ...item, quantity: 1, type: 'spare' });
-        showToast(`✓ ${item.name} added to cart`);
-    }
-    saveCart(cart);
-}
-
-function removeFromCart(index) {
-    const cart = getCart();
-    cart.splice(index, 1);
-    saveCart(cart);
-    showToast('Item removed');
-}
-
-function updateQuantity(index, change) {
-    const cart = getCart();
-    const newQty = (cart[index].quantity || 1) + change;
-    if (newQty <= 0) {
-        cart.splice(index, 1);
-    } else {
-        cart[index].quantity = newQty;
-    }
-    saveCart(cart);
-}
-
-function displayCartItems() {
-    const cart = getCart();
-    const container = document.getElementById('cartItems');
-    const totalEl = document.getElementById('cartTotal');
-    
-    if (!container) return;
-    
-    if (cart.length === 0) {
-        container.innerHTML = '<div class="cart-empty"><div>🛒</div><p>Your cart is empty</p></div>';
-        if (totalEl) totalEl.textContent = 'Kshs 0';
-        return;
-    }
-    
-    let html = '', subtotal = 0;
-    cart.forEach((item, idx) => {
-        const qty = item.quantity || 1;
-        subtotal += item.price * qty;
-        html += `
-            <div class="cart-item">
-                <div>
-                    <div class="ci-title">${item.name}</div>
-                    <div class="ci-price">KES ${item.price.toLocaleString()}</div>
-                    <div class="ci-qty">
-                        <button onclick="updateQuantity(${idx}, -1)">-</button>
-                        <span>${qty}</span>
-                        <button onclick="updateQuantity(${idx}, 1)">+</button>
-                    </div>
-                </div>
-                <button class="ci-rm" onclick="removeFromCart(${idx})">✕</button>
-            </div>
-        `;
-    });
-    const total = subtotal + 200;
-    container.innerHTML = html;
-    if (totalEl) totalEl.textContent = `Kshs ${total.toLocaleString()}`;
-}
-
-// ============== DISPLAY FUNCTIONS ==============
-let currentCat = 'all';
-let spareSearchTerm = '';
-
-function displayRepairs() {
-    const grid = document.getElementById('repairGrid');
-    if (!grid) return;
-    
-    let filtered = repairServices.filter(s => {
-        if (currentCat !== 'all' && s.category !== currentCat) return false;
-        return true;
-    });
-    
-    grid.innerHTML = filtered.map(s => `
-        <div class="repair-card" onclick='openBookingModal(${JSON.stringify(s)})'>
-            <div class="repair-card-header">
-                <div class="icon">${s.category === 'screen' ? '📱' : s.category === 'battery' ? '🔋' : s.category === 'charging' ? '🔌' : s.category === 'speaker' ? '🔊' : s.category === 'water' ? '💧' : '💻'}</div>
-                <h3>${s.name}</h3>
-            </div>
-            <div class="repair-card-body">
-                <div class="repair-price">KES ${s.price.toLocaleString()}</div>
-                <div class="repair-desc">${s.desc}</div>
-                <div style="margin-top: 0.5rem; color: var(--primary); font-size: 0.8rem;">📞 Click to book</div>
-            </div>
-        </div>
-    `).join('');
-}
-
-function displaySpareParts() {
-    const grid = document.getElementById('spareGrid');
-    if (!grid) return;
-    
-    let filtered = spareParts.filter(p => {
-        if (spareSearchTerm && !p.name.toLowerCase().includes(spareSearchTerm.toLowerCase())) return false;
-        return true;
-    });
-    
-    if (filtered.length === 0) {
-        grid.innerHTML = '<div style="text-align:center; padding:3rem; color:var(--muted);">No spare parts found.</div>';
-        return;
-    }
-    
-    grid.innerHTML = filtered.map(p => `
-        <div class="repair-card">
-            <div class="repair-card-header">
-                <div class="icon">${p.name.includes('Screen') ? '📱' : p.name.includes('Battery') ? '🔋' : '🔌'}</div>
-                <h3>${p.name}</h3>
-            </div>
-            <div class="repair-card-body">
-                <div style="display:inline-block; padding:0.2rem 0.6rem; border-radius:20px; font-size:0.7rem; background:rgba(32,224,166,0.2); color:#20e0a6;">In Stock: ${p.stock}</div>
-                <div class="repair-price">KES ${p.price.toLocaleString()}</div>
-                <div class="repair-desc">${p.desc}</div>
-                <button class="repair-add-btn" onclick="event.stopPropagation(); addSpareToCart(${JSON.stringify(p)})">🛒 Add to Cart</button>
-            </div>
-        </div>
-    `).join('');
-}
-
-function searchSpareParts() {
-    spareSearchTerm = document.getElementById('spareSearchInput').value;
-    displaySpareParts();
-}
-
-// ============== INITIALIZE ==============
+// ============== EVENT LISTENERS ==============
 document.addEventListener('DOMContentLoaded', () => {
-    displayRepairs();
-    displaySpareParts();
-    updateCartCount();
-    displayCartItems();
+    // Load data
+    fetchRepairServices();
+    fetchSpareParts();
     
     // Category filters
     document.querySelectorAll('#repairCategories .repair-cat-btn').forEach(btn => {
@@ -757,14 +881,33 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('#repairCategories .repair-cat-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             currentCat = btn.getAttribute('data-cat');
-            displayRepairs();
+            displayRepairServices();
         });
     });
     
-    // Search
-    document.getElementById('spareSearchBtn')?.addEventListener('click', searchSpareParts);
+    // Search spare parts
+    document.getElementById('spareSearchBtn')?.addEventListener('click', () => {
+        spareSearchTerm = document.getElementById('spareSearchInput').value;
+        displaySpareParts();
+    });
     document.getElementById('spareSearchInput')?.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') searchSpareParts();
+        if (e.key === 'Enter') {
+            spareSearchTerm = e.target.value;
+            displaySpareParts();
+        }
+    });
+    
+    // Booking form
+    document.getElementById('bookingForm')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        await submitBooking(formData);
+    });
+    
+    // Modal close
+    document.getElementById('modalClose')?.addEventListener('click', closeBookingModal);
+    document.getElementById('bookingModal')?.addEventListener('click', (e) => {
+        if (e.target === document.getElementById('bookingModal')) closeBookingModal();
     });
     
     // Cart sidebar
@@ -774,9 +917,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const overlay = document.getElementById('overlay');
     
     cartBtn?.addEventListener('click', () => {
+        updateCartUI();
         cartSide?.classList.add('open');
         overlay?.classList.add('show');
-        displayCartItems();
     });
     cartClose?.addEventListener('click', () => {
         cartSide?.classList.remove('open');
@@ -787,16 +930,21 @@ document.addEventListener('DOMContentLoaded', () => {
         overlay?.classList.remove('show');
     });
     
-    // Theme
+    // Checkout button - redirect to main page cart
+    document.getElementById('checkoutBtn')?.addEventListener('click', () => {
+        window.location.href = 'index.html';
+    });
+    
+    // Theme toggle
     const themeBtn = document.getElementById('themeBtn');
     const html = document.documentElement;
     themeBtn?.addEventListener('click', () => {
         const curr = html.getAttribute('data-theme');
         html.setAttribute('data-theme', curr === 'dark' ? 'light' : 'dark');
-        localStorage.setItem('theme', html.getAttribute('data-theme'));
+        localStorage.setItem('nova_theme', html.getAttribute('data-theme'));
     });
-    const saved = localStorage.getItem('theme');
-    if (saved) html.setAttribute('data-theme', saved);
+    const savedTheme = localStorage.getItem('nova_theme') || 'dark';
+    html.setAttribute('data-theme', savedTheme);
     
     // Mobile menu
     const toggle = document.getElementById('menuToggle');
@@ -805,15 +953,21 @@ document.addEventListener('DOMContentLoaded', () => {
         toggle.classList.toggle('open');
         mobile?.classList.toggle('open');
     });
+    
+    // Initialize cart count
+    updateCartUI();
 });
 
-// Make functions global
-window.openBookingModal = openBookingModal;
-window.addSpareToCart = addSpareToCart;
-window.removeFromCart = removeFromCart;
-window.updateQuantity = updateQuantity;
+// Make functions global for onclick handlers
 window.showSection = showSection;
+window.addToNovaCart = addToNovaCart;
+window.removeFromNovaCart = removeFromNovaCart;
+window.updateCartQuantity = updateCartQuantity;
+window.openBookingModal = openBookingModal;
 </script>
+
+<!-- Toast container -->
+<div class="toasts" id="toasts"></div>
 
 </body>
 </html>
