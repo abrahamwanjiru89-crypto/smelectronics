@@ -1007,3 +1007,110 @@ html[data-theme="dark"] .cart-meta input {
         font-size: 1.1rem;
     }
 }
+/* ============== CART STYLING FIXES ============== */
+
+/* Fix cart meta section spacing */
+.cart-meta {
+    padding: 1.25rem;
+    background: var(--surface);
+    border-radius: 1rem;
+    margin: 0.5rem 0;
+    border: 1px solid var(--border);
+}
+
+.cart-meta h4 {
+    font-size: 1rem;
+    margin-bottom: 1rem;
+    color: var(--primary);
+    font-family: var(--font-display);
+}
+
+/* Fix labels and inputs */
+.cart-meta label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    font-size: 0.85rem;
+    color: var(--muted);
+    font-weight: 500;
+}
+
+.cart-meta select,
+.cart-meta input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--bg-2);
+    color: var(--text);
+    font-size: 0.9rem;
+}
+
+/* Fix delivery fee row */
+.cart-fees {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 1rem;
+    margin-top: 0.5rem;
+    border-top: 1px solid var(--border);
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.cart-fees b {
+    font-family: var(--font-mono);
+    color: var(--primary);
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+/* Fix cart total */
+.cart-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    margin-bottom: 1rem;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.cart-total b {
+    font-family: var(--font-mono);
+    color: var(--primary);
+    font-size: 1.3rem;
+}
+
+/* Fix checkout button */
+#checkoutBtn {
+    width: 100%;
+    padding: 1rem;
+    font-size: 1rem;
+    font-weight: 600;
+    background: linear-gradient(135deg, #00e5ff, #7c4dff);
+    color: #000;
+    border: none;
+    border-radius: 0.75rem;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+#checkoutBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px -10px rgba(0, 229, 255, 0.5);
+}
+
+/* Mobile fix */
+@media (max-width: 640px) {
+    .cart-fees {
+        font-size: 0.9rem;
+    }
+    .cart-fees b {
+        font-size: 1rem;
+    }
+    .cart-total b {
+        font-size: 1.1rem;
+    }
+}
