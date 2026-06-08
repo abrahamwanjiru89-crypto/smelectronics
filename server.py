@@ -698,7 +698,45 @@ class Handler(BaseHTTPRequestHandler):
                 fee = int(setting['value']) if setting else 600
                 self.send_json({"fee": fee})
             return
-        
+        # ============================================
+# CREATE REPAIR BOOKING ENDPOINT
+# ============================================
+if path == "/api/repair/bookings":
+    user = self.current_user()
+    data = self.read_json()
+    
+    name = data.get("name", "").strip()
+    phone = data.get("phone", "").strip()
+    email = data.get("email", "").strip().lower()
+    brand = data.get("brand", "").strip()
+    model = data.get("model", "").strip()
+    repair_service_id = data.get("repairServiceId")
+    repair_type = data.get("repairType", "").strip()
+    description = data.get("description", "").strip()
+    pickup_dropoff = data.get("pickupDropoff", "Dropoff")
+    preferred_at = data.get("preferredAt", datetime.now(timezone.utc).isoformat())
+    
+    if not name or not phone or not brand or not model:
+        self.send_json({"error": "Missing required fields"}, 400)
+        return
+    
+    booking_id = "BKG-" + secrets.token_hex(4).upper()
+    now = datetime.now(timezone.utc).isoformat()
+    
+    with db() as conn:
+        conn.execute("""
+            INSERT INTO repair_bookings 
+            (id, user_id, name, email, phone, brand, model, repair_service_id, 
+             repair_type, description, pickup_dropoff, preferred_at, status, created_at)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        """, (
+            booking_id, user["id"] if user else None, name, email, phone, brand, model,
+            repair_service_id, repair_type, description, pickup_dropoff, preferred_at,
+            "Pending", now
+        ))
+    
+    self.send_json({"ok": True, "bookingId": booking_id})
+    return
         if path == "/api/products":
             with db() as conn:
                 rows = conn.execute("SELECT * FROM products ORDER BY created_at DESC").fetchall()
