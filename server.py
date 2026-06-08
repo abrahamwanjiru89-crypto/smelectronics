@@ -16,7 +16,7 @@ from pathlib import Path
 from urllib.parse import unquote, urlparse, parse_qs, urlencode
 import urllib.request
 
-ROOT = Path(__file__).parent.resolve()
+ROOT = Path(__file__parent__).resolve()
 DB_PATH = ROOT / "shop.db"
 UPLOAD_DIR = ROOT / "uploads"
 UPLOAD_DIR.mkdir(exist_ok=True)
@@ -630,7 +630,7 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
 
     # ============================================
-    # FIXED: GET HANDLERS (with root path handling)
+    # GET HANDLERS
     # ============================================
     def do_GET(self):
         parsed = urlparse(self.path)
@@ -698,45 +698,7 @@ class Handler(BaseHTTPRequestHandler):
                 fee = int(setting['value']) if setting else 600
                 self.send_json({"fee": fee})
             return
-        # ============================================
-# CREATE REPAIR BOOKING ENDPOINT
-# ============================================
-if path == "/api/repair/bookings":
-    user = self.current_user()
-    data = self.read_json()
-    
-    name = data.get("name", "").strip()
-    phone = data.get("phone", "").strip()
-    email = data.get("email", "").strip().lower()
-    brand = data.get("brand", "").strip()
-    model = data.get("model", "").strip()
-    repair_service_id = data.get("repairServiceId")
-    repair_type = data.get("repairType", "").strip()
-    description = data.get("description", "").strip()
-    pickup_dropoff = data.get("pickupDropoff", "Dropoff")
-    preferred_at = data.get("preferredAt", datetime.now(timezone.utc).isoformat())
-    
-    if not name or not phone or not brand or not model:
-        self.send_json({"error": "Missing required fields"}, 400)
-        return
-    
-    booking_id = "BKG-" + secrets.token_hex(4).upper()
-    now = datetime.now(timezone.utc).isoformat()
-    
-    with db() as conn:
-        conn.execute("""
-            INSERT INTO repair_bookings 
-            (id, user_id, name, email, phone, brand, model, repair_service_id, 
-             repair_type, description, pickup_dropoff, preferred_at, status, created_at)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-        """, (
-            booking_id, user["id"] if user else None, name, email, phone, brand, model,
-            repair_service_id, repair_type, description, pickup_dropoff, preferred_at,
-            "Pending", now
-        ))
-    
-    self.send_json({"ok": True, "bookingId": booking_id})
-    return
+        
         if path == "/api/products":
             with db() as conn:
                 rows = conn.execute("SELECT * FROM products ORDER BY created_at DESC").fetchall()
@@ -797,7 +759,7 @@ if path == "/api/repair/bookings":
         self.wfile.write(body)
 
     # ============================================
-    # COMPLETE POST HANDLERS (with login endpoints)
+    # POST HANDLERS
     # ============================================
     def do_POST(self):
         path = urlparse(self.path).path
@@ -981,10 +943,10 @@ if path == "/api/repair/bookings":
                         form.get("name", "").strip(),
                         form.get("cat", "phones"),
                         float(form.get("price", "0")),
-                        None,
+                        float(form.get("was", "0")) if form.get("was") else None,
                         4.6,
                         0,
-                        "new",
+                        form.get("badge", ""),
                         f"/uploads/{filename}",
                         form.get("desc", "").strip(),
                         1,
@@ -1103,6 +1065,46 @@ if path == "/api/repair/bookings":
                 self.send_json({"order": row_order(conn, order)})
             return
         
+        # ============================================
+        # CREATE REPAIR BOOKING ENDPOINT (NEW - for repair page)
+        # ============================================
+        if path == "/api/repair/bookings":
+            user = self.current_user()
+            data = self.read_json()
+            
+            name = data.get("name", "").strip()
+            phone = data.get("phone", "").strip()
+            email = data.get("email", "").strip().lower()
+            brand = data.get("brand", "").strip()
+            model = data.get("model", "").strip()
+            repair_service_id = data.get("repairServiceId")
+            repair_type = data.get("repairType", "").strip()
+            description = data.get("description", "").strip()
+            pickup_dropoff = data.get("pickupDropoff", "Dropoff")
+            preferred_at = data.get("preferredAt", datetime.now(timezone.utc).isoformat())
+            
+            if not name or not phone or not brand or not model:
+                self.send_json({"error": "Missing required fields: name, phone, brand, model"}, 400)
+                return
+            
+            booking_id = "BKG-" + secrets.token_hex(4).upper()
+            now = datetime.now(timezone.utc).isoformat()
+            
+            with db() as conn:
+                conn.execute("""
+                    INSERT INTO repair_bookings 
+                    (id, user_id, name, email, phone, brand, model, repair_service_id, 
+                     repair_type, description, pickup_dropoff, preferred_at, status, created_at)
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                """, (
+                    booking_id, user["id"] if user else None, name, email, phone, brand, model,
+                    repair_service_id, repair_type, description, pickup_dropoff, preferred_at,
+                    "Pending", now
+                ))
+            
+            self.send_json({"ok": True, "bookingId": booking_id, "message": "Booking submitted successfully"})
+            return
+        
         # If no endpoint matches
         self.send_json({"error": "Not found"}, 404)
 
@@ -1189,6 +1191,26 @@ if path == "/api/repair/bookings":
                 conn.execute(
                     "UPDATE products SET name = ?, price = ?, in_stock = ?, cat = ?, desc = ? WHERE id = ?",
                     (data.get("name"), data.get("price"), 1 if data.get("inStock") else 0, data.get("cat"), data.get("desc"), product_id),
+                )
+            self.send_json({"ok": True})
+            return
+        
+        # Update Repair Booking
+        if path.startswith("/api/management/repair-bookings/"):
+            if not self.require({"staff", "admin"}):
+                return
+            booking_id = path.split("/")[-1]
+            data = self.read_json()
+            status = data.get("status", "").strip()
+            
+            if not status:
+                self.send_json({"error": "Status is required"}, 400)
+                return
+            
+            with db() as conn:
+                conn.execute(
+                    "UPDATE repair_bookings SET status = ? WHERE id = ?",
+                    (status, booking_id),
                 )
             self.send_json({"ok": True})
             return
