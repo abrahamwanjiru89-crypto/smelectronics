@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<meta name="description" content="S.M Dynamics Mobile Repair Services — Professional phone, tablet, and laptop repairs across Kenya." />
 <title>S.M Dynamics - Mobile Repair Services</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,16 +12,13 @@
 <meta name="theme-color" content="#0b1120">
 <link rel="icon" href="shop/brand logo.png">
 <style>
-/* ========== PREMIUM REPAIR PAGE STYLES ========== */
-
-/* Container */
+/* Same premium styles as before */
 .repair-container {
     max-width: 1400px;
     margin: 0 auto;
     padding: 0 2rem;
 }
 
-/* Section Header */
 .repair-section-header {
     text-align: center;
     margin-bottom: 3rem;
@@ -60,7 +56,6 @@
     font-size: 1rem;
 }
 
-/* Navigation Tabs */
 .repair-tabs {
     display: flex;
     justify-content: center;
@@ -78,7 +73,6 @@
     color: var(--text);
     cursor: pointer;
     transition: all 0.3s ease;
-    backdrop-filter: blur(10px);
 }
 
 .repair-tab:hover {
@@ -93,7 +87,6 @@
     box-shadow: 0 4px 15px rgba(0, 229, 255, 0.3);
 }
 
-/* Category Filters */
 .repair-filters {
     display: flex;
     justify-content: center;
@@ -117,17 +110,14 @@
 .filter-chip:hover {
     border-color: var(--primary);
     color: var(--text);
-    transform: translateY(-1px);
 }
 
 .filter-chip.active {
     background: linear-gradient(135deg, var(--primary), var(--primary-2));
     border-color: transparent;
     color: #000;
-    font-weight: 600;
 }
 
-/* Search Bar */
 .repair-search {
     max-width: 450px;
     margin: 0 auto 2.5rem;
@@ -143,13 +133,11 @@
     border-radius: 60px;
     font-size: 0.9rem;
     color: var(--text);
-    transition: all 0.3s ease;
 }
 
 .repair-search input:focus {
     outline: none;
     border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.1);
 }
 
 .repair-search button {
@@ -168,7 +156,6 @@
     box-shadow: 0 5px 20px rgba(0, 229, 255, 0.3);
 }
 
-/* Cards Grid */
 .repair-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -176,31 +163,13 @@
     margin-top: 1rem;
 }
 
-/* Service Card */
 .service-card {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 1.5rem;
     overflow: hidden;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.4s ease;
     cursor: pointer;
-    position: relative;
-}
-
-.service-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, var(--primary), var(--primary-2), var(--accent));
-    transform: scaleX(0);
-    transition: transform 0.4s ease;
-}
-
-.service-card:hover::before {
-    transform: scaleX(1);
 }
 
 .service-card:hover {
@@ -238,47 +207,33 @@
     font-size: 1.5rem;
     font-weight: 700;
     color: var(--primary);
-    font-family: monospace;
     margin: 0.75rem 0;
 }
 
 .service-desc {
     color: var(--muted);
     font-size: 0.85rem;
-    line-height: 1.5;
     margin-bottom: 1rem;
 }
 
-.service-badge {
-    display: inline-block;
-    padding: 0.25rem 0.75rem;
-    background: rgba(0, 229, 255, 0.1);
-    border-radius: 20px;
-    font-size: 0.7rem;
-    color: var(--primary);
-}
-
-/* Spare Part Card */
 .spare-card {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 1.5rem;
     overflow: hidden;
     transition: all 0.3s ease;
-    position: relative;
 }
 
 .spare-card:hover {
     transform: translateY(-4px);
     border-color: rgba(0, 229, 255, 0.3);
-    box-shadow: 0 10px 30px -15px rgba(0, 0, 0, 0.3);
 }
 
 .spare-image-wrapper {
-    position: relative;
     padding: 1.5rem;
     background: linear-gradient(135deg, rgba(0, 229, 255, 0.03), rgba(124, 77, 255, 0.03));
     text-align: center;
+    position: relative;
 }
 
 .spare-image {
@@ -286,11 +241,6 @@
     height: 100px;
     object-fit: cover;
     border-radius: 1rem;
-    transition: transform 0.3s ease;
-}
-
-.spare-card:hover .spare-image {
-    transform: scale(1.05);
 }
 
 .spare-stock {
@@ -342,7 +292,6 @@
     color: var(--muted);
     font-size: 0.8rem;
     margin-bottom: 1rem;
-    line-height: 1.4;
 }
 
 .add-to-cart-btn {
@@ -367,7 +316,6 @@
     box-shadow: 0 5px 15px rgba(0, 229, 255, 0.3);
 }
 
-/* Booking Modal */
 .repair-modal {
     position: fixed;
     inset: 0;
@@ -397,18 +345,6 @@
     max-height: 85vh;
     overflow-y: auto;
     position: relative;
-    animation: modalSlide 0.3s ease;
-}
-
-@keyframes modalSlide {
-    from {
-        opacity: 0;
-        transform: scale(0.95) translateY(-20px);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1) translateY(0);
-    }
 }
 
 .modal-header {
@@ -445,7 +381,6 @@
     border: 1px solid var(--border);
     color: var(--muted);
     cursor: pointer;
-    transition: all 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -454,7 +389,6 @@
 .modal-close:hover {
     background: var(--danger);
     color: white;
-    border-color: var(--danger);
 }
 
 .form-group {
@@ -479,7 +413,6 @@
     border-radius: 0.75rem;
     color: var(--text);
     font-size: 0.9rem;
-    transition: all 0.2s;
 }
 
 .form-group input:focus,
@@ -487,7 +420,6 @@
 .form-group textarea:focus {
     outline: none;
     border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.1);
 }
 
 .submit-btn {
@@ -500,7 +432,6 @@
     font-size: 1rem;
     color: #000;
     cursor: pointer;
-    transition: all 0.3s;
     margin-top: 1rem;
 }
 
@@ -509,7 +440,6 @@
     box-shadow: 0 5px 20px rgba(0, 229, 255, 0.3);
 }
 
-/* Empty State */
 .empty-state {
     text-align: center;
     padding: 4rem 2rem;
@@ -524,17 +454,6 @@
     opacity: 0.5;
 }
 
-.empty-state h4 {
-    font-size: 1.1rem;
-    margin-bottom: 0.5rem;
-}
-
-.empty-state p {
-    color: var(--muted);
-    font-size: 0.85rem;
-}
-
-/* Loading */
 .loading {
     text-align: center;
     padding: 4rem;
@@ -555,7 +474,6 @@
     to { transform: rotate(360deg); }
 }
 
-/* Toast */
 .toast-container {
     position: fixed;
     bottom: 1.5rem;
@@ -596,7 +514,10 @@
     border-left-color: #ff4d6d;
 }
 
-/* Responsive */
+.hidden-section {
+    display: none !important;
+}
+
 @media (max-width: 768px) {
     .repair-container {
         padding: 0 1rem;
@@ -608,26 +529,12 @@
     
     .repair-grid {
         grid-template-columns: 1fr;
-        gap: 1rem;
-    }
-    
-    .repair-tabs {
-        gap: 0.5rem;
     }
     
     .repair-tab {
         padding: 0.5rem 1.25rem;
         font-size: 0.85rem;
     }
-    
-    .modal-content {
-        padding: 1.5rem;
-    }
-}
-
-/* Hidden Section */
-.hidden-section {
-    display: none !important;
 }
 </style>
 </head>
@@ -645,7 +552,7 @@
 <header class="nav" id="nav">
   <div class="nav-inner">
     <a href="index.html" class="brand">
-      <img src="shop/brand logo.png" alt="S.M Dynamics" class="brand-logo" style="height:28px;">
+      <img src="shop/brand logo.png" alt="S.M Dynamics" style="height:28px;">
       <span class="brand-name">S.M Dynamics</span>
     </a>
     <nav class="nav-links">
@@ -653,7 +560,6 @@
       <a href="index.html#categories">Shop</a>
       <a href="repair.html">Repair</a>
       <a href="index.html#featured">Featured</a>
-      <a href="index.html#flash">Flash Sale</a>
     </nav>
     <div class="nav-tools">
       <button class="icon-btn" id="themeBtn">🌓</button>
@@ -669,24 +575,22 @@
   <a href="index.html#categories">Shop</a>
   <a href="repair.html">Repair</a>
   <a href="index.html#featured">Featured</a>
-  <a href="index.html#flash">Flash Sale</a>
 </aside>
 
 <main>
-  <!-- Hero Section -->
   <section class="hero" style="min-height: 50vh; padding: 3rem 0;">
     <div class="hero-grid" style="max-width: 1200px; margin: 0 auto; padding: 0 2rem;">
       <div class="hero-copy">
         <span class="eyebrow"><span class="dot"></span> Expert Repair Services</span>
         <h1 class="display" style="font-size: 3rem;">Fix It Fast,<br><span class="grad">Fix It Right.</span></h1>
-        <p class="lede">Professional phone, tablet, and laptop repairs using genuine parts. Free diagnosis, 3-month warranty, same-day service.</p>
+        <p class="lede">Professional phone, tablet, and laptop repairs using genuine parts.</p>
         <div class="hero-stats">
           <div><b>5000+</b><span>Repairs</span></div>
           <div><b>98%</b><span>Satisfaction</span></div>
           <div><b>24hr</b><span>Turnaround</span></div>
         </div>
       </div>
-      <div class="hero-slider" style="border-radius: 1.5rem; overflow: hidden;">
+      <div class="hero-slider" style="border-radius: 1.5rem;">
         <div class="hero-slide active" style="background-image: url('https://images.unsplash.com/photo-1616348436168-de43ad0db179?w=600&h=450&fit=crop');">
           <div class="slide-tag">Expert Technicians</div>
           <div class="slide-meta"><h3>Mobile Repair Experts</h3><p>Nakuru, Kenya</p></div>
@@ -695,20 +599,17 @@
     </div>
   </section>
 
-  <!-- Main Content -->
   <div class="repair-container">
-    <!-- Tabs -->
     <div class="repair-tabs">
       <button class="repair-tab active" data-tab="services">🔧 Repair Services</button>
       <button class="repair-tab" data-tab="parts">🔩 Spare Parts</button>
     </div>
 
-    <!-- Services Section -->
     <div id="servicesSection">
       <div class="repair-section-header">
         <div class="badge">What We Fix</div>
         <h2>Professional Repair Services</h2>
-        <p>Click any service to book a repair with our expert technicians</p>
+        <p>Click any service to book a repair</p>
       </div>
       
       <div class="repair-filters" id="serviceFilters">
@@ -726,12 +627,11 @@
       </div>
     </div>
 
-    <!-- Parts Section (Hidden by default) -->
     <div id="partsSection" class="hidden-section">
       <div class="repair-section-header">
         <div class="badge">Genuine Parts</div>
         <h2>Replacement Spare Parts</h2>
-        <p>Add genuine spare parts to your cart and checkout with the main store</p>
+        <p>Add genuine spare parts to your cart</p>
       </div>
       
       <div class="repair-search">
@@ -747,26 +647,21 @@
   </div>
 </main>
 
-<!-- Footer -->
 <footer class="footer">
   <div class="container foot-grid">
     <div>
       <a href="index.html" class="brand">S.M Dynamics</a>
       <p class="muted">Premium electronics and repair services across Kenya.</p>
-      <div class="socials">
-        <a href="#">f</a><a href="#">𝕏</a><a href="#">♪</a><a href="#">💬</a>
-      </div>
     </div>
     <div><h4>Shop</h4><a href="#">Phones</a><a href="#">Audio</a><a href="#">Laptops</a></div>
     <div><h4>Support</h4><a href="#">Help</a><a href="#">Shipping</a><a href="#">Returns</a></div>
-    <div><h4>Contact</h4><a href="#">WhatsApp</a><a href="#">Email</a><a href="#">Location</a></div>
+    <div><h4>Contact</h4><a href="#">WhatsApp</a><a href="#">Email</a></div>
   </div>
   <div class="foot-bot container">
     <span>© 2026 S.M Dynamics. All rights reserved.</span>
   </div>
 </footer>
 
-<!-- Booking Modal -->
 <div class="repair-modal" id="bookingModal">
   <div class="modal-content">
     <button class="modal-close" id="closeModal">×</button>
@@ -802,7 +697,7 @@
       </div>
       <div class="form-group">
         <label>Issue Description</label>
-        <textarea id="bookingNotes" rows="3" placeholder="Describe the problem..."></textarea>
+        <textarea id="bookingNotes" rows="3"></textarea>
       </div>
       <button type="submit" class="submit-btn">📞 Submit Booking</button>
     </form>
@@ -812,14 +707,14 @@
 <div class="toast-container" id="toastContainer"></div>
 
 <script>
-// ============== PREMIUM REPAIR PAGE SCRIPT ==============
+// ============== REPAIR PAGE SCRIPT ==============
 let repairServices = [];
 let spareParts = [];
 let currentCategory = 'all';
 let searchTerm = '';
 let selectedService = null;
 
-// Cart Functions
+// ============== CART FUNCTIONS ==============
 function getCart() {
     return JSON.parse(localStorage.getItem('nova_cart') || '[]');
 }
@@ -832,7 +727,8 @@ function saveCart(cart) {
 function updateCartCount() {
     const cart = getCart();
     const count = cart.reduce((s, i) => s + (i.qty || 1), 0);
-    document.getElementById('cartCount').textContent = count;
+    const countEl = document.getElementById('cartCount');
+    if (countEl) countEl.textContent = count;
 }
 
 function addToCart(item) {
@@ -858,7 +754,19 @@ function addToCart(item) {
     saveCart(cart);
 }
 
-// API Calls
+// ============== LOAD FROM LOCALSTORAGE FIRST (Like main page) ==============
+function loadSparePartsFromLocalStorage() {
+    const stored = localStorage.getItem('spare_parts');
+    if (stored && JSON.parse(stored).length > 0) {
+        spareParts = JSON.parse(stored);
+        console.log('Loaded spare parts from localStorage:', spareParts.length);
+        renderParts();
+        return true;
+    }
+    return false;
+}
+
+// ============== FETCH FROM SERVER (Fallback) ==============
 async function fetchServices() {
     try {
         const res = await fetch('/api/management/repair-services', { cache: 'no-store' });
@@ -874,6 +782,38 @@ async function fetchServices() {
     renderServices();
 }
 
+async function fetchPartsFromServer() {
+    try {
+        const res = await fetch(`/api/spare-parts?_=${Date.now()}`, { 
+            cache: 'no-store',
+            headers: { 'Cache-Control': 'no-cache' }
+        });
+        if (res.ok) {
+            const data = await res.json();
+            spareParts = data.spares || [];
+            // Save to localStorage for future loads
+            localStorage.setItem('spare_parts', JSON.stringify(spareParts));
+            renderParts();
+        } else {
+            // Fallback to localStorage
+            if (!loadSparePartsFromLocalStorage()) {
+                spareParts = [];
+                renderParts();
+            }
+        }
+    } catch(e) {
+        console.error('Error fetching spare parts:', e);
+        // Fallback to localStorage
+        loadSparePartsFromLocalStorage();
+    }
+}
+
+// Force refresh spare parts
+function refreshSpareParts() {
+    fetchPartsFromServer();
+    showToast('Refreshing spare parts...', 'success');
+}
+
 function getDefaultServices() {
     return [
         { id: "1", title: "Screen Replacement", category: "screen", price: 3500, description: "Professional LCD/OLED replacement" },
@@ -885,28 +825,7 @@ function getDefaultServices() {
     ];
 }
 
-async function fetchParts() {
-    const grid = document.getElementById('partsGrid');
-    if (grid) grid.innerHTML = '<div class="loading"><div class="loading-spinner"></div>Loading parts...</div>';
-    
-    try {
-        const res = await fetch(`/api/spare-parts?_=${Date.now()}`, { 
-            cache: 'no-store',
-            headers: { 'Cache-Control': 'no-cache' }
-        });
-        if (res.ok) {
-            const data = await res.json();
-            spareParts = data.spares || [];
-        } else {
-            spareParts = [];
-        }
-    } catch(e) {
-        spareParts = [];
-    }
-    renderParts();
-}
-
-// Render Functions
+// ============== RENDER FUNCTIONS ==============
 function renderServices() {
     const grid = document.getElementById('servicesGrid');
     if (!grid) return;
@@ -925,7 +844,7 @@ function renderServices() {
                 <h3>${escapeHtml(s.title)}</h3>
                 <div class="service-price">KES ${s.price.toLocaleString()}</div>
                 <div class="service-desc">${escapeHtml(s.description)}</div>
-                <div class="service-badge">📞 Click to book</div>
+                <div style="font-size:0.7rem;color:var(--primary);">📞 Click to book</div>
             </div>
         </div>
     `).join('');
@@ -975,7 +894,7 @@ function getIcon(cat) {
     return icons[cat] || '🔧';
 }
 
-// Booking Functions
+// ============== BOOKING FUNCTIONS ==============
 function openBooking(id, title, price) {
     selectedService = { id, title, price };
     document.getElementById('modalTitle').textContent = title;
@@ -1037,7 +956,7 @@ function escapeHtml(str) {
     return String(str).replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
 }
 
-// Tab Switching
+// ============== TAB SWITCHING ==============
 function switchTab(tab) {
     const servicesSection = document.getElementById('servicesSection');
     const partsSection = document.getElementById('partsSection');
@@ -1053,26 +972,36 @@ function switchTab(tab) {
         servicesSection.classList.add('hidden-section');
         partsSection.classList.remove('hidden-section');
         tabs[1].classList.add('active');
-        fetchParts();
+        refreshSpareParts();
     }
 }
 
-// Filter Services
 function filterServices(category) {
     currentCategory = category;
     renderServices();
 }
 
-// Search Parts
 function searchParts() {
     searchTerm = document.getElementById('partSearch').value.toLowerCase();
     renderParts();
 }
 
-// Init
+// ============== LISTEN FOR STORAGE EVENTS (Like main page) ==============
+window.addEventListener('storage', (e) => {
+    if (e.key === 'spare_parts_updated' || e.key === 'spare_parts') {
+        console.log('Spare parts updated from management page, refreshing...');
+        loadSparePartsFromLocalStorage();
+        // Also fetch from server to be sure
+        fetchPartsFromServer();
+    }
+});
+
+// ============== INIT ==============
 document.addEventListener('DOMContentLoaded', () => {
+    // First try localStorage
+    loadSparePartsFromLocalStorage();
     fetchServices();
-    fetchParts();
+    fetchPartsFromServer(); // This will also update localStorage
     updateCartCount();
     
     // Tab listeners
@@ -1091,7 +1020,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Search
     document.getElementById('searchBtn')?.addEventListener('click', searchParts);
-    document.getElementById('refreshBtn')?.addEventListener('click', fetchParts);
+    document.getElementById('refreshBtn')?.addEventListener('click', refreshSpareParts);
     document.getElementById('partSearch')?.addEventListener('keypress', e => e.key === 'Enter' && searchParts());
     
     // Modal
@@ -1099,7 +1028,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('closeModal')?.addEventListener('click', closeBooking);
     document.getElementById('bookingModal')?.addEventListener('click', e => e.target === document.getElementById('bookingModal') && closeBooking());
     
-    // Cart
+    // Cart button
     document.getElementById('cartBtn')?.addEventListener('click', () => window.location.href = 'index.html');
     
     // Theme
@@ -1125,6 +1054,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // Global functions
 window.addToCart = addToCart;
 window.openBooking = openBooking;
+window.refreshSpareParts = refreshSpareParts;
 </script>
 </body>
 </html>
