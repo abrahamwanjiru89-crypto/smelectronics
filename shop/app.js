@@ -1,6 +1,7 @@
 /* =========================================================
    S.M Dynamics Electronics — Premium electronics storefront (vanilla JS)
    UPDATED: Partial Payment System - Pay delivery fee only upfront
+   UPDATED: Spare parts integration from repair page
 ========================================================= */
 
 // ----- PRODUCT DATA -----
@@ -21,6 +22,35 @@ const DEFAULT_PRODUCTS = [
 ];
 
 let PRODUCTS = DEFAULT_PRODUCTS.slice();
+
+// ============================================
+// SPARE PARTS INTEGRATION - For repair page cart items
+// ============================================
+
+function getProductWithSpares(productId) {
+    // First check regular products
+    let product = PRODUCTS.find(p => p.id === productId);
+    if (product) return product;
+    
+    // Check spare parts stored in localStorage (added from repair page)
+    const sparePartsStore = JSON.parse(localStorage.getItem('nova_spare_parts') || '{}');
+    const sparePart = sparePartsStore[productId];
+    if (sparePart) {
+        return {
+            id: productId,
+            name: sparePart.name,
+            price: sparePart.price,
+            img: sparePart.img,
+            cat: 'spare_parts',
+            inStock: true,
+            desc: 'Replacement spare part',
+            rating: 5,
+            reviews: 0,
+            specs: { Type: 'Spare Part', Warranty: '3 months' }
+        };
+    }
+    return null;
+}
 
 // ----- STATE -----
 const state = {
@@ -120,9 +150,15 @@ function showCheckoutModal(subtotal, deliveryFeeAmount, onConfirm) {
 }
 
 async function updateCartTotals() {
-  const subtotal = state.cart.reduce((s, c) => s + (PRODUCTS.find(p => p.id === c.id)?.price || 0) * c.qty, 0);
+  const subtotal = state.cart.reduce((s, c) => {
+    const p = getProductWithSpares(c.id);
+    return s + (p?.price || 0) * c.qty;
+  }, 0);
   const subLocId = getSelectedSubLocation()?.id;
-  const weight = state.cart.reduce((w, c) => w + (PRODUCTS.find(p => p.id === c.id)?.weight || 0.5) * c.qty, 0);
+  const weight = state.cart.reduce((w, c) => {
+    const p = getProductWithSpares(c.id);
+    return w + (p?.weight || 0.5) * c.qty;
+  }, 0);
   
   if (subLocId) {
     try {
@@ -210,7 +246,10 @@ async function handleCheckout() {
     return;
   }
 
-  const subtotal = state.cart.reduce((s, c) => s + (PRODUCTS.find(p => p.id === c.id)?.price || 0) * c.qty, 0);
+  const subtotal = state.cart.reduce((s, c) => {
+    const p = getProductWithSpares(c.id);
+    return s + (p?.price || 0) * c.qty;
+  }, 0);
   const total = subtotal + deliveryFee;
 
   // Show modal with partial payment info
@@ -695,7 +734,7 @@ $('#sortBy').addEventListener('change', e => { state.sort = e.target.value; rend
 
 // ----- CART -----
 function addCart(id) {
-  const p = PRODUCTS.find(x => x.id === id);
+  const p = getProductWithSpares(id);
   if (p?.inStock === false) return toast('This product is out of stock', 'error');
   const item = state.cart.find(c => c.id === id);
   if (item) item.qty++; else state.cart.push({ id, qty: 1 });
@@ -714,7 +753,7 @@ function renderCart() {
     box.innerHTML = '<div class="cart-empty"><div style="font-size:3rem">🛒</div><p>Your cart is empty</p></div>'; 
   } else {
     box.innerHTML = state.cart.map(c => {
-      const p = PRODUCTS.find(x => x.id === c.id);
+      const p = getProductWithSpares(c.id);
       if (!p) return '';
       return `<div class="cart-item">
         <img src="${p.img}" alt="${p.name}" onerror="this.src='/shop/hero-phone.jpg'">
@@ -733,7 +772,10 @@ function renderCart() {
     }));
   }
   
-  const subtotal = state.cart.reduce((s, c) => s + (PRODUCTS.find(p => p.id === c.id)?.price || 0) * c.qty, 0);
+  const subtotal = state.cart.reduce((s, c) => {
+    const p = getProductWithSpares(c.id);
+    return s + (p?.price || 0) * c.qty;
+  }, 0);
   $('#cartCount').textContent = state.cart.reduce((s, c) => s + c.qty, 0);
   
   // Update cart footer with partial payment info
@@ -771,7 +813,8 @@ $('#wishBtn').addEventListener('click', () => toast(state.wish.length ? `${state
 
 // ----- MODAL -----
 function openModal(id) {
-  const p = PRODUCTS.find(x => x.id === id); if (!p) return;
+  const p = getProductWithSpares(id);
+  if (!p) return;
   if (!state.recent.includes(id)) {
     state.recent.unshift(id); state.recent = state.recent.slice(0, 6); save('nova_recent', state.recent);
     renderRecent();
@@ -790,7 +833,7 @@ function openModal(id) {
         <div class="card-rating"><span class="stars">${star(p.rating)}</span> ${p.rating} · ${p.reviews} reviews</div>
         <div class="price">${p.was ? `<s>${fmt(p.was)}</s>` : ''}${fmt(p.price)}</div>
         <p class="desc">${p.desc}</p>
-        <div class="specs">${Object.entries(p.specs).map(([k,v]) => `<div><span>${k}</span><span>${v}</span></div>`).join('')}</div>
+        <div class="specs">${Object.entries(p.specs || { Type: 'Spare Part', Warranty: '3 months' }).map(([k,v]) => `<div><span>${k}</span><span>${v}</span></div>`).join('')}</div>
         <button class="btn primary block" id="mAdd" ${p.inStock === false ? 'disabled' : ''}>${p.inStock === false ? 'Out of Stock' : 'Add to Cart'}</button>
       </div>
     </div>`;
@@ -1010,7 +1053,7 @@ window.setDeliveryFee = async function(fee) {
 };
 
 // ============================================
-// LISTEN FOR STORAGE EVENTS FROM MANAGEMENT PAGE
+// LISTEN FOR STORAGE EVENTS FROM MANAGEMENT PAGE AND REPAIR PAGE
 // ============================================
 window.addEventListener('storage', (e) => {
   if (e.key === 'management_products') {
@@ -1020,6 +1063,16 @@ window.addEventListener('storage', (e) => {
     renderFlash();
     renderCart();
     renderRecent();
+  }
+  if (e.key === 'nova_cart') {
+    console.log('Cart updated from another page, refreshing...');
+    state.cart = load('nova_cart', []);
+    renderCart();
+    $('#cartCount').textContent = state.cart.reduce((s, c) => s + c.qty, 0);
+  }
+  if (e.key === 'nova_spare_parts') {
+    console.log('Spare parts updated, refreshing cart display...');
+    renderCart();
   }
 });
 
