@@ -314,6 +314,14 @@
       <button class="icon-btn menu-toggle" id="menuToggle"><span></span><span></span><span></span></button>
     </div>
   </div>
+  <div class="search-panel" id="searchPanel" aria-hidden="true">
+    <div class="search-inner">
+      <svg viewBox="0 0 24 24" class="s-icon"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="searchInput" type="search" placeholder="Search 1000+ premium products..." aria-label="Search products" />
+      <button class="ghost-btn" id="searchClose">Esc</button>
+    </div>
+    <div class="search-results" id="searchResults"></div>
+  </div>
 </header>
 
 <!-- Mobile menu -->
@@ -368,7 +376,6 @@
     </div>
     <h2 class="section-head" style="text-align: center; margin-bottom: 0;">Repair <span class="grad">Services</span></h2>
     
-    <!-- Repair Categories -->
     <div class="repair-categories" id="repairCategories">
       <button class="repair-cat-btn active" data-cat="all">All</button>
       <button class="repair-cat-btn" data-cat="screen">📱 Screen</button>
@@ -379,7 +386,6 @@
       <button class="repair-cat-btn" data-cat="water">💧 Water Damage</button>
     </div>
 
-    <!-- Repair Brand Filters -->
     <div class="brand-filters" id="repairBrandFilters">
       <button class="brand-btn active" data-brand="all">All Brands</button>
       <button class="brand-btn" data-brand="iPhone">iPhone</button>
@@ -391,24 +397,21 @@
       <button class="brand-btn" data-brand="Huawei">Huawei</button>
     </div>
 
-    <!-- Repair Grid -->
     <div class="repair-grid" id="repairGrid"></div>
   </div>
 
-  <!-- SPARE PARTS SECTION (hidden by default) -->
+  <!-- SPARE PARTS SECTION -->
   <div id="spareSection" class="container hidden-section">
     <div class="section-header">
       <span class="eyebrow"><span class="dot"></span> Genuine Parts</span>
     </div>
     <h2 class="section-head" style="text-align: center; margin-bottom: 0;">Spare <span class="grad">Parts</span></h2>
     
-    <!-- Spare Parts Search -->
     <div class="search-container">
       <input type="text" id="spareSearchInput" placeholder="Search spare parts... (e.g., iPhone screen, battery)">
       <button id="spareSearchBtn">🔍 Search</button>
     </div>
     
-    <!-- Spare Parts Categories -->
     <div class="repair-categories" id="spareCategories">
       <button class="repair-cat-btn active" data-spare-cat="all">All Parts</button>
       <button class="repair-cat-btn" data-spare-cat="screen">📱 Screens</button>
@@ -418,7 +421,6 @@
       <button class="repair-cat-btn" data-spare-cat="glass">🔲 Back Glass</button>
     </div>
 
-    <!-- Spare Parts Brand Filters -->
     <div class="brand-filters" id="spareBrandFilters">
       <button class="brand-btn active" data-spare-brand="all">All Brands</button>
       <button class="brand-btn" data-spare-brand="iPhone">iPhone</button>
@@ -428,7 +430,6 @@
       <button class="brand-btn" data-spare-brand="All">Universal</button>
     </div>
 
-    <!-- Spare Parts Grid -->
     <div class="repair-grid" id="spareGrid"></div>
   </div>
 
@@ -465,21 +466,33 @@
   </section>
 </main>
 
-<!-- CART SIDEBAR -->
+<!-- CART SIDEBAR - IDENTICAL TO MAIN PAGE -->
 <div class="overlay" id="overlay"></div>
-<aside class="cart-side" id="cartSide">
+<aside class="cart-side" id="cartSide" aria-hidden="true" aria-label="Shopping cart">
   <header class="cart-head">
     <h3>Your Cart</h3>
-    <button class="icon-btn" id="cartClose">✕</button>
+    <button class="icon-btn" id="cartClose" aria-label="Close cart">✕</button>
   </header>
   <div class="cart-body">
     <div class="cart-items" id="cartItems"></div>
     <div class="cart-meta">
       <h4>Delivery details</h4>
-      <label>County <select id="county"><option>Choose county</option></select></label>
-      <label>Sub-location <input id="subLocation" placeholder="Start typing area"></label>
-      <label>Street / zone <input id="street" placeholder="e.g. 3rd Avenue"></label>
-      <div class="cart-fees"><span>Delivery fee</span><b id="deliveryFee">Kshs 200</b></div>
+      <label>County
+        <select id="county" autocomplete="address-level1" required>
+          <option value="">Choose county</option>
+        </select>
+      </label>
+      <label>Sub-location
+        <input id="subLocation" list="sublocationsList" placeholder="Start typing area (e.g. Nakuru Town)" autocomplete="address-level2" required>
+        <datalist id="sublocationsList"></datalist>
+      </label>
+      <label>Street / zone
+        <input id="street" type="text" list="streetsList" placeholder="e.g. 3rd Avenue, Kiamunyeki" autocomplete="street-address" required>
+        <datalist id="streetsList"></datalist>
+      </label>
+      <div class="cart-fees">
+        <span>Delivery fee</span><b id="deliveryFee">Kshs 200</b>
+      </div>
     </div>
   </div>
   <footer class="cart-foot">
@@ -541,11 +554,11 @@ function showSection(section) {
         spareSection.classList.remove('hidden-section');
         navRepairBtn.classList.remove('active');
         navSpareBtn.classList.add('active');
-        displaySpareParts(); // Refresh spare parts when shown
+        displaySpareParts();
     }
 }
 
-// ============== CART FUNCTIONS ==============
+// ============== CART FUNCTIONS (Same as main page) ==============
 function getCart() {
     return JSON.parse(localStorage.getItem('cart')) || [];
 }
@@ -558,27 +571,41 @@ function saveCart(cart) {
 
 function updateCartCount() {
     const cart = getCart();
-    const count = cart.reduce((s, i) => s + (i.quantity || 1), 0);
-    const el = document.getElementById('cartCount');
-    if (el) el.textContent = count;
+    const count = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
+    const cartCountElement = document.getElementById('cartCount');
+    if (cartCountElement) cartCountElement.textContent = count;
 }
 
-function showToast(msg) {
+function showToast(message) {
+    let container = document.getElementById('toastContainer');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toastContainer';
+        container.style.cssText = 'position:fixed; bottom:20px; right:20px; z-index:10000; display:flex; flex-direction:column; gap:10px;';
+        document.body.appendChild(container);
+    }
     const toast = document.createElement('div');
-    toast.className = 'toast-notification';
-    toast.textContent = msg;
-    document.body.appendChild(toast);
+    toast.style.cssText = 'padding:12px 20px; background:linear-gradient(135deg,#00e5ff,#7c4dff); color:#000; font-weight:600; border-radius:12px; animation:toastSlide 0.3s ease;';
+    toast.textContent = message;
+    container.appendChild(toast);
     setTimeout(() => toast.remove(), 2500);
 }
 
 function addToCart(item) {
     const cart = getCart();
-    const existing = cart.find(i => i.id === item.id);
-    if (existing) {
-        existing.quantity = (existing.quantity || 1) + 1;
+    const existingItem = cart.find(i => i.id === item.id);
+    
+    if (existingItem) {
+        existingItem.quantity = (existingItem.quantity || 1) + 1;
         showToast(`✓ Added another ${item.name}`);
     } else {
-        cart.push({ ...item, quantity: 1 });
+        cart.push({
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            quantity: 1,
+            image: item.image || 'shop/default.png'
+        });
         showToast(`✓ ${item.name} added to cart`);
     }
     saveCart(cart);
@@ -588,7 +615,7 @@ function removeFromCart(index) {
     const cart = getCart();
     cart.splice(index, 1);
     saveCart(cart);
-    showToast(`Item removed`);
+    showToast('Item removed from cart');
 }
 
 function updateQuantity(index, change) {
@@ -606,7 +633,12 @@ function displayCartItems() {
     const cart = getCart();
     const container = document.getElementById('cartItems');
     const totalEl = document.getElementById('cartTotal');
+    const deliveryFeeEl = document.getElementById('deliveryFee');
+    
     if (!container) return;
+    
+    const deliveryFee = 200;
+    if (deliveryFeeEl) deliveryFeeEl.textContent = `Kshs ${deliveryFee}`;
     
     if (cart.length === 0) {
         container.innerHTML = '<div class="cart-empty"><div>🛒</div><p>Your cart is empty</p></div>';
@@ -614,28 +646,43 @@ function displayCartItems() {
         return;
     }
     
-    let html = '', subtotal = 0;
-    cart.forEach((item, idx) => {
+    let html = '';
+    let subtotal = 0;
+    
+    cart.forEach((item, index) => {
         const qty = item.quantity || 1;
-        subtotal += item.price * qty;
+        const itemTotal = item.price * qty;
+        subtotal += itemTotal;
+        
         html += `
             <div class="cart-item">
                 <div>
-                    <div class="ci-title">${item.name}</div>
+                    <div class="ci-title">${escapeHtml(item.name)}</div>
                     <div class="ci-price">KES ${item.price.toLocaleString()}</div>
                     <div class="ci-qty">
-                        <button onclick="updateQuantity(${idx}, -1)">-</button>
+                        <button onclick="updateQuantity(${index}, -1)">-</button>
                         <span>${qty}</span>
-                        <button onclick="updateQuantity(${idx}, 1)">+</button>
+                        <button onclick="updateQuantity(${index}, 1)">+</button>
                     </div>
                 </div>
-                <button class="ci-rm" onclick="removeFromCart(${idx})">✕</button>
+                <button class="ci-rm" onclick="removeFromCart(${index})">✕</button>
             </div>
         `;
     });
-    const total = subtotal + 200;
+    
+    const total = subtotal + deliveryFee;
     container.innerHTML = html;
     if (totalEl) totalEl.textContent = `Kshs ${total.toLocaleString()}`;
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+    });
 }
 
 // ============== DISPLAY REPAIR SERVICES ==============
@@ -656,11 +703,11 @@ function displayRepairs() {
         <div class="repair-card">
             <div class="repair-card-header">
                 <div class="icon">${s.category === 'screen' ? '📱' : s.category === 'battery' ? '🔋' : s.category === 'charging' ? '🔌' : s.category === 'speaker' ? '🔊' : s.category === 'water' ? '💧' : '💻'}</div>
-                <h3>${s.name}</h3>
+                <h3>${escapeHtml(s.name)}</h3>
             </div>
             <div class="repair-card-body">
                 <div class="repair-price">KES ${s.price.toLocaleString()}</div>
-                <div class="repair-desc">${s.desc}</div>
+                <div class="repair-desc">${escapeHtml(s.desc)}</div>
                 <div class="repair-desc" style="font-size:0.7rem; color:var(--primary);">${s.brand}</div>
                 <button class="repair-add-btn" onclick='addToCart(${JSON.stringify(s)})'>🛒 Add to Cart</button>
             </div>
@@ -693,12 +740,12 @@ function displaySpareParts() {
         <div class="repair-card">
             <div class="repair-card-header">
                 <div class="icon">${p.category === 'screen' ? '📱' : p.category === 'battery' ? '🔋' : p.category === 'charging' ? '🔌' : '🔊'}</div>
-                <h3>${p.name}</h3>
+                <h3>${escapeHtml(p.name)}</h3>
             </div>
             <div class="repair-card-body">
                 <div class="stock-badge">In Stock: ${p.stock}</div>
                 <div class="repair-price">KES ${p.price.toLocaleString()}</div>
-                <div class="repair-desc">${p.desc}</div>
+                <div class="repair-desc">${escapeHtml(p.desc)}</div>
                 <div class="repair-desc" style="font-size:0.7rem; color:var(--primary);">${p.brand}</div>
                 <button class="repair-add-btn" onclick='addToCart(${JSON.stringify(p)})'>🛒 Add to Cart</button>
             </div>
@@ -759,7 +806,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
     
-    // Search buttons
+    // Search
     const searchBtn = document.getElementById('spareSearchBtn');
     const searchInput = document.getElementById('spareSearchInput');
     searchBtn?.addEventListener('click', searchSpareParts);
