@@ -10,41 +10,66 @@
 <link rel="stylesheet" href="shop/styles.css">
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#0b1120">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="SM Dynamics Electronics">
+<meta name="application-name" content="SM Dynamics Electronics">
 <link rel="apple-touch-icon" href="shop/brand logo.png">
+<script src="shop/pwa.js" defer></script>
 <style>
-  .spare-row, .booking-card, .staff-row {
+  /* Additional management styles */
+  .product-row {
+    display: grid;
+    grid-template-columns: 60px 1fr 150px 120px 120px 100px 100px;
+    gap: 1rem;
+    align-items: center;
+    padding: 0.75rem;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .product-row img {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 8px;
+  }
+  .staff-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 0.75rem;
     border-bottom: 1px solid rgba(255,255,255,0.1);
-    flex-wrap: wrap;
-    gap: 0.5rem;
   }
-  .booking-card {
-    flex-direction: column;
-    align-items: stretch;
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 1rem;
-    margin-bottom: 1rem;
-  }
-  .booking-row {
+  .staff-row div {
     display: flex;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 1rem;
+    flex-direction: column;
+  }
+  .staff-row span {
+    font-size: 0.875rem;
+    color: #888;
+  }
+  .order-row {
+    padding: 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .order-items {
+    margin: 0.5rem 0;
+    font-size: 0.875rem;
+  }
+  .order-meta {
+    color: #888;
+    margin-top: 0.25rem;
   }
   .status {
     display: inline-block;
-    padding: 0.25rem 0.75rem;
+    padding: 0.25rem 0.5rem;
     border-radius: 2rem;
     font-size: 0.75rem;
-    font-weight: 600;
+    margin-left: 0.5rem;
   }
-  .status.pending { background: #ff9800; color: #000; }
-  .status.in_progress { background: #2196f3; color: #fff; }
-  .status.completed { background: #4caf50; color: #fff; }
-  .status.cancelled { background: #f44336; color: #fff; }
+  .status.pending, .status.placed { background: #ff9800; color: #000; }
+  .status.paid, .status.completed { background: #4caf50; color: #fff; }
+  .status.shipped { background: #2196f3; color: #fff; }
+  .status.delivered { background: #00c853; color: #fff; }
   .dash-empty {
     text-align: center;
     padding: 2rem;
@@ -67,6 +92,59 @@
     font-size: 1.5rem;
     color: #00e5ff;
   }
+  .manager-order {
+    margin-bottom: 1rem;
+  }
+  .danger-btn {
+    color: #ff3b30 !important;
+  }
+  
+  /* Badge styling for product display */
+  .badge-status {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+  }
+  .badge-flash-sale {
+    background: #ff2bd6;
+    color: white;
+  }
+  .badge-hot {
+    background: #ff4d6d;
+    color: white;
+  }
+  .badge-new {
+    background: #20e0a6;
+    color: #000;
+  }
+  .badge-none {
+    background: #888;
+    color: white;
+  }
+  
+  .btn-badge {
+    padding: 0.5rem 0.8rem;
+    border-radius: 0.5rem;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.75rem;
+    transition: all 0.2s ease;
+  }
+  .btn-badge:hover {
+    transform: translateY(-1px);
+    opacity: 0.9;
+  }
+  .btn-flash-sale { background: #ff2bd6; color: white; }
+  .btn-hot { background: #ff4d6d; color: white; }
+  .btn-new { background: #20e0a6; color: #000; }
+  .btn-remove-badge { background: #888; color: white; }
+  .btn-edit { background: #00e5ff; color: #000; }
+  .btn-delete { background: #ff3b30; color: white; }
+  
+  /* Delivery Fee Control Styles */
   .delivery-fee-card {
     background: linear-gradient(135deg, rgba(0,229,255,0.1), rgba(124,77,255,0.1));
     border: 1px solid rgba(0,229,255,0.3);
@@ -82,7 +160,6 @@
     gap: 1rem;
     align-items: center;
     flex-wrap: wrap;
-    margin-top: 1rem;
   }
   .delivery-fee-input input {
     flex: 1;
@@ -94,32 +171,27 @@
     color: white;
     font-size: 1rem;
   }
-  .status-select {
-    padding: 0.3rem 0.5rem;
-    border-radius: 0.5rem;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    color: var(--text);
-    font-size: 0.75rem;
-    cursor: pointer;
+  .delivery-fee-input button {
+    padding: 0.75rem 1.5rem;
   }
-  .btn-delete, .btn-edit {
-    padding: 0.3rem 0.8rem;
-    border-radius: 0.5rem;
-    border: none;
-    cursor: pointer;
-    font-size: 0.7rem;
+  .fee-info {
+    margin-top: 1rem;
+    padding: 0.75rem;
+    background: rgba(0,0,0,0.2);
+    border-radius: 0.75rem;
+    font-size: 0.85rem;
+    color: #888;
   }
-  .btn-delete { background: #ff3b30; color: white; }
-  .btn-edit { background: #00e5ff; color: #000; }
-  .admin-sections[hidden] { display: none; }
+  .fee-info i {
+    color: #00e5ff;
+  }
 </style>
 </head>
 <body class="management-body">
   <main class="management-shell">
     <!-- Login Section -->
     <section class="management-login" id="managerLogin">
-      <a class="brand" href="index.html" style="display: flex; justify-content: center; gap: 0.5rem; margin-bottom: 2rem;">
+      <a class="brand" href="index.html" aria-label="Back to shop">
         <img src="shop/brand logo.png" alt="SM Dynamics" style="height: 40px;">
         <span class="brand-name">S.M Dynamics Electronics</span>
       </a>
@@ -127,11 +199,10 @@
         <span class="eyebrow"><span class="dot"></span> Staff Area</span>
         <h1>Admin & Staff Portal</h1>
         <form class="auth-form" id="managerLoginForm">
-          <input name="email" type="email" placeholder="Admin or staff email" required>
-          <input name="password" type="password" placeholder="Password" required>
+          <input name="email" type="email" placeholder="Admin or staff email" autocomplete="email" required>
+          <input name="password" type="password" placeholder="Password" autocomplete="current-password" required>
           <button class="btn primary block" type="submit">Login</button>
         </form>
-        <p class="auth-hint" style="margin-top: 1rem; text-align: center;">admin@smdynamics.com / admin123</p>
       </div>
     </section>
 
@@ -140,62 +211,52 @@
       <header class="manager-top">
         <div>
           <span class="eyebrow"><span class="dot"></span><span id="managerRole">Management</span></span>
-          <h1 id="managerTitle">Admin Portal</h1>
+          <h1 id="managerTitle">Admin and Staff Portal</h1>
         </div>
         <div class="manager-actions">
           <a class="btn ghost" href="index.html">Shop</a>
           <a class="btn ghost" href="repair.html">Repair Portal</a>
-          <button class="btn ghost" id="managerLogout">Logout</button>
+          <button class="btn ghost" id="managerLogout" type="button">Logout</button>
         </div>
       </header>
 
       <!-- Orders Section -->
       <div class="dash-panel wide reveal">
         <h3>📦 Customer Orders</h3>
-        <div id="placedOrders"><div class="dash-empty">Loading orders...</div></div>
+        <div id="placedOrders"></div>
       </div>
 
       <!-- Repair Bookings Section -->
       <div class="dash-panel wide reveal">
         <h3>🔧 Repair Bookings</h3>
-        <div id="repairBookings"><div class="dash-empty">Loading bookings...</div></div>
+        <div id="repairBookings"></div>
       </div>
 
       <!-- Admin Only Sections -->
       <div class="admin-sections" id="adminSections" hidden>
+        
+        <!-- Business Performance -->
         <section class="dash-panel reveal">
           <h3>📊 Business Performance</h3>
+          <canvas id="performanceChart" width="900" height="320" aria-label="Business performance graph"></canvas>
           <div class="metrics" id="metrics"></div>
         </section>
 
+        <!-- DELIVERY FEE CONTROL (ADMIN ONLY) -->
         <section class="dash-panel reveal delivery-fee-card">
           <h3>🚚 Delivery Fee Control</h3>
+          <p style="margin-bottom: 1rem; color: #888;">Set the delivery fee that customers will pay upfront when placing orders.</p>
           <div class="delivery-fee-display" id="currentDeliveryFee">Kshs 600</div>
-          <div class="delivery-fee-input">
+          <div class="delivery-fee-input" style="margin-top: 1rem;">
             <input type="number" id="newDeliveryFee" placeholder="Enter new delivery fee" min="0" step="50">
-            <button class="btn primary" id="updateDeliveryFeeBtn">Update</button>
+            <button class="btn primary" id="updateDeliveryFeeBtn">Update Delivery Fee</button>
+          </div>
+          <div class="fee-info">
+            <i>💡 Note:</i> Customers will pay this delivery fee upfront via M-Pesa. The remaining product amount will be paid on delivery.
           </div>
         </section>
 
-        <section class="dash-panel wide reveal">
-          <h3>🔩 Spare Parts Inventory</h3>
-          <div id="sparePartAdmin"><div class="dash-empty">Loading spare parts...</div></div>
-        </section>
-
-        <section class="dash-panel wide reveal">
-          <h3>➕ Add Spare Part</h3>
-          <form class="dash-form" id="sparePartForm" enctype="multipart/form-data">
-            <input name="name" placeholder="Part name (e.g. iPhone 11 Screen)" required>
-            <input name="brand" placeholder="Brand (e.g. Apple)" required>
-            <input name="category" placeholder="Category (e.g. Screen, Battery)" required>
-            <input name="price" type="number" step="0.01" placeholder="Price (Kshs)" required>
-            <input name="stock" type="number" placeholder="Stock quantity" required>
-            <textarea name="description" placeholder="Part description" rows="2"></textarea>
-            <input name="image" type="file" accept="image/*">
-            <button class="btn primary block" type="submit">Add Spare Part</button>
-          </form>
-        </section>
-
+        <!-- Staff Accounts -->
         <section class="dash-panel reveal">
           <h3>👥 Staff Accounts</h3>
           <form class="dash-form" id="staffForm">
@@ -206,87 +267,173 @@
           </form>
           <div class="staff-list" id="staffList"></div>
         </section>
+
+        <!-- Spare Parts Inventory -->
+        <section class="dash-panel wide reveal">
+          <h3>🔩 Spare Parts Inventory</h3>
+          <div class="product-admin" id="sparePartAdmin"></div>
+        </section>
+
+        <!-- Add Spare Part -->
+        <section class="dash-panel wide reveal">
+          <h3>➕ Add Spare Part</h3>
+          <form class="dash-form" id="sparePartForm" enctype="multipart/form-data">
+            <input name="name" placeholder="Part name (e.g. iPhone 14 LCD)" required>
+            <input name="brand" placeholder="Brand (e.g. Apple)" required>
+            <input name="category" placeholder="Category (e.g. Screen)" required>
+            <input name="price" type="number" min="0" placeholder="Price" required>
+            <input name="stock" type="number" min="0" placeholder="Stock quantity" required>
+            <input name="image" type="file" accept="image/*">
+            <textarea name="description" placeholder="Part description" rows="3" required></textarea>
+            <button class="btn primary block" type="submit">Add Spare Part</button>
+          </form>
+        </section>
       </div>
     </section>
   </main>
   
-  <div class="toasts" id="toasts"></div>
+  <div class="toasts" id="toasts" aria-live="polite"></div>
 
   <script>
-    // API helper with credentials
+    // ============================================
+    // COMPLETE MANAGEMENT SCRIPT
+    // ============================================
+    
+    let currentUser = null;
+    
+    function showToast(msg, type = 'success') {
+      const container = document.getElementById('toasts');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerText = msg;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+    
+    // API helper
     async function apiFetch(url, options = {}) {
       const response = await fetch(url, {
         ...options,
         credentials: 'include',
         headers: { 'Content-Type': 'application/json', ...options.headers }
       });
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-        throw new Error(error.error || 'Request failed');
+      if (response.status === 401 || response.status === 403) {
+        document.getElementById('managerLogin').hidden = false;
+        document.getElementById('managerOrders').hidden = true;
+        return null;
       }
-      return response.json();
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Request failed');
+      return data;
     }
-
-    function showToast(msg, type = 'success') {
-      const container = document.getElementById('toasts');
-      const toast = document.createElement('div');
-      toast.className = `toast ${type}`;
-      toast.textContent = msg;
-      container.appendChild(toast);
-      setTimeout(() => toast.remove(), 3000);
-    }
-
-    // ============ AUTH ============
-    async function login(email, password) {
+    
+    // ============ LOGIN ============
+    document.getElementById('managerLoginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = e.target.querySelector('input[type="email"]').value;
+      const password = e.target.querySelector('input[type="password"]').value;
+      
       try {
         const data = await apiFetch('/api/auth/management-login', {
           method: 'POST',
           body: JSON.stringify({ email, password })
         });
-        if (data.user) {
+        
+        if (data && data.user) {
+          currentUser = data.user;
+          document.getElementById('managerLogin').hidden = true;
+          document.getElementById('managerOrders').hidden = false;
+          
           if (data.user.role === 'admin') {
-            showAdminPanel();
+            document.getElementById('adminSections').hidden = false;
+            document.getElementById('managerRole').innerText = 'Admin Dashboard';
+            document.getElementById('managerTitle').innerText = 'Admin Control Panel';
+            loadAdminData();
           } else {
-            showStaffPanel();
+            document.getElementById('adminSections').hidden = true;
+            document.getElementById('managerRole').innerText = 'Staff Dashboard';
+            document.getElementById('managerTitle').innerText = 'Staff Portal';
           }
+          loadOrders();
+          loadRepairBookings();
           showToast(`Welcome, ${data.user.name}!`);
-          return true;
         }
       } catch (err) {
         showToast(err.message, 'error');
       }
-      return false;
-    }
-
-    async function logout() {
-      await apiFetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+    });
+    
+    // ============ LOGOUT ============
+    document.getElementById('managerLogout').addEventListener('click', async () => {
+      await apiFetch('/api/auth/logout', { method: 'POST' });
       document.getElementById('managerLogin').hidden = false;
       document.getElementById('managerOrders').hidden = true;
       showToast('Logged out');
-    }
-
-    async function checkSession() {
+    });
+    
+    // ============ LOAD ORDERS ============
+    async function loadOrders() {
       try {
-        const data = await apiFetch('/api/auth/me');
-        if (data.user) {
-          if (data.user.role === 'admin') showAdminPanel();
-          else if (data.user.role === 'staff') showStaffPanel();
+        const data = await apiFetch('/api/management/orders/placed');
+        const container = document.getElementById('placedOrders');
+        if (!data || !data.orders || data.orders.length === 0) {
+          container.innerHTML = '<div class="dash-empty">No orders yet</div>';
+          return;
         }
+        let html = '';
+        data.orders.forEach(o => {
+          html += `<div class="order-row">
+            <strong>${o.id}</strong> - ${o.customer} - KES ${o.total.toLocaleString()}
+            <div class="order-meta">Status: ${o.status} | ${new Date(o.createdAt).toLocaleString()}</div>
+          </div>`;
+        });
+        container.innerHTML = html;
       } catch (err) {
-        // Not logged in
+        console.error('Failed to load orders', err);
       }
     }
-
+    
+    // ============ LOAD REPAIR BOOKINGS ============
+    async function loadRepairBookings() {
+      try {
+        const data = await apiFetch('/api/management/repair-bookings');
+        const container = document.getElementById('repairBookings');
+        if (!data || !data.bookings || data.bookings.length === 0) {
+          container.innerHTML = '<div class="dash-empty">No repair bookings yet</div>';
+          return;
+        }
+        let html = '';
+        data.bookings.forEach(b => {
+          const statusClass = (b.status || 'pending').toLowerCase();
+          html += `
+            <div class="order-row">
+              <div><strong>🔧 ${b.repairType || b.repair_service_title || 'Repair'}</strong> - ${b.brand} ${b.model}</div>
+              <div>Customer: ${b.customer || b.name} | 📞 ${b.phone}</div>
+              <div class="order-meta">
+                Status: <span class="status ${statusClass}">${b.status || 'Pending'}</span>
+                | 📅 ${new Date(b.createdAt).toLocaleDateString()}
+              </div>
+            </div>
+          `;
+        });
+        container.innerHTML = html;
+      } catch (err) {
+        console.error('Failed to load bookings', err);
+      }
+    }
+    
     // ============ DELIVERY FEE ============
     async function loadDeliveryFee() {
       try {
         const data = await apiFetch('/api/admin/delivery-fee');
-        document.getElementById('currentDeliveryFee').textContent = `Kshs ${data.fee.toLocaleString()}`;
+        if (data) {
+          document.getElementById('currentDeliveryFee').innerHTML = `Kshs ${data.fee.toLocaleString()}`;
+        }
       } catch (err) {
         console.error('Failed to load delivery fee', err);
       }
     }
-
+    
     async function updateDeliveryFee() {
       const input = document.getElementById('newDeliveryFee');
       const newFee = parseInt(input.value);
@@ -294,6 +441,8 @@
         showToast('Enter a valid amount', 'error');
         return;
       }
+      if (!confirm(`Change delivery fee to Kshs ${newFee.toLocaleString()}?`)) return;
+      
       try {
         await apiFetch('/api/admin/delivery-fee', {
           method: 'POST',
@@ -306,34 +455,38 @@
         showToast('Update failed', 'error');
       }
     }
-
+    
+    document.getElementById('updateDeliveryFeeBtn')?.addEventListener('click', updateDeliveryFee);
+    document.getElementById('newDeliveryFee')?.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') updateDeliveryFee();
+    });
+    
     // ============ SPARE PARTS ============
     async function loadSpareParts() {
       try {
         const data = await apiFetch('/api/spare-parts');
         const container = document.getElementById('sparePartAdmin');
-        if (!data.spares || data.spares.length === 0) {
+        if (!data || !data.spares || data.spares.length === 0) {
           container.innerHTML = '<div class="dash-empty">No spare parts</div>';
           return;
         }
         let html = '';
         data.spares.forEach(p => {
-          html += `
-            <div class="spare-row">
-              <div><strong>${escapeHtml(p.name)}</strong><br><small>${escapeHtml(p.brand)} | ${escapeHtml(p.category)}</small></div>
-              <div>KES ${p.price.toLocaleString()}</div>
-              <div>Stock: ${p.stock}</div>
-              <button class="btn-delete" onclick="deleteSparePart('${p.id}')">Delete</button>
-            </div>
-          `;
+          html += `<div class="product-row">
+            <img src="${p.image || '/shop/default.png'}" onerror="this.src='/shop/brand logo.png'">
+            <div><strong>${escapeHtml(p.name)}</strong><br><small>${escapeHtml(p.brand)} | ${escapeHtml(p.category)}</small></div>
+            <div>KES ${p.price.toLocaleString()}</div>
+            <div>Stock: ${p.stock}</div>
+            <button class="btn-delete" onclick="deleteSparePart('${p.id}')" style="background:#ff3b30; color:white; border:none; padding:0.3rem 0.8rem; border-radius:0.5rem; cursor:pointer;">Delete</button>
+          </div>`;
         });
         container.innerHTML = html;
       } catch (err) {
         console.error('Failed to load spare parts', err);
       }
     }
-
-    async function deleteSparePart(id) {
+    
+    window.deleteSparePart = async (id) => {
       if (!confirm('Delete this spare part?')) return;
       try {
         await fetch(`/api/admin/spare-parts/${id}`, { method: 'DELETE', credentials: 'include' });
@@ -342,84 +495,31 @@
       } catch (err) {
         showToast('Delete failed', 'error');
       }
-    }
-
-    // ============ REPAIR BOOKINGS ============
-    async function loadRepairBookings() {
-      try {
-        const data = await apiFetch('/api/management/repair-bookings');
-        const container = document.getElementById('repairBookings');
-        if (!data.bookings || data.bookings.length === 0) {
-          container.innerHTML = '<div class="dash-empty">No repair bookings yet</div>';
-          return;
-        }
-        let html = '';
-        data.bookings.forEach(b => {
-          const statusClass = b.status?.toLowerCase() || 'pending';
-          html += `
-            <div class="booking-card">
-              <div class="booking-row">
-                <div><strong>${escapeHtml(b.repairType)}</strong><br><small>${escapeHtml(b.brand)} ${escapeHtml(b.model)}</small></div>
-                <div><strong>${escapeHtml(b.customer)}</strong><br><small>📞 ${escapeHtml(b.phone)}</small></div>
-                <div><select class="status-select" onchange="updateBookingStatus('${b.id}', this.value)">
-                  <option value="pending" ${statusClass === 'pending' ? 'selected' : ''}>Pending</option>
-                  <option value="in_progress" ${statusClass === 'in_progress' ? 'selected' : ''}>In Progress</option>
-                  <option value="completed" ${statusClass === 'completed' ? 'selected' : ''}>Completed</option>
-                  <option value="cancelled" ${statusClass === 'cancelled' ? 'selected' : ''}>Cancelled</option>
-                </select></div>
-                <div class="status ${statusClass}">${b.status || 'Pending'}</div>
-                <div><small>📅 ${new Date(b.createdAt).toLocaleDateString()}</small></div>
-              </div>
-              ${b.description ? `<div style="margin-top: 0.5rem; font-size: 0.8rem; color: #888;">📝 ${escapeHtml(b.description)}</div>` : ''}
-            </div>
-          `;
-        });
-        container.innerHTML = html;
-      } catch (err) {
-        console.error('Failed to load bookings', err);
-      }
-    }
-
-    async function updateBookingStatus(id, status) {
-      try {
-        await fetch(`/api/management/repair-bookings/${id}`, {
-          method: 'PUT',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status })
-        });
-        loadRepairBookings();
-        showToast(`Booking status updated to ${status}`);
-      } catch (err) {
-        showToast('Update failed', 'error');
-      }
-    }
-
+    };
+    
     // ============ STAFF ============
     async function loadStaff() {
       try {
         const data = await apiFetch('/api/admin/staff');
         const container = document.getElementById('staffList');
-        if (!data.staff || data.staff.length === 0) {
+        if (!data || !data.staff || data.staff.length === 0) {
           container.innerHTML = '<div class="dash-empty">No staff accounts</div>';
           return;
         }
         let html = '';
         data.staff.forEach(s => {
-          html += `
-            <div class="staff-row">
-              <div><strong>${escapeHtml(s.name)}</strong><br><small>${escapeHtml(s.email)}</small></div>
-              <button class="btn-delete" onclick="deleteStaff('${s.id}')">Delete</button>
-            </div>
-          `;
+          html += `<div class="staff-row">
+            <div><strong>${escapeHtml(s.name)}</strong><br><span>${escapeHtml(s.email)}</span></div>
+            <button class="btn-delete" onclick="deleteStaff('${s.id}')" style="background:#ff3b30; color:white; border:none; padding:0.3rem 0.8rem; border-radius:0.5rem; cursor:pointer;">Delete</button>
+          </div>`;
         });
         container.innerHTML = html;
       } catch (err) {
         console.error('Failed to load staff', err);
       }
     }
-
-    async function deleteStaff(id) {
+    
+    window.deleteStaff = async (id) => {
       if (!confirm('Delete this staff account?')) return;
       try {
         await fetch(`/api/admin/staff/${id}`, { method: 'DELETE', credentials: 'include' });
@@ -428,90 +528,29 @@
       } catch (err) {
         showToast('Delete failed', 'error');
       }
-    }
-
+    };
+    
     // ============ METRICS ============
     async function loadMetrics() {
       try {
         const data = await apiFetch('/api/management/repair-bookings');
-        const bookings = data.bookings || [];
+        const bookings = data?.bookings || [];
         const pending = bookings.filter(b => b.status === 'pending').length;
         const inProgress = bookings.filter(b => b.status === 'in_progress').length;
         const completed = bookings.filter(b => b.status === 'completed').length;
-        const totalRevenue = bookings.filter(b => b.status === 'completed').reduce((sum, b) => sum + (b.price || 0), 0);
+        const revenue = bookings.filter(b => b.status === 'completed').reduce((s, b) => s + (b.price || 0), 0);
         document.getElementById('metrics').innerHTML = `
           <div><b>${pending}</b><span>Pending</span></div>
           <div><b>${inProgress}</b><span>In Progress</span></div>
           <div><b>${completed}</b><span>Completed</span></div>
-          <div><b>KES ${totalRevenue.toLocaleString()}</b><span>Revenue</span></div>
+          <div><b>KES ${revenue.toLocaleString()}</b><span>Revenue</span></div>
         `;
       } catch (err) {
         console.error('Failed to load metrics', err);
       }
     }
-
-    // ============ PANELS ============
-    function showAdminPanel() {
-      document.getElementById('managerLogin').hidden = true;
-      document.getElementById('managerOrders').hidden = false;
-      document.getElementById('adminSections').hidden = false;
-      document.getElementById('managerRole').textContent = 'Admin Dashboard';
-      document.getElementById('managerTitle').textContent = 'Admin Control Panel';
-      
-      loadDeliveryFee();
-      loadSpareParts();
-      loadRepairBookings();
-      loadStaff();
-      loadMetrics();
-      loadOrders();
-    }
-
-    function showStaffPanel() {
-      document.getElementById('managerLogin').hidden = true;
-      document.getElementById('managerOrders').hidden = false;
-      document.getElementById('adminSections').hidden = true;
-      document.getElementById('managerRole').textContent = 'Staff Dashboard';
-      document.getElementById('managerTitle').textContent = 'Staff Portal';
-      
-      loadRepairBookings();
-      loadOrders();
-    }
-
-    async function loadOrders() {
-      try {
-        const data = await apiFetch('/api/management/orders/placed');
-        const container = document.getElementById('placedOrders');
-        if (!data.orders || data.orders.length === 0) {
-          container.innerHTML = '<div class="dash-empty">No orders yet</div>';
-          return;
-        }
-        let html = '';
-        data.orders.forEach(o => {
-          html += `
-            <div style="padding: 1rem; border: 1px solid rgba(255,255,255,0.1); border-radius: 1rem; margin-bottom: 1rem;">
-              <div><strong>Order: ${o.id}</strong> | ${o.customer} | KES ${o.total}</div>
-              <div>Status: ${o.status} | Payment: ${o.paymentStatus}</div>
-              <div><small>${new Date(o.createdAt).toLocaleString()}</small></div>
-            </div>
-          `;
-        });
-        container.innerHTML = html;
-      } catch (err) {
-        console.error('Failed to load orders', err);
-      }
-    }
-
+    
     // ============ FORM HANDLERS ============
-    document.getElementById('managerLoginForm')?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const email = e.target.querySelector('input[type="email"]').value;
-      const password = e.target.querySelector('input[type="password"]').value;
-      await login(email, password);
-    });
-
-    document.getElementById('managerLogout')?.addEventListener('click', logout);
-    document.getElementById('updateDeliveryFeeBtn')?.addEventListener('click', updateDeliveryFee);
-
     document.getElementById('sparePartForm')?.addEventListener('submit', async (e) => {
       e.preventDefault();
       const formData = new FormData(e.target);
@@ -525,15 +564,15 @@
         e.target.reset();
         showToast('Spare part added');
       } catch (err) {
-        showToast('Failed to add spare part', 'error');
+        showToast('Failed to add', 'error');
       }
     });
-
+    
     document.getElementById('staffForm')?.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const name = e.target.querySelector('input[name="name"]').value;
-      const email = e.target.querySelector('input[name="email"]').value;
-      const password = e.target.querySelector('input[name="password"]').value;
+      const name = e.target.querySelector('[name="name"]').value;
+      const email = e.target.querySelector('[name="email"]').value;
+      const password = e.target.querySelector('[name="password"]').value;
       try {
         await apiFetch('/api/admin/staff', {
           method: 'POST',
@@ -546,23 +585,48 @@
         showToast(err.message, 'error');
       }
     });
-
+    
+    // ============ ADMIN DATA ============
+    async function loadAdminData() {
+      loadDeliveryFee();
+      loadSpareParts();
+      loadStaff();
+      loadMetrics();
+    }
+    
+    // ============ UTILITIES ============
     function escapeHtml(str) {
       if (!str) return '';
-      return str.replace(/[&<>]/g, function(m) {
-        if (m === '&') return '&amp;';
-        if (m === '<') return '&lt;';
-        if (m === '>') return '&gt;';
-        return m;
-      });
+      return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
     }
-
-    // Make functions global for onclick
-    window.deleteSparePart = deleteSparePart;
-    window.updateBookingStatus = updateBookingStatus;
-    window.deleteStaff = deleteStaff;
-
-    // Initialize
+    
+    // ============ CHECK SESSION ============
+    async function checkSession() {
+      try {
+        const data = await apiFetch('/api/auth/me');
+        if (data && data.user) {
+          currentUser = data.user;
+          document.getElementById('managerLogin').hidden = true;
+          document.getElementById('managerOrders').hidden = false;
+          
+          if (data.user.role === 'admin') {
+            document.getElementById('adminSections').hidden = false;
+            document.getElementById('managerRole').innerText = 'Admin Dashboard';
+            document.getElementById('managerTitle').innerText = 'Admin Control Panel';
+            loadAdminData();
+          } else {
+            document.getElementById('adminSections').hidden = true;
+            document.getElementById('managerRole').innerText = 'Staff Dashboard';
+            document.getElementById('managerTitle').innerText = 'Staff Portal';
+          }
+          loadOrders();
+          loadRepairBookings();
+        }
+      } catch (err) {
+        // Not logged in, show login form
+      }
+    }
+    
     checkSession();
   </script>
 </body>
