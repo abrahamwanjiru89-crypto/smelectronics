@@ -13,38 +13,89 @@
 <meta name="theme-color" content="#0b1120">
 <link rel="icon" href="shop/brand logo.png">
 <style>
+/* Enhanced Repair page styles */
 .repair-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.8rem;
     margin: 2rem 0;
 }
+
 .repair-card {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 1rem;
+    border-radius: 1.25rem;
     overflow: hidden;
-    transition: all 0.3s;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
+    position: relative;
 }
+
+.repair-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(0,229,255,0), rgba(124,77,255,0));
+    transition: all 0.4s ease;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.repair-card:hover::before {
+    background: linear-gradient(135deg, rgba(0,229,255,0.08), rgba(124,77,255,0.08));
+}
+
 .repair-card:hover {
-    transform: translateY(-5px);
+    transform: translateY(-8px);
     border-color: var(--primary);
-    box-shadow: 0 10px 30px -10px rgba(0,229,255,0.3);
+    box-shadow: 0 20px 40px -15px rgba(0,229,255,0.3);
 }
+
 .repair-card-header {
     background: linear-gradient(135deg, rgba(0,229,255,0.08), rgba(124,77,255,0.08));
+    padding: 1.8rem;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+}
+
+.repair-card-header .icon {
+    font-size: 3.5rem;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
+}
+
+.repair-card-header h3 {
+    margin-top: 0.75rem;
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.repair-card-body {
     padding: 1.5rem;
     text-align: center;
+    position: relative;
+    z-index: 1;
 }
-.repair-card-header .icon { font-size: 3rem; }
-.repair-card-header h3 { margin-top: 0.75rem; font-family: var(--font-display); font-size: 1.2rem; }
-.repair-card-body { padding: 1.2rem; text-align: center; }
-.repair-price { font-size: 1.5rem; font-weight: 700; color: var(--primary); font-family: var(--font-mono); margin: 0.5rem 0; }
-.repair-desc { color: var(--muted); font-size: 0.85rem; margin-bottom: 0.5rem; }
+
+.repair-price {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--primary);
+    font-family: var(--font-mono);
+    margin: 0.5rem 0;
+}
+
+.repair-desc {
+    color: var(--muted);
+    font-size: 0.875rem;
+    margin-bottom: 0.75rem;
+    line-height: 1.5;
+}
+
 .repair-add-btn {
     margin-top: 0.75rem;
-    padding: 0.6rem 1.2rem;
+    padding: 0.75rem 1.5rem;
     border-radius: 2rem;
     background: linear-gradient(135deg, #00e5ff, #7c4dff);
     border: none;
@@ -53,13 +104,56 @@
     cursor: pointer;
     transition: all 0.3s;
     width: 100%;
+    font-size: 0.9rem;
+    position: relative;
+    overflow: hidden;
 }
-.repair-add-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,229,255,0.3); }
+
+.repair-add-btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.repair-add-btn:hover::before {
+    width: 300px;
+    height: 300px;
+}
+
+.repair-add-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px -8px rgba(0,229,255,0.5);
+}
+
+/* Stock badge */
+.stock-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    background: rgba(32,224,166,0.15);
+    color: #20e0a6;
+    margin-bottom: 0.5rem;
+}
+
+.stock-badge.low {
+    background: rgba(255,77,109,0.15);
+    color: #ff4d6d;
+}
+
+/* Booking Modal Enhancements */
 .booking-modal {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.8);
-    backdrop-filter: blur(8px);
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(12px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -68,52 +162,72 @@
     visibility: hidden;
     transition: all 0.3s;
 }
-.booking-modal.open { opacity: 1; visibility: visible; }
+
+.booking-modal.open {
+    opacity: 1;
+    visibility: visible;
+}
+
 .booking-modal-content {
     background: var(--bg-2);
     border: 1px solid var(--border);
-    border-radius: 1.5rem;
+    border-radius: 1.75rem;
     padding: 2rem;
-    max-width: 500px;
+    max-width: 520px;
     width: 90%;
     max-height: 85vh;
     overflow-y: auto;
     position: relative;
+    animation: modalSlideIn 0.3s ease;
 }
-.booking-modal-content h3 { font-family: var(--font-display); font-size: 1.5rem; margin-bottom: 0.5rem; color: var(--primary); }
-.booking-modal-content .service-price { font-size: 1.2rem; color: var(--gold); margin-bottom: 1.5rem; }
-.booking-modal-content input, .booking-modal-content select, .booking-modal-content textarea {
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.booking-modal-content h3 {
+    font-family: var(--font-display);
+    font-size: 1.75rem;
+    margin-bottom: 0.5rem;
+    color: var(--primary);
+}
+
+.booking-modal-content .service-price {
+    font-size: 1.5rem;
+    color: var(--gold);
+    margin-bottom: 1.5rem;
+    font-weight: 700;
+}
+
+.booking-modal-content input,
+.booking-modal-content select,
+.booking-modal-content textarea {
     width: 100%;
-    padding: 0.8rem 1rem;
+    padding: 0.85rem 1rem;
     margin: 0.5rem 0 1rem;
     border-radius: 12px;
     border: 1px solid var(--border);
     background: var(--surface);
     color: var(--text);
     font-size: 0.9rem;
+    transition: all 0.3s;
 }
-.booking-modal-content input:focus, .booking-modal-content select:focus, .booking-modal-content textarea:focus {
+
+.booking-modal-content input:focus,
+.booking-modal-content select:focus,
+.booking-modal-content textarea:focus {
     outline: none;
     border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(0,229,255,0.1);
 }
-.booking-modal-content label { font-size: 0.85rem; color: var(--muted); font-weight: 500; }
-.modal-close {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    font-size: 1.5rem;
-    cursor: pointer;
-    color: var(--muted);
-    background: none;
-    border: none;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.modal-close:hover { background: var(--surface); color: var(--danger); }
+
 .submit-booking {
     width: 100%;
     padding: 1rem;
@@ -127,75 +241,139 @@
     cursor: pointer;
     transition: all 0.3s;
 }
-.submit-booking:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,229,255,0.3); }
-.hidden-section { display: none; }
-.repair-nav-buttons {
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
-    margin: 2rem 0 1rem;
-    flex-wrap: wrap;
+
+.submit-booking:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px -8px rgba(0,229,255,0.5);
 }
-.nav-section-btn {
-    padding: 0.8rem 2rem;
-    border-radius: 40px;
-    background: var(--surface);
-    border: 1px solid var(--border);
+
+/* Loading animation */
+.loading-spinner {
+    text-align: center;
+    padding: 3rem;
+    color: var(--muted);
+}
+
+.loading-spinner::after {
+    content: "⏳";
+    animation: spin 1s linear infinite;
+    display: inline-block;
+    margin-left: 0.5rem;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Empty state */
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: var(--muted);
+}
+
+.empty-state .empty-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.empty-state h4 {
+    margin-bottom: 0.5rem;
     color: var(--text);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s;
-    font-size: 1rem;
 }
-.nav-section-btn:hover { border-color: var(--primary); transform: translateY(-2px); }
-.nav-section-btn.active { background: linear-gradient(135deg, #00e5ff, #7c4dff); color: #000; border-color: transparent; }
-.repair-categories {
+
+/* Toast improvements */
+.toasts {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    z-index: 1001;
     display: flex;
+    flex-direction: column;
     gap: 0.75rem;
-    justify-content: center;
-    flex-wrap: wrap;
-    margin: 2rem 0 1.5rem;
 }
-.repair-cat-btn {
-    padding: 0.6rem 1.2rem;
-    border-radius: 40px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    color: var(--text);
-    cursor: pointer;
-    transition: all 0.3s;
-    font-size: 0.85rem;
+
+.toast {
+    padding: 0.875rem 1.25rem;
+    border-radius: 12px;
+    background: var(--bg-2);
+    border-left: 4px solid var(--primary);
+    box-shadow: 0 10px 30px -10px rgba(0,0,0,0.3);
+    animation: slideInRight 0.3s ease;
+    font-weight: 500;
 }
-.repair-cat-btn.active { background: linear-gradient(135deg, #00e5ff, #7c4dff); color: #000; border-color: transparent; }
-.search-container {
-    max-width: 500px;
-    margin: 1.5rem auto;
-    display: flex;
+
+.toast.success {
+    border-left-color: #20e0a6;
+}
+
+.toast.error {
+    border-left-color: #ff4d6d;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Section headers */
+.section-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.section-header .eyebrow {
+    display: inline-flex;
+    align-items: center;
     gap: 0.5rem;
-}
-.search-container input {
-    flex: 1;
-    padding: 0.8rem 1.2rem;
-    border-radius: 40px;
+    padding: 0.4rem 0.8rem;
     border: 1px solid var(--border);
-    background: var(--surface);
-    color: var(--text);
-    font-size: 0.9rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
 }
-.search-container button {
-    padding: 0.8rem 1.5rem;
-    border-radius: 40px;
-    background: linear-gradient(135deg, #00e5ff, #7c4dff);
-    border: none;
-    color: #000;
-    font-weight: 600;
-    cursor: pointer;
+
+.spare-image {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 1rem;
+    margin: 0 auto 1rem;
+    transition: transform 0.3s;
 }
-.loading-spinner { text-align: center; padding: 3rem; color: var(--muted); }
-.loading-spinner::after { content: "⏳"; animation: spin 1s linear infinite; display: inline-block; margin-left: 0.5rem; }
-@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-.spare-image { width: 80px; height: 80px; object-fit: cover; border-radius: 12px; margin: 0 auto 10px; }
-@media (max-width: 640px) { .repair-grid { grid-template-columns: 1fr; } }
+
+.repair-card:hover .spare-image {
+    transform: scale(1.05);
+}
+
+@media (max-width: 768px) {
+    .repair-grid {
+        grid-template-columns: 1fr;
+        gap: 1.2rem;
+    }
+    
+    .repair-card-header {
+        padding: 1.2rem;
+    }
+    
+    .repair-card-body {
+        padding: 1rem;
+    }
+    
+    .repair-price {
+        font-size: 1.4rem;
+    }
+}
 </style>
 </head>
 <body>
@@ -271,7 +449,7 @@
   </div>
 
   <div id="repairSection" class="container">
-    <div class="section-header" style="text-align: center;">
+    <div class="section-header">
       <span class="eyebrow"><span class="dot"></span> What We Fix</span>
       <h2 style="margin-top: 0.5rem;">Click any service to <span class="grad">book a repair</span></h2>
     </div>
@@ -288,7 +466,7 @@
   </div>
 
   <div id="spareSection" class="container hidden-section">
-    <div class="section-header" style="text-align: center;">
+    <div class="section-header">
       <span class="eyebrow"><span class="dot"></span> Genuine Parts</span>
       <h2>Spare <span class="grad">Parts</span></h2>
       <p>Add spare parts to your cart and checkout with the main store</p>
@@ -300,6 +478,30 @@
     <div class="repair-grid" id="spareGrid"><div class="loading-spinner">Loading spare parts...</div></div>
   </div>
 </main>
+
+<!-- Footer (copied from main page, without management link) -->
+<footer class="footer">
+  <div class="container foot-grid">
+    <div>
+      <a href="index.html" class="brand"><img src="shop/brand logo.png" alt="S.M Dynamics Electronics" class="brand-logo-sm" style="height:32px;"><span class="brand-name">S.M Dynamics Electronics</span></a>
+      <p class="muted">Premium electronics and repair services across Kenya.</p>
+      <div class="socials">
+        <a href="https://www.facebook.com/Smatelectronics/" aria-label="Facebook">f</a>
+        <a href="https://x.com" aria-label="X">𝕏</a>
+        <a href="https://tiktok.com" aria-label="TikTok">♪</a>
+        <a href="https://wa.me/254717043977" aria-label="WhatsApp">💬</a>
+      </div>
+    </div>
+    <div><h4>Shop</h4><a href="index.html#categories">Phones</a><a href="index.html#categories">Audio</a><a href="index.html#categories">Laptops</a><a href="index.html#categories">Gaming</a></div>
+    <div><h4>Support</h4><a href="contact.html">Help Center</a><a href="contact.html">Shipping</a><a href="contact.html">Returns</a><a href="contact.html">Warranty</a></div>
+    <div><h4>Contact</h4><a href="https://wa.me/254717043977" target="_blank" rel="noopener">💬 WhatsApp: +254 717 043 977</a><a href="mailto:info@smdynamics.com">📧 info@smdynamics.com</a><a href="https://www.tiktok.com/@smdynamics" target="_blank">🎵 TikTok</a><a href="https://maps.google.com/maps?q=S.M+Dynamics+Electronics+Kenya" target="_blank">📍 Location</a></div>
+    <div><h4>Company</h4><a href="contact.html">About</a><a href="contact.html">Terms and Conditions</a><a href="contact.html">Founder</a></div>
+  </div>
+  <div class="foot-bot container">
+    <span>© 2026 S.M Dynamics Electronics. All rights reserved.</span>
+    <span>Designed for Kenya · Built for Earth.</span>
+  </div>
+</footer>
 
 <div class="booking-modal" id="bookingModal">
   <div class="booking-modal-content">
@@ -329,7 +531,6 @@
   </div>
 </div>
 
-<!-- Toast container for repair page -->
 <div class="toasts" id="toasts"></div>
 
 <script>
@@ -340,8 +541,7 @@ let currentCat = 'all';
 let spareSearchTerm = '';
 let selectedService = null;
 
-// ============== CART FUNCTIONS (Matches main page app.js) ==============
-// Main page uses 'nova_cart' with {id, qty} format
+// ============== CART FUNCTIONS ==============
 function getNovaCart() {
     try {
         return JSON.parse(localStorage.getItem('nova_cart')) || [];
@@ -351,11 +551,9 @@ function getNovaCart() {
 function saveNovaCart(cart) {
     localStorage.setItem('nova_cart', JSON.stringify(cart));
     updateCartCount();
-    // Dispatch storage event so main page updates if open
     window.dispatchEvent(new StorageEvent('storage', { key: 'nova_cart' }));
 }
 
-// Update cart badge count
 function updateCartCount() {
     const cart = getNovaCart();
     const count = cart.reduce((sum, item) => sum + (item.qty || 1), 0);
@@ -363,37 +561,32 @@ function updateCartCount() {
     if (countEl) countEl.textContent = count;
 }
 
-// Add spare part to Nova Cart (using same format as main page: {id, qty})
-// ALSO store spare part details in a separate localStorage so main page can display them
 function addToNovaCart(item) {
     console.log('Adding to Nova Cart:', item);
     
-    // Store spare part details separately for main page to read
     const sparePartsStore = JSON.parse(localStorage.getItem('nova_spare_parts') || '{}');
     sparePartsStore[item.id] = {
         name: item.name,
         price: item.price,
-        img: item.image || item.image_path || '/shop/hero-phone.jpg'
+        img: item.image || '/shop/hero-phone.jpg'
     };
     localStorage.setItem('nova_spare_parts', JSON.stringify(sparePartsStore));
     
-    // Add to cart using same format as main page
     const cart = getNovaCart();
     const existing = cart.find(i => i.id === item.id);
     
     if (existing) {
         existing.qty = (existing.qty || 1) + 1;
-        showToast(`✓ Added another ${item.name} to cart`);
+        showToast(`✓ Added another ${item.name} to cart`, 'success');
     } else {
         cart.push({ id: item.id, qty: 1 });
-        showToast(`✓ ${item.name} added to cart`);
+        showToast(`✓ ${item.name} added to cart`, 'success');
     }
     
     saveNovaCart(cart);
-    console.log('Cart now has:', getNovaCart());
 }
 
-function showToast(message) {
+function showToast(message, type = 'success') {
     let toasts = document.getElementById('toasts');
     if (!toasts) {
         toasts = document.createElement('div');
@@ -402,7 +595,7 @@ function showToast(message) {
         document.body.appendChild(toasts);
     }
     const t = document.createElement('div');
-    t.className = 'toast success';
+    t.className = `toast ${type}`;
     t.textContent = message;
     toasts.appendChild(t);
     setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateX(50%)'; }, 2800);
@@ -469,7 +662,7 @@ function displayRepairServices() {
     let filtered = repairServices.filter(s => currentCat === 'all' || s.category === currentCat);
     
     if (filtered.length === 0) {
-        grid.innerHTML = '<div style="text-align:center; padding:3rem; color:var(--muted);">No repair services found.</div>';
+        grid.innerHTML = '<div class="empty-state"><div class="empty-icon">🔧</div><h4>No repair services found</h4><p>Check back later for more services</p></div>';
         return;
     }
     
@@ -515,13 +708,14 @@ function displaySpareParts() {
     });
     
     if (filtered.length === 0) {
-        grid.innerHTML = '<div style="text-align:center; padding:3rem; color:var(--muted);">No spare parts found. Add some in Management page.</div>';
+        grid.innerHTML = '<div class="empty-state"><div class="empty-icon">🔩</div><h4>No spare parts found</h4><p>Add spare parts in the Management page</p></div>';
         return;
     }
     
     grid.innerHTML = filtered.map(p => {
         let imageUrl = p.image || p.image_path || '/shop/hero-phone.jpg';
         if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('/')) imageUrl = '/' + imageUrl;
+        const stockClass = (p.stock || 0) < 5 ? 'low' : '';
         
         return `
             <div class="repair-card">
@@ -530,7 +724,7 @@ function displaySpareParts() {
                     <h3>${escapeHtml(p.name)}</h3>
                 </div>
                 <div class="repair-card-body">
-                    <div style="display:inline-block; padding:0.2rem 0.6rem; border-radius:20px; font-size:0.7rem; background:rgba(32,224,166,0.2); color:#20e0a6;">
+                    <div class="stock-badge ${stockClass}">
                         ${escapeHtml(p.brand || 'Generic')} · Stock: ${p.stock || 0}
                     </div>
                     <div class="repair-price">KES ${(p.price || 0).toLocaleString()}</div>
@@ -593,14 +787,14 @@ async function submitBooking(formData) {
         });
         
         if (response.ok) {
-            showToast('✓ Booking request sent! We will call you within 24 hours.');
+            showToast('✓ Booking request sent! We will call you within 24 hours.', 'success');
             closeBookingModal();
         } else {
             const error = await response.json();
-            showToast('❌ Booking failed: ' + (error.error || 'Unknown error'));
+            showToast('❌ Booking failed: ' + (error.error || 'Unknown error'), 'error');
         }
     } catch(err) {
-        showToast('❌ Could not connect to server. Please try again.');
+        showToast('❌ Could not connect to server. Please try again.', 'error');
     }
 }
 
@@ -632,6 +826,11 @@ function showSection(section) {
         navSpareBtn.classList.add('active');
         fetchSpareParts();
     }
+}
+
+// ============== REFRESH FUNCTION (FOR DELETE SYNC) ==============
+function refreshSpareParts() {
+    fetchSpareParts();
 }
 
 // ============== INIT ==============
@@ -673,7 +872,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target === document.getElementById('bookingModal')) closeBookingModal();
     });
     
-    // Cart button - redirect to main page cart
     const cartBtn = document.getElementById('cartBtn');
     cartBtn?.addEventListener('click', () => {
         window.location.href = 'index.html';
@@ -695,10 +893,18 @@ document.addEventListener('DOMContentLoaded', () => {
         toggle.classList.toggle('open');
         mobile?.classList.toggle('open');
     });
+    
+    // Auto-refresh spare parts every 15 seconds to keep in sync with management
+    setInterval(() => {
+        if (document.getElementById('spareSection') && !document.getElementById('spareSection').classList.contains('hidden-section')) {
+            fetchSpareParts();
+        }
+    }, 15000);
 });
 
 // Global functions
 window.addToNovaCart = addToNovaCart;
+window.refreshSpareParts = refreshSpareParts;
 </script>
 </body>
 </html>
