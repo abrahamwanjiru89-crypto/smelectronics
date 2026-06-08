@@ -10,23 +10,21 @@
 <link rel="stylesheet" href="shop/styles.css">
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#0b1120">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="SM Dynamics Electronics">
-<meta name="application-name" content="SM Dynamics Electronics">
 <link rel="apple-touch-icon" href="shop/brand logo.png">
 <script src="shop/pwa.js" defer></script>
 <style>
-  /* Additional management styles */
-  .product-row {
+  .product-row, .spare-row, .booking-row {
     display: grid;
-    grid-template-columns: 60px 1fr 150px 120px 120px 100px 100px;
+    grid-template-columns: 60px 1fr 150px 120px 100px 100px;
     gap: 1rem;
     align-items: center;
     padding: 0.75rem;
     border-bottom: 1px solid rgba(255,255,255,0.1);
   }
-  .product-row img {
+  .booking-row {
+    grid-template-columns: 200px 180px 150px 120px 100px 120px;
+  }
+  .product-row img, .spare-row img {
     width: 50px;
     height: 50px;
     object-fit: cover;
@@ -39,14 +37,6 @@
     padding: 0.75rem;
     border-bottom: 1px solid rgba(255,255,255,0.1);
   }
-  .staff-row div {
-    display: flex;
-    flex-direction: column;
-  }
-  .staff-row span {
-    font-size: 0.875rem;
-    color: #888;
-  }
   .order-row {
     padding: 1rem;
     border-bottom: 1px solid rgba(255,255,255,0.1);
@@ -55,21 +45,22 @@
     margin: 0.5rem 0;
     font-size: 0.875rem;
   }
-  .order-meta {
-    color: #888;
-    margin-top: 0.25rem;
-  }
   .status {
     display: inline-block;
-    padding: 0.25rem 0.5rem;
+    padding: 0.25rem 0.75rem;
     border-radius: 2rem;
     font-size: 0.75rem;
-    margin-left: 0.5rem;
+    font-weight: 600;
   }
-  .status.pending, .status.placed { background: #ff9800; color: #000; }
-  .status.paid, .status.completed { background: #4caf50; color: #fff; }
+  .status.pending { background: #ff9800; color: #000; }
+  .status.in_progress { background: #2196f3; color: #fff; }
+  .status.completed { background: #4caf50; color: #fff; }
+  .status.cancelled { background: #f44336; color: #fff; }
+  .status.placed { background: #ff9800; color: #000; }
+  .status.paid { background: #4caf50; color: #fff; }
   .status.shipped { background: #2196f3; color: #fff; }
   .status.delivered { background: #00c853; color: #fff; }
+  
   .dash-empty {
     text-align: center;
     padding: 2rem;
@@ -92,14 +83,6 @@
     font-size: 1.5rem;
     color: #00e5ff;
   }
-  .manager-order {
-    margin-bottom: 1rem;
-  }
-  .danger-btn {
-    color: #ff3b30 !important;
-  }
-  
-  /* Badge styling for product display */
   .badge-status {
     display: inline-block;
     padding: 0.2rem 0.5rem;
@@ -107,44 +90,17 @@
     font-size: 0.7rem;
     font-weight: 600;
   }
-  .badge-flash-sale {
-    background: #ff2bd6;
-    color: white;
-  }
-  .badge-hot {
-    background: #ff4d6d;
-    color: white;
-  }
-  .badge-new {
-    background: #20e0a6;
-    color: #000;
-  }
-  .badge-none {
-    background: #888;
-    color: white;
-  }
-  
-  .btn-badge {
-    padding: 0.5rem 0.8rem;
+  .btn-edit, .btn-delete, .btn-view {
+    padding: 0.3rem 0.6rem;
     border-radius: 0.5rem;
     border: none;
     cursor: pointer;
-    font-weight: 500;
-    font-size: 0.75rem;
-    transition: all 0.2s ease;
+    font-size: 0.7rem;
+    margin: 0 0.2rem;
   }
-  .btn-badge:hover {
-    transform: translateY(-1px);
-    opacity: 0.9;
-  }
-  .btn-flash-sale { background: #ff2bd6; color: white; }
-  .btn-hot { background: #ff4d6d; color: white; }
-  .btn-new { background: #20e0a6; color: #000; }
-  .btn-remove-badge { background: #888; color: white; }
   .btn-edit { background: #00e5ff; color: #000; }
   .btn-delete { background: #ff3b30; color: white; }
-  
-  /* Delivery Fee Control Styles */
+  .btn-view { background: #4caf50; color: white; }
   .delivery-fee-card {
     background: linear-gradient(135deg, rgba(0,229,255,0.1), rgba(124,77,255,0.1));
     border: 1px solid rgba(0,229,255,0.3);
@@ -155,35 +111,17 @@
     color: #00e5ff;
     font-family: var(--font-mono);
   }
-  .delivery-fee-input {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-    flex-wrap: wrap;
-  }
-  .delivery-fee-input input {
-    flex: 1;
-    min-width: 150px;
-    padding: 0.75rem;
-    border-radius: 0.75rem;
-    border: 1px solid rgba(255,255,255,0.1);
-    background: #0f0f1a;
-    color: white;
-    font-size: 1rem;
-  }
-  .delivery-fee-input button {
-    padding: 0.75rem 1.5rem;
-  }
-  .fee-info {
-    margin-top: 1rem;
-    padding: 0.75rem;
-    background: rgba(0,0,0,0.2);
-    border-radius: 0.75rem;
-    font-size: 0.85rem;
-    color: #888;
-  }
-  .fee-info i {
-    color: #00e5ff;
+  .admin-sections[hidden] { display: none; }
+  
+  /* Status select dropdown */
+  .status-select {
+    padding: 0.3rem 0.5rem;
+    border-radius: 0.5rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 0.75rem;
+    cursor: pointer;
   }
 </style>
 </head>
@@ -203,7 +141,9 @@
           <input name="password" type="password" placeholder="Password" autocomplete="current-password" required>
           <button class="btn primary block" type="submit">Login</button>
         </form>
-        
+        <p class="auth-hint" style="margin-top: 1rem; text-align: center;">
+          Demo Login: admin@smdynamics.com / admin123
+        </p>
       </div>
     </section>
 
@@ -243,20 +183,35 @@
           <div class="metrics" id="metrics"></div>
         </section>
 
-        <!-- ============================================ -->
-        <!-- DELIVERY FEE CONTROL (ADMIN ONLY) -->
-        <!-- ============================================ -->
+        <!-- Delivery Fee Control -->
         <section class="dash-panel reveal delivery-fee-card">
           <h3>🚚 Delivery Fee Control</h3>
-          <p style="margin-bottom: 1rem; color: #888;">Set the delivery fee that customers will pay upfront when placing orders.</p>
+          <p style="margin-bottom: 1rem; color: #888;">Set the delivery fee that customers will pay upfront.</p>
           <div class="delivery-fee-display" id="currentDeliveryFee">Kshs 600</div>
           <div class="delivery-fee-input" style="margin-top: 1rem;">
             <input type="number" id="newDeliveryFee" placeholder="Enter new delivery fee" min="0" step="50">
             <button class="btn primary" id="updateDeliveryFeeBtn">Update Delivery Fee</button>
           </div>
-          <div class="fee-info">
-            <i>💡 Note:</i> Customers will pay this delivery fee upfront via M-Pesa. The remaining product amount will be paid on delivery.
-          </div>
+        </section>
+
+        <!-- Spare Parts Inventory -->
+        <section class="dash-panel wide reveal">
+          <h3>🔩 Spare Parts Inventory</h3>
+          <div id="sparePartAdmin"></div>
+        </section>
+
+        <!-- Add Spare Part -->
+        <section class="dash-panel wide reveal">
+          <h3>➕ Add Spare Part</h3>
+          <form class="dash-form" id="sparePartForm">
+            <input name="name" placeholder="Part name (e.g. iPhone 11 Screen)" required>
+            <input name="brand" placeholder="Brand (e.g. Apple)" required>
+            <input name="category" placeholder="Category (e.g. Screen, Battery)" required>
+            <input name="price" type="number" min="0" placeholder="Price (Kshs)" required>
+            <input name="stock" type="number" min="0" placeholder="Stock quantity" required>
+            <textarea name="desc" placeholder="Part description" rows="2" required></textarea>
+            <button class="btn primary block" type="submit">Add Spare Part</button>
+          </form>
         </section>
 
         <!-- Staff Accounts -->
@@ -270,104 +225,6 @@
           </form>
           <div class="staff-list" id="staffList"></div>
         </section>
-
-        <!-- Products Management -->
-        <section class="dash-panel wide reveal">
-          <h3>🛍️ Products</h3>
-          <div class="product-admin" id="productAdmin"></div>
-        </section>
-
-        <!-- Add Product - UPDATED with Badge and Original Price fields -->
-        <section class="dash-panel wide reveal">
-          <h3>➕ Add Product</h3>
-          <form class="dash-form product-add" id="productForm" enctype="multipart/form-data">
-            <input name="name" placeholder="Product name" required>
-            <select name="cat" required>
-              <option value="phones">Phones</option>
-              <option value="audio">Audio</option>
-              <option value="laptops">Laptops</option>
-              <option value="wearables">Wearables</option>
-              <option value="gaming">Gaming</option>
-              <option value="home">Smart Home</option>
-              <option value="repair">Repairs</option>
-            </select>
-            <input name="price" type="number" min="0" placeholder="Sale Price (Kshs)" required>
-            <input name="was" type="number" min="0" placeholder="Original Price (Kshs) - for Flash Sale">
-            <select name="badge">
-              <option value="">No Badge</option>
-              <option value="sale">🔥 Flash Sale</option>
-              <option value="hot">⚡ Hot</option>
-              <option value="new">✨ New</option>
-            </select>
-            <input name="img" type="file" accept="image/*" required>
-            <textarea name="desc" placeholder="Description" required></textarea>
-            <button class="btn primary block" type="submit">Add Product</button>
-          </form>
-        </section>
-
-        <!-- Spare Parts Inventory -->
-        <section class="dash-panel wide reveal">
-          <h3>🔩 Spare Parts Inventory</h3>
-          <div class="product-admin" id="sparePartAdmin"></div>
-        </section>
-
-        <!-- Add Spare Part -->
-        <section class="dash-panel wide reveal">
-          <h3>➕ Add Spare Part</h3>
-          <form class="dash-form" id="sparePartForm" enctype="multipart/form-data">
-            <input name="name" placeholder="Part name (e.g. iPhone 14 LCD)" required>
-            <input name="brand" placeholder="Brand (e.g. Apple)" required>
-            <input name="category" placeholder="Category (e.g. Screen)" required>
-            <input name="price" type="number" min="0" placeholder="Price" required>
-            <input name="stock" type="number" min="0" placeholder="Stock quantity" required>
-            <input name="image" type="file" accept="image/*" required>
-            <textarea name="description" placeholder="Part description" rows="3" required></textarea>
-            <button class="btn primary block" type="submit">Add Spare Part</button>
-          </form>
-        </section>
-
-        <!-- Repair Services Management -->
-        <section class="dash-panel wide reveal">
-          <h3>🔧 Repair Services</h3>
-          <div class="product-admin" id="repairServiceAdmin"></div>
-        </section>
-
-        <!-- Add Repair Service -->
-        <section class="dash-panel wide reveal">
-          <h3>➕ Add Repair Service</h3>
-          <form class="dash-form" id="repairServiceForm" enctype="multipart/form-data">
-            <input name="title" placeholder="Service title (e.g. Screen Replacement)" required>
-            <input name="brand" placeholder="Brand (e.g. Samsung, Apple, All)" required>
-            <input name="repairType" placeholder="Repair type" required>
-            <input name="price" type="number" min="0" placeholder="Price" required>
-            <input name="duration" placeholder="Duration (e.g. 1-2 hours)" required>
-            <input name="warranty" placeholder="Warranty (e.g. 3 months)" required>
-            <select name="available" required>
-              <option value="1">Available</option>
-              <option value="0">Unavailable</option>
-            </select>
-            <input name="image" type="file" accept="image/*">
-            <textarea name="description" placeholder="Service description" rows="3" required></textarea>
-            <button class="btn primary block" type="submit">Add Repair Service</button>
-          </form>
-        </section>
-
-        <!-- Repair Categories (for reference) -->
-        <section class="dash-panel reveal" hidden>
-          <h3>📁 Repair Categories</h3>
-          <select id="repairCategorySelect"></select>
-        </section>
-
-        <!-- Technicians Management -->
-        <section class="dash-panel reveal">
-          <h3>👨‍🔧 Repair Technicians</h3>
-          <form class="dash-form" id="technicianForm">
-            <input name="name" placeholder="Technician name" required>
-            <input name="email" type="email" placeholder="Technician email" required>
-            <button class="btn primary block" type="submit">Add Technician</button>
-          </form>
-          <div class="staff-list" id="technicianList"></div>
-        </section>
       </div>
     </section>
   </main>
@@ -376,28 +233,68 @@
 
   <script>
     // ============================================
-    // DELIVERY FEE CONTROL FUNCTIONS
+    // DATA STORAGE KEYS
     // ============================================
-    
-    async function loadDeliveryFee() {
-      try {
-        const response = await fetch('/api/admin/delivery-fee', {
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' }
-        });
-        if (response.ok) {
-          const data = await response.json();
-          const feeElement = document.getElementById('currentDeliveryFee');
-          if (feeElement) {
-            feeElement.textContent = `Kshs ${data.fee.toLocaleString()}`;
-          }
-        }
-      } catch (err) {
-        console.error('Failed to load delivery fee:', err);
+    const STORAGE_KEYS = {
+      SPARE_PARTS: 'spare_parts',
+      REPAIR_BOOKINGS: 'repair_bookings',
+      STAFF: 'staff_accounts',
+      ADMIN: 'admin_account',
+      DELIVERY_FEE: 'delivery_fee',
+      CURRENT_ADMIN: 'current_admin'
+    };
+
+    // Initialize default data if not exists
+    function initializeData() {
+      // Spare Parts
+      if (!localStorage.getItem(STORAGE_KEYS.SPARE_PARTS)) {
+        const defaultSpareParts = [
+          { id: 101, name: "iPhone 11 Screen", brand: "iPhone", category: "Screen", price: 3500, stock: 12, desc: "Genuine LCD with tools" },
+          { id: 102, name: "iPhone 12 Screen", brand: "iPhone", category: "Screen", price: 4500, stock: 8, desc: "OLED with True Tone" },
+          { id: 103, name: "Samsung A12 Screen", brand: "Samsung", category: "Screen", price: 3200, stock: 10, desc: "LCD with frame" },
+          { id: 104, name: "iPhone 11 Battery", brand: "iPhone", category: "Battery", price: 2200, stock: 25, desc: "3110mAh high capacity" },
+          { id: 105, name: "iPhone Charging Port", brand: "iPhone", category: "Charging", price: 1500, stock: 18, desc: "Lightning flex cable" }
+        ];
+        localStorage.setItem(STORAGE_KEYS.SPARE_PARTS, JSON.stringify(defaultSpareParts));
+      }
+      
+      // Repair Bookings
+      if (!localStorage.getItem(STORAGE_KEYS.REPAIR_BOOKINGS)) {
+        localStorage.setItem(STORAGE_KEYS.REPAIR_BOOKINGS, JSON.stringify([]));
+      }
+      
+      // Delivery Fee
+      if (!localStorage.getItem(STORAGE_KEYS.DELIVERY_FEE)) {
+        localStorage.setItem(STORAGE_KEYS.DELIVERY_FEE, JSON.stringify(600));
+      }
+      
+      // Admin Account
+      if (!localStorage.getItem(STORAGE_KEYS.ADMIN)) {
+        localStorage.setItem(STORAGE_KEYS.ADMIN, JSON.stringify({
+          email: 'admin@smdynamics.com',
+          password: 'admin123',
+          name: 'Super Admin',
+          role: 'admin'
+        }));
+      }
+      
+      // Staff Accounts
+      if (!localStorage.getItem(STORAGE_KEYS.STAFF)) {
+        localStorage.setItem(STORAGE_KEYS.STAFF, JSON.stringify([]));
       }
     }
+
+    // ============================================
+    // DELIVERY FEE FUNCTIONS
+    // ============================================
+    function loadDeliveryFee() {
+      const fee = JSON.parse(localStorage.getItem(STORAGE_KEYS.DELIVERY_FEE)) || 600;
+      const feeElement = document.getElementById('currentDeliveryFee');
+      if (feeElement) feeElement.textContent = `Kshs ${fee.toLocaleString()}`;
+      return fee;
+    }
     
-    async function updateDeliveryFee() {
+    function updateDeliveryFee() {
       const input = document.getElementById('newDeliveryFee');
       const newFee = parseInt(input.value);
       
@@ -406,35 +303,296 @@
         return;
       }
       
-      if (!confirm(`Are you sure you want to change the delivery fee to Kshs ${newFee.toLocaleString()}?`)) {
-        return;
-      }
+      if (!confirm(`Change delivery fee to Kshs ${newFee.toLocaleString()}?`)) return;
       
-      try {
-        const response = await fetch('/api/admin/delivery-fee', {
-          method: 'POST',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fee: newFee })
-        });
-        
-        if (response.ok) {
-          const feeElement = document.getElementById('currentDeliveryFee');
-          if (feeElement) {
-            feeElement.textContent = `Kshs ${newFee.toLocaleString()}`;
-          }
-          input.value = '';
-          toast(`Delivery fee updated to Kshs ${newFee.toLocaleString()}`, 'success');
-        } else {
-          throw new Error('Update failed');
-        }
-      } catch (err) {
-        toast('Failed to update delivery fee', 'error');
+      localStorage.setItem(STORAGE_KEYS.DELIVERY_FEE, JSON.stringify(newFee));
+      loadDeliveryFee();
+      input.value = '';
+      toast(`Delivery fee updated to Kshs ${newFee.toLocaleString()}`, 'success');
+    }
+
+    // ============================================
+    // SPARE PARTS FUNCTIONS
+    // ============================================
+    function getSpareParts() {
+      return JSON.parse(localStorage.getItem(STORAGE_KEYS.SPARE_PARTS)) || [];
+    }
+    
+    function saveSpareParts(parts) {
+      localStorage.setItem(STORAGE_KEYS.SPARE_PARTS, JSON.stringify(parts));
+      displaySpareParts();
+    }
+    
+    function addSparePart(part) {
+      const parts = getSpareParts();
+      const newId = Date.now();
+      parts.push({ ...part, id: newId });
+      saveSpareParts(parts);
+      toast('Spare part added successfully!', 'success');
+    }
+    
+    function deleteSparePart(id) {
+      if (!confirm('Delete this spare part?')) return;
+      let parts = getSpareParts();
+      parts = parts.filter(p => p.id !== id);
+      saveSpareParts(parts);
+      toast('Spare part deleted', 'success');
+    }
+    
+    function updateSpareStock(id, newStock) {
+      const parts = getSpareParts();
+      const part = parts.find(p => p.id === id);
+      if (part) {
+        part.stock = parseInt(newStock);
+        saveSpareParts(parts);
+        toast('Stock updated', 'success');
       }
     }
     
-    // Simple toast function for this page
-    function toast(msg, type) {
+    function displaySpareParts() {
+      const container = document.getElementById('sparePartAdmin');
+      if (!container) return;
+      
+      const parts = getSpareParts();
+      
+      if (parts.length === 0) {
+        container.innerHTML = '<div class="dash-empty">No spare parts added yet.</div>';
+        return;
+      }
+      
+      let html = '<div style="display: flex; flex-direction: column; gap: 0.5rem;">';
+      parts.forEach(part => {
+        html += `
+          <div class="spare-row" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
+            <div style="flex: 2;"><strong>${escapeHtml(part.name)}</strong><br><small style="color:#888;">${escapeHtml(part.brand)} | ${escapeHtml(part.category)}</small></div>
+            <div style="flex: 1;">KES ${part.price.toLocaleString()}</div>
+            <div style="flex: 1;">
+              <input type="number" value="${part.stock}" min="0" style="width: 70px; padding: 0.3rem; border-radius: 0.5rem;" onchange="updateSpareStock(${part.id}, this.value)">
+            </div>
+            <div style="flex: 0;">
+              <button class="btn-delete" onclick="deleteSparePart(${part.id})">Delete</button>
+            </div>
+          </div>
+        `;
+      });
+      html += '</div>';
+      container.innerHTML = html;
+    }
+    
+    // ============================================
+    // REPAIR BOOKINGS FUNCTIONS
+    // ============================================
+    function getRepairBookings() {
+      return JSON.parse(localStorage.getItem(STORAGE_KEYS.REPAIR_BOOKINGS)) || [];
+    }
+    
+    function saveRepairBookings(bookings) {
+      localStorage.setItem(STORAGE_KEYS.REPAIR_BOOKINGS, JSON.stringify(bookings));
+      displayRepairBookings();
+    }
+    
+    function updateBookingStatus(id, newStatus) {
+      const bookings = getRepairBookings();
+      const booking = bookings.find(b => b.id === id);
+      if (booking) {
+        booking.status = newStatus;
+        saveRepairBookings(bookings);
+        toast(`Booking status updated to ${newStatus}`, 'success');
+      }
+    }
+    
+    function displayRepairBookings() {
+      const container = document.getElementById('repairBookings');
+      if (!container) return;
+      
+      const bookings = getRepairBookings();
+      
+      if (bookings.length === 0) {
+        container.innerHTML = '<div class="dash-empty">No repair bookings yet.</div>';
+        return;
+      }
+      
+      let html = '<div style="display: flex; flex-direction: column; gap: 1rem;">';
+      bookings.reverse().forEach(booking => {
+        const statusClass = booking.status || 'pending';
+        html += `
+          <div class="booking-row" style="padding: 1rem; border: 1px solid rgba(255,255,255,0.1); border-radius: 1rem;">
+            <div>
+              <strong>${escapeHtml(booking.service)}</strong><br>
+              <small style="color:#888;">KES ${booking.price.toLocaleString()}</small>
+            </div>
+            <div>
+              <strong>${escapeHtml(booking.customer?.name || 'N/A')}</strong><br>
+              <small>${escapeHtml(booking.customer?.phone || 'N/A')}</small>
+            </div>
+            <div>
+              ${escapeHtml(booking.customer?.brand || '')} ${escapeHtml(booking.customer?.model || '')}
+            </div>
+            <div>
+              <select class="status-select" onchange="updateBookingStatus('${booking.id}', this.value)">
+                <option value="pending" ${statusClass === 'pending' ? 'selected' : ''}>⏳ Pending</option>
+                <option value="in_progress" ${statusClass === 'in_progress' ? 'selected' : ''}>🔧 In Progress</option>
+                <option value="completed" ${statusClass === 'completed' ? 'selected' : ''}>✅ Completed</option>
+                <option value="cancelled" ${statusClass === 'cancelled' ? 'selected' : ''}>❌ Cancelled</option>
+              </select>
+            </div>
+            <div class="status ${statusClass}">${statusClass.replace('_', ' ').toUpperCase()}</div>
+            <div>
+              <small style="color:#888;">${new Date(booking.date).toLocaleDateString()}</small>
+            </div>
+          </div>
+        `;
+      });
+      html += '</div>';
+      container.innerHTML = html;
+    }
+    
+    // ============================================
+    // STAFF FUNCTIONS
+    // ============================================
+    function getStaff() {
+      return JSON.parse(localStorage.getItem(STORAGE_KEYS.STAFF)) || [];
+    }
+    
+    function saveStaff(staff) {
+      localStorage.setItem(STORAGE_KEYS.STAFF, JSON.stringify(staff));
+      displayStaff();
+    }
+    
+    function addStaff(staff) {
+      const staffList = getStaff();
+      if (staffList.find(s => s.email === staff.email)) {
+        toast('Staff with this email already exists', 'error');
+        return false;
+      }
+      staffList.push({ ...staff, id: Date.now(), role: 'staff' });
+      saveStaff(staffList);
+      toast('Staff account created', 'success');
+      return true;
+    }
+    
+    function deleteStaff(id) {
+      if (!confirm('Delete this staff account?')) return;
+      let staff = getStaff();
+      staff = staff.filter(s => s.id !== id);
+      saveStaff(staff);
+      toast('Staff deleted', 'success');
+    }
+    
+    function displayStaff() {
+      const container = document.getElementById('staffList');
+      if (!container) return;
+      
+      const staff = getStaff();
+      if (staff.length === 0) {
+        container.innerHTML = '<div class="dash-empty">No staff accounts.</div>';
+        return;
+      }
+      
+      let html = '';
+      staff.forEach(s => {
+        html += `
+          <div class="staff-row">
+            <div><strong>${escapeHtml(s.name)}</strong><br><span>${escapeHtml(s.email)}</span></div>
+            <button class="btn-delete" onclick="deleteStaff(${s.id})">Delete</button>
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+    }
+    
+    // ============================================
+    // AUTHENTICATION
+    // ============================================
+    let currentUser = null;
+    
+    function login(email, password) {
+      const admin = JSON.parse(localStorage.getItem(STORAGE_KEYS.ADMIN));
+      const staff = getStaff();
+      
+      if (admin && admin.email === email && admin.password === password) {
+        currentUser = { ...admin, isAdmin: true };
+        localStorage.setItem(STORAGE_KEYS.CURRENT_ADMIN, JSON.stringify(currentUser));
+        showAdminPanel();
+        return true;
+      }
+      
+      const staffMember = staff.find(s => s.email === email && s.password === password);
+      if (staffMember) {
+        currentUser = { ...staffMember, isAdmin: false };
+        localStorage.setItem(STORAGE_KEYS.CURRENT_ADMIN, JSON.stringify(currentUser));
+        showStaffPanel();
+        return true;
+      }
+      
+      toast('Invalid email or password', 'error');
+      return false;
+    }
+    
+    function logout() {
+      localStorage.removeItem(STORAGE_KEYS.CURRENT_ADMIN);
+      currentUser = null;
+      document.getElementById('managerLogin').hidden = false;
+      document.getElementById('managerOrders').hidden = true;
+      toast('Logged out successfully', 'success');
+    }
+    
+    function showAdminPanel() {
+      document.getElementById('managerLogin').hidden = true;
+      document.getElementById('managerOrders').hidden = false;
+      document.getElementById('adminSections').hidden = false;
+      document.getElementById('managerRole').textContent = 'Admin Dashboard';
+      document.getElementById('managerTitle').textContent = 'Admin Control Panel';
+      
+      loadDeliveryFee();
+      displaySpareParts();
+      displayRepairBookings();
+      displayStaff();
+      loadMetrics();
+    }
+    
+    function showStaffPanel() {
+      document.getElementById('managerLogin').hidden = true;
+      document.getElementById('managerOrders').hidden = false;
+      document.getElementById('adminSections').hidden = true;
+      document.getElementById('managerRole').textContent = 'Staff Dashboard';
+      document.getElementById('managerTitle').textContent = 'Staff Portal';
+      
+      displayRepairBookings();
+    }
+    
+    function loadMetrics() {
+      const bookings = getRepairBookings();
+      const pending = bookings.filter(b => b.status === 'pending').length;
+      const inProgress = bookings.filter(b => b.status === 'in_progress').length;
+      const completed = bookings.filter(b => b.status === 'completed').length;
+      const totalRevenue = bookings.filter(b => b.status === 'completed').reduce((sum, b) => sum + b.price, 0);
+      
+      const metricsDiv = document.getElementById('metrics');
+      if (metricsDiv) {
+        metricsDiv.innerHTML = `
+          <div><b>${pending}</b><span>Pending Bookings</span></div>
+          <div><b>${inProgress}</b><span>In Progress</span></div>
+          <div><b>${completed}</b><span>Completed</span></div>
+          <div><b>KES ${totalRevenue.toLocaleString()}</b><span>Revenue from Repairs</span></div>
+        `;
+      }
+    }
+    
+    // ============================================
+    // UTILITIES
+    // ============================================
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+      });
+    }
+    
+    function toast(msg, type = 'success') {
       const container = document.getElementById('toasts');
       if (!container) return;
       const el = document.createElement('div');
@@ -444,25 +602,74 @@
       setTimeout(() => el.remove(), 3000);
     }
     
-    // Attach event listener when DOM is ready
+    // ============================================
+    // EVENT LISTENERS
+    // ============================================
     document.addEventListener('DOMContentLoaded', () => {
-      const updateBtn = document.getElementById('updateDeliveryFeeBtn');
-      if (updateBtn) {
-        updateBtn.addEventListener('click', updateDeliveryFee);
+      initializeData();
+      
+      // Check for existing session
+      const savedUser = localStorage.getItem(STORAGE_KEYS.CURRENT_ADMIN);
+      if (savedUser) {
+        currentUser = JSON.parse(savedUser);
+        if (currentUser.isAdmin) {
+          showAdminPanel();
+        } else {
+          showStaffPanel();
+        }
       }
       
-      // Allow Enter key to submit
-      const feeInput = document.getElementById('newDeliveryFee');
-      if (feeInput) {
-        feeInput.addEventListener('keypress', (e) => {
-          if (e.key === 'Enter') {
-            updateDeliveryFee();
-          }
+      // Login form
+      document.getElementById('managerLoginForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const email = e.target.querySelector('input[type="email"]').value;
+        const password = e.target.querySelector('input[type="password"]').value;
+        login(email, password);
+      });
+      
+      // Logout
+      document.getElementById('managerLogout').addEventListener('click', logout);
+      
+      // Delivery fee update
+      document.getElementById('updateDeliveryFeeBtn').addEventListener('click', updateDeliveryFee);
+      
+      // Spare part form
+      document.getElementById('sparePartForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        addSparePart({
+          name: formData.get('name'),
+          brand: formData.get('brand'),
+          category: formData.get('category'),
+          price: parseInt(formData.get('price')),
+          stock: parseInt(formData.get('stock')),
+          desc: formData.get('desc')
         });
-      }
+        e.target.reset();
+      });
+      
+      // Staff form
+      document.getElementById('staffForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        addStaff({
+          name: formData.get('name'),
+          email: formData.get('email'),
+          password: formData.get('password')
+        });
+        e.target.reset();
+      });
+      
+      // Delivery fee Enter key
+      document.getElementById('newDeliveryFee')?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') updateDeliveryFee();
+      });
     });
+    
+    // Make functions global for onclick
+    window.deleteSparePart = deleteSparePart;
+    window.updateSpareStock = updateSpareStock;
+    window.updateBookingStatus = updateBookingStatus;
   </script>
-  
-  <script src="shop/management.js" defer></script>
 </body>
 </html>
