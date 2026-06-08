@@ -83,14 +83,25 @@ function toast(msg, type='info') {
 }
 
 // ============================================
+// DISPATCH STORAGE EVENT FOR REPAIR PAGE SYNC
+// ============================================
+function notifySparePartsUpdated() {
+  // Dispatch storage event so repair page knows to refresh
+  window.dispatchEvent(new StorageEvent('storage', { 
+    key: 'spare_parts_updated',
+    newValue: Date.now().toString(),
+    oldValue: null
+  }));
+  console.log('Dispatched spare_parts_updated event');
+}
+
+// ============================================
 // PRODUCT BADGE FUNCTIONS
 // ============================================
 
-// Mark product as Flash Sale
 window.markAsFlashSale = async function(id) {
   console.log('Flash Sale clicked for ID:', id, typeof id);
   
-  // Convert id to string for comparison
   const productId = String(id);
   const product = products.find(p => String(p.id) === productId);
   
@@ -112,13 +123,11 @@ window.markAsFlashSale = async function(id) {
   product.badge = 'sale';
   product.was = wasPrice;
   
-  // Save to localStorage
   localStorage.setItem('management_products', JSON.stringify(products));
   renderProducts();
   toast(`🔥 ${product.name} marked as FLASH SALE!`, 'success');
 };
 
-// Mark product as Hot
 window.markAsHot = async function(id) {
   console.log('Hot clicked for ID:', id, typeof id);
   
@@ -138,7 +147,6 @@ window.markAsHot = async function(id) {
   toast(`⚡ ${product.name} marked as HOT!`, 'success');
 };
 
-// Mark product as New
 window.markAsNew = async function(id) {
   console.log('New clicked for ID:', id, typeof id);
   
@@ -158,7 +166,6 @@ window.markAsNew = async function(id) {
   toast(`✨ ${product.name} marked as NEW!`, 'success');
 };
 
-// Remove badge from product
 window.removeBadge = async function(id) {
   console.log('Remove Badge clicked for ID:', id, typeof id);
   
@@ -191,7 +198,6 @@ function renderProducts() {
   }
   
   el.innerHTML = products.map(product => {
-    // Ensure product.id is properly handled
     const productId = product.id;
     return `
     <div class="product-item" data-id="${productId}" style="background:#1a1a2e; border-radius:1rem; padding:1rem; margin-bottom:1rem; border:1px solid rgba(255,255,255,0.1);">
@@ -222,7 +228,6 @@ function renderProducts() {
     </div>
   `}).join('');
   
-  // Attach event listeners for edit and delete buttons
   $$('.edit-product').forEach(btn => btn.addEventListener('click', () => editProduct(btn.dataset.id)));
   $$('.delete-product').forEach(btn => btn.addEventListener('click', () => deleteProduct(btn.dataset.id)));
 }
@@ -253,7 +258,7 @@ function deleteProduct(id) {
 }
 
 // ============================================
-// SPARE PARTS CRUD
+// SPARE PARTS CRUD - UPDATED WITH STORAGE EVENTS
 // ============================================
 
 function renderAdminSpareParts() {
@@ -266,7 +271,7 @@ function renderAdminSpareParts() {
   el.innerHTML = spareParts.map(part => `
     <div class="spare-item" data-id="${part.id}" style="background:#1a1a2e; border-radius:1rem; padding:1rem; margin-bottom:1rem; border:1px solid rgba(255,255,255,0.1);">
       <div style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap;">
-        <img src="${part.image || 'shop/hero-phone.jpg'}" style="width:60px; height:60px; object-fit:cover; border-radius:0.5rem;">
+        <img src="${part.image || part.image_path || 'shop/hero-phone.jpg'}" style="width:60px; height:60px; object-fit:cover; border-radius:0.5rem;">
         <div style="flex:1;">
           <h4>${esc(part.name)}</h4>
           <div style="display:flex; gap:1rem; flex-wrap:wrap; font-size:0.875rem;">
@@ -286,7 +291,10 @@ function renderAdminSpareParts() {
   `).join('');
   
   $$('.edit-spare').forEach(btn => btn.addEventListener('click', () => editSparePart(btn.dataset.id)));
-  $$('.delete-spare').forEach(btn => btn.addEventListener('click', () => deleteSparePart(btn.dataset.id)));
+  $$('.delete-spare').forEach(btn => btn.addEventListener('click', async (e) => {
+    e.preventDefault();
+    await deleteSparePart(btn.dataset.id);
+  }));
 }
 
 function editSparePart(id) {
@@ -304,18 +312,44 @@ function editSparePart(id) {
         part.stock = parseInt(newStock);
         localStorage.setItem('spare_parts', JSON.stringify(spareParts));
         renderAdminSpareParts();
+        // Notify repair page
+        notifySparePartsUpdated();
         toast('Spare part updated', 'success');
       }
     }
   }
 }
 
-function deleteSparePart(id) {
-  if (!confirm('Delete this spare part?')) return;
-  spareParts = spareParts.filter(p => p.id != id);
-  localStorage.setItem('spare_parts', JSON.stringify(spareParts));
-  renderAdminSpareParts();
-  toast('Spare part deleted', 'success');
+// FIXED: Delete Spare Part with storage event dispatch
+async function deleteSparePart(id) {
+    if (!confirm('Delete this spare part? This cannot be undone.')) return;
+    
+    try {
+        const response = await fetch(`/api/admin/spare-parts/${id}`, {
+            method: 'DELETE',
+            credentials: 'include'
+        });
+        
+        if (response.ok) {
+            // Remove from local array
+            spareParts = spareParts.filter(p => p.id != id);
+            // Save to localStorage
+            localStorage.setItem('spare_parts', JSON.stringify(spareParts));
+            // IMPORTANT: Notify repair page
+            notifySparePartsUpdated();
+            renderAdminSpareParts();
+            toast('Spare part deleted successfully!', 'success');
+        } else {
+            throw new Error('Server delete failed');
+        }
+    } catch (err) {
+        // Fallback to local deletion only
+        spareParts = spareParts.filter(p => p.id != id);
+        localStorage.setItem('spare_parts', JSON.stringify(spareParts));
+        notifySparePartsUpdated();
+        renderAdminSpareParts();
+        toast('Spare part deleted (local only). Server may be offline.', 'warning');
+    }
 }
 
 // ============================================
@@ -704,6 +738,7 @@ $('#sparePartForm')?.addEventListener('submit', async e => {
   try {
     await api('/api/admin/spare-parts', { method:'POST', body:fd });
     await loadAdminSpareParts();
+    notifySparePartsUpdated();
     e.target.reset();
     toast('Spare part added', 'success');
   } catch (err) {
@@ -722,6 +757,7 @@ $('#sparePartForm')?.addEventListener('submit', async e => {
     existing.push(newPart);
     localStorage.setItem('spare_parts', JSON.stringify(existing));
     await loadAdminSpareParts();
+    notifySparePartsUpdated();
     e.target.reset();
     toast('Spare part added (offline)', 'success');
   }
