@@ -784,7 +784,47 @@ class Handler(BaseHTTPRequestHandler):
                 rows = conn.execute("SELECT * FROM repair_technicians ORDER BY name").fetchall()
                 self.send_json({"technicians": [row_repair_technician(r) for r in rows]})
             return
-        
+
+        if path == "/api/repair/categories":
+            with db() as conn:
+                rows = conn.execute("SELECT * FROM repair_categories ORDER BY name").fetchall()
+                self.send_json({"categories": [{"id": r["id"], "name": r["name"], "slug": r["slug"]} for r in rows]})
+            return
+
+        if path == "/api/admin/analytics":
+            if not self.require({"admin"}):
+                return
+            with db() as conn:
+                total_orders = conn.execute("SELECT COUNT(*) FROM orders").fetchone()[0]
+                total_sales = conn.execute("SELECT COALESCE(SUM(total), 0) FROM orders").fetchone()[0]
+                delivered = conn.execute("SELECT COUNT(*) FROM orders WHERE status = 'Delivered'").fetchone()[0]
+                total_products = conn.execute("SELECT COUNT(*) FROM products").fetchone()[0]
+                # Last 7 days sales by day
+                days_data = conn.execute("""
+                    SELECT
+                        strftime('%w', created_at) as dow,
+                        strftime('%Y-%m-%d', created_at) as day,
+                        COALESCE(SUM(total), 0) as sales,
+                        COUNT(*) as orders
+                    FROM orders
+                    WHERE created_at >= datetime('now', '-7 days')
+                    GROUP BY day
+                    ORDER BY day ASC
+                """).fetchall()
+                day_labels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+                days = [{"label": day_labels[int(r["dow"])], "sales": r["sales"], "orders": r["orders"]} for r in days_data]
+                # Pad to 7 entries if fewer days have data
+                if len(days) < 7:
+                    days = days + [{"label": day_labels[i % 7], "sales": 0, "orders": 0} for i in range(len(days), 7)]
+                self.send_json({
+                    "totalSales": total_sales,
+                    "totalOrders": total_orders,
+                    "delivered": delivered,
+                    "products": total_products,
+                    "days": days
+                })
+            return
+
         # Serve static files (HTML, CSS, JS, images)
         # Build the file path
         file_path = unquote(path).lstrip("/")
@@ -823,7 +863,7 @@ class Handler(BaseHTTPRequestHandler):
     # POST HANDLERS
     # ============================================
     def do_POST(self):
-        path = urlparse(self.path).path.rstrip("/")
+        path = urlparse(self.path).path
         
         # ============================================
         # MANAGEMENT LOGIN ENDPOINT
@@ -986,7 +1026,12 @@ class Handler(BaseHTTPRequestHandler):
             if not self.require({"admin"}):
                 return
             
+            print("📦 Received product submission")  # Debug
+            
             form, files = self.read_multipart()
+            
+            print(f"📝 Form fields: {list(form.keys())}")  # Debug
+            print(f"📎 Files: {list(files.keys())}")  # Debug
             
             image = files.get("img")
             if not image:
