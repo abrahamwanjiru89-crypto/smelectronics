@@ -10,7 +10,7 @@ function showInstallButton() {
     deferredPrompt.prompt();
     const choiceResult = await deferredPrompt.userChoice;
     if (choiceResult.outcome === 'accepted') {
-      toast('Install prompt accepted. Add SM Dynamics to your home screen.');
+      toast('Install prompt accepted. Add SM Dynamics to your home screen.', 'success');
     } else {
       toast('Installation dismissed. You can install it later from the browser menu.', 'info');
     }
@@ -31,7 +31,11 @@ function showUpdateBanner(registration) {
   `;
   document.body.appendChild(banner);
   document.getElementById('refreshAppBtn')?.addEventListener('click', async () => {
-    registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+    if (registration.waiting) {
+      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+    } else {
+      window.location.reload();
+    }
   });
 }
 
@@ -50,8 +54,8 @@ async function requestNotificationPermission() {
     const registration = await navigator.serviceWorker.ready;
     registration.showNotification('SM Dynamics Electronics', {
       body: 'You will receive new product alerts and promotions here.',
-      icon: '/shop/brand logo.png',
-      badge: '/shop/brand logo.png',
+      icon: '/shop/brand%20logo.png',
+      badge: '/shop/brand%20logo.png',
       vibrate: [100, 50, 100],
       tag: 'welcome-notification'
     });
@@ -77,8 +81,12 @@ function registerServiceWorker() {
     toast('Service worker registration failed. App will still work offline when possible.', 'error');
   });
 
+  let prevController = navigator.serviceWorker.controller;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    window.location.reload();
+    if (prevController) {
+      window.location.reload();
+    }
+    prevController = navigator.serviceWorker.controller;
   });
 }
 
