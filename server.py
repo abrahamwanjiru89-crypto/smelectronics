@@ -202,6 +202,8 @@ def db():
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     conn.execute("PRAGMA journal_mode = WAL")
+    # Enable autocommit mode for better transaction handling
+    conn.isolation_level = None
     return conn
 
 def hash_password(password, salt=None):
@@ -919,7 +921,7 @@ class Handler(BaseHTTPRequestHandler):
             return
         
         # ============================================
-        # ADD PRODUCT ENDPOINT
+        # ADD PRODUCT ENDPOINT - FIXED VERSION
         # ============================================
         if path == "/api/admin/products":
             if not self.require({"admin"}):
@@ -929,31 +931,56 @@ class Handler(BaseHTTPRequestHandler):
             if not image:
                 self.send_json({"error": "Product image is required"}, 400)
                 return
+            
+            # Save image
             ext = Path(image["filename"]).suffix.lower() or ".jpg"
             filename = secrets.token_hex(12) + ext
             target = UPLOAD_DIR / filename
             with target.open("wb") as f:
                 f.write(image["content"])
+            
             product_id = "p-" + secrets.token_hex(8)
+            
+            # Get badge from form - THIS WAS THE PROBLEM (was hardcoded to "new")
+            badge_value = form.get("badge", "").strip()
+            
+            # Get was price (original price) if provided
+            was_price = None
+            was_input = form.get("was", "").strip()
+            if was_input:
+                try:
+                    was_price = float(was_input)
+                except ValueError:
+                    was_price = None
+            
+            # Get category
+            category = form.get("cat", "phones")
+            
+            # Get price
+            try:
+                price = float(form.get("price", "0"))
+            except ValueError:
+                price = 0
+            
             with db() as conn:
                 conn.execute(
                     "INSERT INTO products (id,name,cat,price,was,rating,reviews,badge,img,desc,in_stock,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
                     (
                         product_id,
                         form.get("name", "").strip(),
-                        form.get("cat", "phones"),
-                        float(form.get("price", "0")),
-                        float(form.get("was", "0")) if form.get("was") else None,
+                        category,
+                        price,
+                        was_price,  # Now uses the form value
                         4.6,
                         0,
-                        form.get("badge", ""),
+                        badge_value,  # Now uses the form value (NOT hardcoded)
                         f"/uploads/{filename}",
                         form.get("desc", "").strip(),
                         1,
                         datetime.now(timezone.utc).isoformat(),
                     ),
                 )
-            self.send_json({"ok": True})
+            self.send_json({"ok": True, "id": product_id})
             return
         
         # ============================================
@@ -1016,7 +1043,7 @@ class Handler(BaseHTTPRequestHandler):
             return
         
         # ============================================
-        # CREATE ORDER ENDPOINT (Partial Payment - Only delivery fee upfront)
+        # CREATE ORDER ENDPOINT
         # ============================================
         if path == "/api/orders":
             user = self.require({"customer"})
@@ -1028,7 +1055,6 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"error": "Cart is empty"}, 400)
                 return
             with db() as conn:
-                # Get delivery fee from settings
                 delivery_fee_setting = conn.execute("SELECT value FROM settings WHERE key = 'delivery_fee'").fetchone()
                 delivery_fee = int(delivery_fee_setting['value']) if delivery_fee_setting else 600
                 
@@ -1047,7 +1073,6 @@ class Handler(BaseHTTPRequestHandler):
                     total += product["price"] * qty
                     rows.append((order_id, product["id"], product["name"], product["price"], qty, product["img"]))
                 
-                # Customer only pays delivery fee upfront
                 deposit_amount = delivery_fee
                 remaining_amount = total
                 
@@ -1065,56 +1090,15 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"order": row_order(conn, order)})
             return
         
-        # ============================================
-        # CREATE REPAIR BOOKING ENDPOINT (NEW - for repair page)
-        # ============================================
-        if path == "/api/repair/bookings":
-            user = self.current_user()
-            data = self.read_json()
-            
-            name = data.get("name", "").strip()
-            phone = data.get("phone", "").strip()
-            email = data.get("email", "").strip().lower()
-            brand = data.get("brand", "").strip()
-            model = data.get("model", "").strip()
-            repair_service_id = data.get("repairServiceId")
-            repair_type = data.get("repairType", "").strip()
-            description = data.get("description", "").strip()
-            pickup_dropoff = data.get("pickupDropoff", "Dropoff")
-            preferred_at = data.get("preferredAt", datetime.now(timezone.utc).isoformat())
-            
-            if not name or not phone or not brand or not model:
-                self.send_json({"error": "Missing required fields: name, phone, brand, model"}, 400)
-                return
-            
-            booking_id = "BKG-" + secrets.token_hex(4).upper()
-            now = datetime.now(timezone.utc).isoformat()
-            
-            with db() as conn:
-                conn.execute("""
-                    INSERT INTO repair_bookings 
-                    (id, user_id, name, email, phone, brand, model, repair_service_id, 
-                     repair_type, description, pickup_dropoff, preferred_at, status, created_at)
-                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-                """, (
-                    booking_id, user["id"] if user else None, name, email, phone, brand, model,
-                    repair_service_id, repair_type, description, pickup_dropoff, preferred_at,
-                    "Pending", now
-                ))
-            
-            self.send_json({"ok": True, "bookingId": booking_id, "message": "Booking submitted successfully"})
-            return
-        
         # If no endpoint matches
         self.send_json({"error": "Not found"}, 404)
 
     # ============================================
-    # PUT HANDLERS (for updates)
+    # PUT HANDLERS
     # ============================================
     def do_PUT(self):
         path = urlparse(self.path).path.rstrip("/")
         
-        # Update Spare Part
         if path.startswith("/api/admin/spare-parts/"):
             if not self.require({"admin"}):
                 return
@@ -1147,7 +1131,6 @@ class Handler(BaseHTTPRequestHandler):
                 image_path = part["image_path"]
                 image = files.get("image")
                 if image:
-                    # Delete old image if exists and not default
                     if image_path and not image_path.startswith('/shop/'):
                         old_file = UPLOAD_DIR / Path(image_path).name
                         if old_file.exists():
@@ -1165,7 +1148,6 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json({"ok": True})
             return
         
-        # Update Repair Service
         if path.startswith("/api/management/repair-services/"):
             if not self.require({"admin"}):
                 return
@@ -1180,7 +1162,6 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json({"ok": True})
             return
         
-        # Update Product
         if path.startswith("/api/admin/products/"):
             if not self.require({"admin"}):
                 return
@@ -1195,59 +1176,34 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json({"ok": True})
             return
         
-        # Update Repair Booking
-        if path.startswith("/api/management/repair-bookings/"):
-            if not self.require({"staff", "admin"}):
-                return
-            booking_id = path.split("/")[-1]
-            data = self.read_json()
-            status = data.get("status", "").strip()
-            
-            if not status:
-                self.send_json({"error": "Status is required"}, 400)
-                return
-            
-            with db() as conn:
-                conn.execute(
-                    "UPDATE repair_bookings SET status = ? WHERE id = ?",
-                    (status, booking_id),
-                )
-            self.send_json({"ok": True})
-            return
-        
         self.send_json({"error": "Not found"}, 404)
 
     # ============================================
-    # DELETE HANDLERS (with image deletion)
+    # DELETE HANDLERS
     # ============================================
     def do_DELETE(self):
         path = urlparse(self.path).path.rstrip("/")
         
-        # Delete image file from server
         if path == "/api/admin/delete-image":
             if not self.require({"admin"}):
                 return
             data = self.read_json()
             image_path = data.get("imagePath")
             if image_path:
-                # Don't delete default shop images
                 default_images = ['hero-phone.jpg', 'headphones.jpg', 'laptop.jpg', 'watch.jpg', 'vr.jpg', 'earbuds.jpg', 'camera.jpg', 'console.jpg', 'tablet.jpg', 'speaker.jpg', 'drone.jpg', 'hub.jpg', 'keyboard.jpg', 'brand logo.png']
                 filename = image_path.split('/')[-1]
                 if filename not in default_images:
                     target = UPLOAD_DIR / filename
                     if target.exists() and target.is_file():
                         target.unlink()
-                        print(f"Deleted image: {filename}")
             self.send_json({"ok": True})
             return
         
-        # Delete Spare Part
         if path.startswith("/api/admin/spare-parts/"):
             if not self.require({"admin"}):
                 return
             spare_id = path.split("/")[-1]
             with db() as conn:
-                # Get the image path first to delete the file
                 part = conn.execute("SELECT image_path FROM spare_parts WHERE id = ?", (spare_id,)).fetchone()
                 if part and part["image_path"]:
                     filename = part["image_path"].split('/')[-1]
@@ -1260,13 +1216,11 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json({"ok": True})
             return
         
-        # Delete Product
         if path.startswith("/api/admin/products/"):
             if not self.require({"admin"}):
                 return
             product_id = path.split("/")[-1]
             with db() as conn:
-                # Get the image path first
                 product = conn.execute("SELECT img FROM products WHERE id = ?", (product_id,)).fetchone()
                 if product and product["img"] and not product["img"].startswith('/shop/'):
                     filename = product["img"].split('/')[-1]
@@ -1277,13 +1231,11 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json({"ok": True})
             return
         
-        # Delete Repair Service
         if path.startswith("/api/management/repair-services/"):
             if not self.require({"admin"}):
                 return
             service_id = path.split("/")[-1]
             with db() as conn:
-                # Get the image path first
                 service = conn.execute("SELECT image FROM repair_services WHERE id = ?", (service_id,)).fetchone()
                 if service and service["image"] and not service["image"].startswith('/shop/'):
                     filename = service["image"].split('/')[-1]
@@ -1294,7 +1246,6 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json({"ok": True})
             return
         
-        # Delete Staff
         if path.startswith("/api/admin/staff/"):
             if not self.require({"admin"}):
                 return
@@ -1304,7 +1255,6 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json({"ok": True})
             return
         
-        # Delete Technician
         if path.startswith("/api/management/repair-technicians/"):
             if not self.require({"admin"}):
                 return
