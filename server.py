@@ -823,7 +823,7 @@ class Handler(BaseHTTPRequestHandler):
     # POST HANDLERS
     # ============================================
     def do_POST(self):
-        path = urlparse(self.path).path
+        path = urlparse(self.path).path.rstrip("/")
         
         # ============================================
         # MANAGEMENT LOGIN ENDPOINT
@@ -986,12 +986,7 @@ class Handler(BaseHTTPRequestHandler):
             if not self.require({"admin"}):
                 return
             
-            print("📦 Received product submission")  # Debug
-            
             form, files = self.read_multipart()
-            
-            print(f"📝 Form fields: {list(form.keys())}")  # Debug
-            print(f"📎 Files: {list(files.keys())}")  # Debug
             
             image = files.get("img")
             if not image:
