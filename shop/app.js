@@ -1,5 +1,6 @@
 /* =========================================================
    S.M Dynamics Electronics — Premium electronics storefront (vanilla JS)
+   UPDATED: Fixed product loading from server
    UPDATED: Partial Payment System - Pay delivery fee only upfront
    UPDATED: Spare parts integration from repair page
 ========================================================= */
@@ -84,22 +85,66 @@ function getSelectedSubLocation() {
 }
 
 // ============================================
-// LOAD PRODUCTS FROM LOCALSTORAGE (SYNC WITH MANAGEMENT PAGE)
+// FIXED: loadProductsFromServer - ALWAYS fetch from server first
 // ============================================
 
-function loadProductsFromLocalStorage() {
-  const stored = localStorage.getItem('management_products');
-  if (stored && JSON.parse(stored).length > 0) {
-    PRODUCTS = JSON.parse(stored);
-    console.log('Loaded products from management page:', PRODUCTS.length);
-    return true;
+async function loadProductsFromServer() {
+  try {
+    const data = await api('/api/products');
+    if (data && data.products && data.products.length > 0) {
+      PRODUCTS = data.products;
+      // Cache to localStorage as backup
+      localStorage.setItem('management_products', JSON.stringify(PRODUCTS));
+      console.log('✅ Loaded products from server:', PRODUCTS.length);
+      return true;
+    }
+    return false;
+  } catch (err) {
+    console.error('Failed to load products from server:', err);
+    return false;
   }
-  return false;
 }
 
 // ============================================
-// UPDATED: CHECKOUT MODAL - Partial Payment (Only Delivery Fee)
+// FIXED: refreshProducts - Always fetch from server first
 // ============================================
+
+async function refreshProducts() {
+  // ALWAYS fetch from server first (this gets products added via management page)
+  const loaded = await loadProductsFromServer();
+  
+  if (!loaded) {
+    // Fallback to localStorage if server fails
+    const stored = localStorage.getItem('management_products');
+    if (stored && JSON.parse(stored).length > 0) {
+      PRODUCTS = JSON.parse(stored);
+      console.log('⚠️ Using cached products from localStorage:', PRODUCTS.length);
+    } else {
+      console.log('⚠️ Using default products');
+    }
+  }
+  
+  // Render all sections with updated products
+  renderProducts();
+  renderFlash();
+  renderCart();
+  renderRecent();
+}
+
+// ============================================
+// MANUAL REFRESH FUNCTION (for debugging)
+// ============================================
+
+window.forceRefreshProducts = async function() {
+  console.log('🔄 Force refreshing products...');
+  await refreshProducts();
+  toast('Products refreshed!', 'success');
+};
+
+// ============================================
+// CHECKOUT MODAL - Partial Payment (Only Delivery Fee)
+// ============================================
+
 function showCheckoutModal(subtotal, deliveryFeeAmount, onConfirm) {
   const existingModal = document.querySelector('.checkout-modal');
   if (existingModal) existingModal.remove();
@@ -216,8 +261,9 @@ function updateCartFooter(subtotal) {
 }
 
 // ============================================
-// UPDATED: CHECKOUT HANDLER - Partial Payment
+// CHECKOUT HANDLER - Partial Payment
 // ============================================
+
 async function handleCheckout() {
   if (!state.cart.length) {
     toast('Cart is empty', 'error');
@@ -301,8 +347,9 @@ async function handleCheckout() {
 }
 
 // ============================================
-// FIXED: loadCounties with immediate fallback AND populates countySubLocations
+// loadCounties with fallback
 // ============================================
+
 async function loadCounties() {
   const el = $('#county');
   if (!el) return;
@@ -469,36 +516,6 @@ async function api(path, options = {}) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || 'Request failed');
   return data;
-}
-
-// ============================================
-// UPDATED: refreshProducts - Checks localStorage first
-// ============================================
-async function refreshProducts() {
-  // First try to load from localStorage (management page saves here)
-  if (loadProductsFromLocalStorage()) {
-    renderProducts();
-    renderFlash();
-    renderCart();
-    renderRecent();
-    return;
-  }
-  
-  // Fallback to server
-  try {
-    const data = await api('/api/products');
-    if (data && data.products) {
-      PRODUCTS = data.products;
-      // Save to localStorage for consistency
-      localStorage.setItem('management_products', JSON.stringify(PRODUCTS));
-    }
-  } catch (err) {
-    console.error('Failed to refresh products:', err);
-  }
-  renderProducts();
-  renderFlash();
-  renderCart();
-  renderRecent();
 }
 
 async function refreshOrders() {
@@ -1058,11 +1075,8 @@ window.setDeliveryFee = async function(fee) {
 window.addEventListener('storage', (e) => {
   if (e.key === 'management_products') {
     console.log('Products updated from management page, refreshing...');
-    loadProductsFromLocalStorage();
-    renderProducts();
-    renderFlash();
-    renderCart();
-    renderRecent();
+    // Reload from server instead of just localStorage
+    refreshProducts();
   }
   if (e.key === 'nova_cart') {
     console.log('Cart updated from another page, refreshing...');
@@ -1076,10 +1090,15 @@ window.addEventListener('storage', (e) => {
   }
 });
 
-// ----- INIT -----
+// ============================================
+// FIXED INIT - ALWAYS fetch from server first
+// ============================================
+
 (async function initApp() {
-  // First try to load from localStorage
-  loadProductsFromLocalStorage();
+  console.log('🚀 Initializing app...');
+  
+  // ALWAYS fetch products from server first (gets management page additions)
+  await refreshProducts();
   
   renderProducts();
   renderFlash();
@@ -1105,9 +1124,10 @@ window.addEventListener('storage', (e) => {
       state.user = session.user;
       await refreshOrders();
     }
-    await refreshProducts();
   } catch (err) {
-    toast('Using fallback product data until the server is available', 'error');
+    console.log('Auth check failed:', err);
   }
+  
   updateAccountUi();
+  console.log('✅ App initialized with', PRODUCTS.length, 'products');
 })();
