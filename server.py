@@ -562,25 +562,84 @@ class Handler(BaseHTTPRequestHandler):
         return json.loads(self.rfile.read(length).decode())
 
     def read_multipart(self):
-        length = int(self.headers.get("Content-Length", "0"))
-        content_type = self.headers.get("Content-Type", "")
-        raw = self.rfile.read(length)
-        message = BytesParser(policy=default).parsebytes(
-            f"Content-Type: {content_type}\r\nMIME-Version: 1.0\r\n\r\n".encode() + raw
-        )
-        fields, files = {}, {}
-        for part in message.iter_parts():
-            disposition = part.get_params(header="content-disposition", failobj=[])
-            params = {k: v for k, v in disposition if k}
-            name = params.get("name")
-            if not name:
+        """Parse multipart form data - FIXED VERSION"""
+        content_type = self.headers.get('Content-Type', '')
+        
+        if 'multipart/form-data' not in content_type:
+            return {}, {}
+        
+        # Extract boundary
+        boundary = None
+        for part in content_type.split(';'):
+            part = part.strip()
+            if part.startswith('boundary='):
+                boundary = part[9:].strip('"')
+                break
+        
+        if not boundary:
+            return {}, {}
+        
+        # Read the request body
+        content_length = int(self.headers.get('Content-Length', 0))
+        if content_length == 0:
+            return {}, {}
+        
+        body = self.rfile.read(content_length)
+        
+        # Split by boundary
+        boundary_bytes = f'--{boundary}'.encode()
+        parts = body.split(boundary_bytes)
+        
+        fields = {}
+        files = {}
+        
+        for part in parts:
+            # Skip empty parts and the final boundary
+            if not part or part == b'--\r\n' or part == b'--':
                 continue
-            filename = params.get("filename")
-            payload = part.get_payload(decode=True) or b""
-            if filename:
-                files[name] = {"filename": filename, "content": payload}
-            else:
-                fields[name] = payload.decode(errors="replace")
+            
+            # Find the end of headers (double CRLF)
+            header_end = part.find(b'\r\n\r\n')
+            if header_end == -1:
+                continue
+            
+            headers = part[:header_end].decode('utf-8', errors='replace')
+            content = part[header_end + 4:]  # Skip the \r\n\r\n
+            
+            # Remove trailing \r\n if present
+            if content.endswith(b'\r\n'):
+                content = content[:-2]
+            
+            # Parse Content-Disposition header
+            name = None
+            filename = None
+            
+            for line in headers.split('\r\n'):
+                if line.startswith('Content-Disposition:'):
+                    # Parse name
+                    name_match = re.search(r'name="([^"]+)"', line)
+                    if name_match:
+                        name = name_match.group(1)
+                    
+                    # Parse filename
+                    filename_match = re.search(r'filename="([^"]+)"', line)
+                    if filename_match:
+                        filename = filename_match.group(1)
+            
+            if name:
+                if filename:
+                    # This is a file
+                    files[name] = {
+                        'filename': filename,
+                        'content': content
+                    }
+                else:
+                    # This is a regular field
+                    try:
+                        fields[name] = content.decode('utf-8', errors='replace').strip()
+                    except:
+                        fields[name] = content.decode('latin-1', errors='replace').strip()
+        
         return fields, files
 
     def current_user(self):
@@ -926,7 +985,14 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/admin/products":
             if not self.require({"admin"}):
                 return
+            
+            print("📦 Received product submission")  # Debug
+            
             form, files = self.read_multipart()
+            
+            print(f"📝 Form fields: {list(form.keys())}")  # Debug
+            print(f"📎 Files: {list(files.keys())}")  # Debug
+            
             image = files.get("img")
             if not image:
                 self.send_json({"error": "Product image is required"}, 400)
@@ -941,45 +1007,44 @@ class Handler(BaseHTTPRequestHandler):
             
             product_id = "p-" + secrets.token_hex(8)
             
-            # Get badge from form - THIS WAS THE PROBLEM (was hardcoded to "new")
-            badge_value = form.get("badge", "").strip()
-            
-            # Get was price (original price) if provided
+            # Get form values with proper defaults
+            name = form.get("name", "").strip()
+            category = form.get("cat", "phones")
+            price = float(form.get("price", "0"))
             was_price = None
-            was_input = form.get("was", "").strip()
-            if was_input:
+            was_input = form.get("was", "")
+            if was_input and was_input.strip():
                 try:
                     was_price = float(was_input)
-                except ValueError:
+                except:
                     was_price = None
+            badge_value = form.get("badge", "")
+            desc = form.get("desc", "").strip()
             
-            # Get category
-            category = form.get("cat", "phones")
-            
-            # Get price
-            try:
-                price = float(form.get("price", "0"))
-            except ValueError:
-                price = 0
+            if not name or price <= 0:
+                self.send_json({"error": "Product name and valid price are required"}, 400)
+                return
             
             with db() as conn:
                 conn.execute(
                     "INSERT INTO products (id,name,cat,price,was,rating,reviews,badge,img,desc,in_stock,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
                     (
                         product_id,
-                        form.get("name", "").strip(),
+                        name,
                         category,
                         price,
-                        was_price,  # Now uses the form value
+                        was_price,
                         4.6,
                         0,
-                        badge_value,  # Now uses the form value (NOT hardcoded)
+                        badge_value,
                         f"/uploads/{filename}",
-                        form.get("desc", "").strip(),
+                        desc,
                         1,
                         datetime.now(timezone.utc).isoformat(),
                     ),
                 )
+            
+            print(f"✅ Product added: {product_id} - {name}")  # Debug
             self.send_json({"ok": True, "id": product_id})
             return
         
@@ -1088,6 +1153,18 @@ class Handler(BaseHTTPRequestHandler):
                 conn.executemany("INSERT INTO order_items (order_id,product_id,name,price,qty,img) VALUES (?,?,?,?,?,?)", rows)
                 order = conn.execute("SELECT * FROM orders WHERE id = ?", (order_id,)).fetchone()
                 self.send_json({"order": row_order(conn, order)})
+            return
+        
+        # TEST ENDPOINT for debugging
+        if path == "/api/test-upload":
+            if not self.require({"admin"}):
+                return
+            form, files = self.read_multipart()
+            self.send_json({
+                "form_fields": list(form.keys()),
+                "file_fields": list(files.keys()),
+                "received": True
+            })
             return
         
         # If no endpoint matches
