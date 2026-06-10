@@ -1,875 +1,869 @@
-// ============================================
-// S.M DYNAMICS MANAGEMENT JS - COMPLETE FIX
-// ============================================
-
-let currentUser = null;
-let products = [];
-let spareParts = [];
-let repairServices = [];
-let staff = [];
-let technicians = [];
+const $ = (s, p=document) => p.querySelector(s);
+const $$ = (s, p=document) => [...p.querySelectorAll(s)];
+let manager = null;
+let offlineManager = false;
 let orders = [];
+let products = [];
+let staff = [];
 let repairBookings = [];
+let repairServices = [];
+let spareParts = [];
+let technicians = [];
+let repairCategories = [];
+let counties = [];
+let subLocations = [];
+let deliveryZones = [];
+let deliveryRates = [];
 
-// ============================================
-// HELPER FUNCTIONS
-// ============================================
+const LOADING = {
+  orders: '<p class="muted" style="padding:1rem">Fetching orders...</p>',
+  bookings: '<p class="muted" style="padding:1rem">Loading repair bookings...</p>',
+  products: '<p class="muted" style="padding:1.25rem">Loading products...</p>',
+  staff: '<p class="muted" style="padding:1rem">Loading staff accounts...</p>',
+  spares: '<p class="muted" style="padding:1rem">Loading inventory...</p>'
+};
 
-function showToast(message, type = 'info') {
-    let container = document.getElementById('toasts');
-    if (!container) {
-        container = document.createElement('div');
-        container.id = 'toasts';
-        container.className = 'toasts';
-        document.body.appendChild(container);
-    }
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    toast.textContent = message;
-    container.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
+const OFFLINE_MANAGER = { id:'local-admin', name:'Offline Admin', role:'admin' };
+const DUMMY_ORDERS = [{ id:'ORD-0001', customer:'Local Admin', email:'admin@local', createdAt:new Date().toISOString(), items:[{name:'Demo product', qty:1}], total:0 }];
+const DUMMY_PRODUCTS = [{ id:'prod-0001', name:'Demo Product', cat:'phones', price:999, was:1199, rating:4.5, reviews:76, img:'/shop/hero-phone.jpg', desc:'This is a local demo product for the management dashboard.' }];
+const DUMMY_STAFF = [{ id:'staff-0001', name:'Staff Member', email:'staff@local' }];
+const DUMMY_REPAIR_BOOKINGS = [{ id:'BKG-0001', name:'Jane Doe', email:'jane@local', brand:'Samsung', model:'Galaxy S23', repairType:'Screen repair', pickupDropoff:'Dropoff', status:'Pending', repairServiceTitle:'Screen Replacement' }];
+const DUMMY_REPAIR_SERVICES = [{ id:'svc-0001', title:'Screen Replacement', brand:'Samsung', repairType:'Screen repair', price:4500, available:true }];
+const DUMMY_TECHNICIANS = [{ id:'tech-0001', name:'Alex Mwangi', email:'alex@local' }];
+const DUMMY_REPAIR_CATEGORIES = [{ id:'cat-0001', name:'Phones' }];
+const DUMMY_COUNTIES = [{ id:'c-0001', name:'Nairobi' }];
+const DUMMY_SUB_LOCATIONS = [{ id:'sl-0001', countyId:'c-0001', name:'Westlands', deliveryZoneId:'dz-0001' }];
+const DUMMY_DELIVERY_ZONES = [{ id:'dz-0001', name:'Nairobi Central', description:'Central areas of Nairobi' }];
+const DUMMY_DELIVERY_RATES = [{ id:'dr-0001', deliveryZoneId:'dz-0001', baseFee:300 }];
+const DUMMY_ANALYTICS = { totalSales:0, totalOrders:0, delivered:0, products:1, days:[
+  { label:'Mon', sales:0, orders:0 },
+  { label:'Tue', sales:0, orders:0 },
+  { label:'Wed', sales:0, orders:0 },
+  { label:'Thu', sales:0, orders:0 },
+  { label:'Fri', sales:0, orders:0 },
+  { label:'Sat', sales:0, orders:0 },
+  { label:'Sun', sales:0, orders:0 }
+]};
+
+const fmt = n => 'Kshs ' + Number(n || 0).toLocaleString('en-KE', { minimumFractionDigits: 0 });
+const esc = v => String(v ?? '').replace(/[&<>"']/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch]));
+
+async function api(path, options = {}) {
+  let res;
+  const headers = options.headers ? { ...options.headers } : {};
+  if (!(options.body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json';
+  }
+  try {
+    res = await fetch(path, {
+      credentials: 'include',
+      method: options.method || 'GET',
+      body: options.body,
+      headers: Object.keys(headers).length > 0 ? headers : undefined
+    });
+  } catch (err) {
+    const error = new Error(err.message || 'Network request failed');
+    error.network = true;
+    throw error;
+  }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Request failed');
+  return data;
 }
 
-function escapeHtml(str) {
-    if (!str) return '';
-    return String(str).replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
-}
-
-async function apiRequest(url, options = {}) {
-    try {
-        const response = await fetch(url, {
-            ...options,
-            credentials: 'include',
-            headers: {
-                'Content-Type': 'application/json',
-                ...options.headers,
-            },
-        });
-        
-        if (!response.ok) {
-            const error = await response.json().catch(() => ({ error: 'Request failed' }));
-            throw new Error(error.error || `HTTP ${response.status}`);
-        }
-        return await response.json();
-    } catch (err) {
-        console.error(`API Error (${url}):`, err);
-        throw err;
-    }
-}
-
-// ============================================
-// MANAGEMENT LOGIN
-// ============================================
-
-async function managerLogin(email, password) {
-    try {
-        const response = await fetch('/api/auth/management-login', {
-            method: 'POST',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            currentUser = data.user;
-            showToast(`Welcome ${currentUser.name}`, 'success');
-            await loadManagementPanel();
-            return true;
-        } else {
-            const error = await response.json();
-            showToast(error.error || 'Login failed', 'error');
-            return false;
-        }
-    } catch (err) {
-        showToast('Connection error: ' + err.message, 'error');
-        return false;
-    }
-}
-
-// ============================================
-// LOAD MANAGEMENT PANEL
-// ============================================
-
-async function loadManagementPanel() {
-    const loginSection = document.getElementById('managerLogin');
-    const ordersSection = document.getElementById('managerOrders');
-    
-    if (loginSection) loginSection.hidden = true;
-    if (ordersSection) ordersSection.hidden = false;
-    
-    const roleSpan = document.getElementById('managerRole');
-    const titleSpan = document.getElementById('managerTitle');
-    const adminSections = document.getElementById('adminSections');
-    
-    if (currentUser && currentUser.role === 'admin') {
-        if (roleSpan) roleSpan.textContent = 'Administrator';
-        if (titleSpan) titleSpan.textContent = 'Admin Dashboard';
-        if (adminSections) adminSections.hidden = false;
-    } else {
-        if (roleSpan) roleSpan.textContent = 'Staff Portal';
-        if (titleSpan) titleSpan.textContent = 'Staff Dashboard';
-        if (adminSections) adminSections.hidden = true;
-    }
-    
-    // Load all data in parallel
-    await Promise.all([
-        loadOrders(),
-        loadRepairBookings(),
-        loadDeliveryFee(),
-        loadProducts(),
-        loadSpareParts(),
-        loadRepairServices(),
-        loadStaffList(),
-        loadTechnicians(),
-        loadMetrics()
-    ]);
+function toast(msg, type='info') {
+  const t = document.createElement('div');
+  const container = $('#toasts');
+  if (!container) return console.log(`Toast (${type}): ${msg}`);
+  t.className = `toast ${type}`;
+  t.textContent = msg;
+  container.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateX(50%)'; t.style.transition = 'all .4s'; }, 2800);
+  setTimeout(() => t.remove(), 3300);
 }
 
 // ============================================
-// LOAD ORDERS
+// DISPATCH STORAGE EVENT FOR REPAIR PAGE SYNC
 // ============================================
-
-async function loadOrders() {
-    const container = document.getElementById('placedOrders');
-    if (!container) return;
-    
-    container.innerHTML = '<div class="dash-empty">Loading orders...</div>';
-    
-    try {
-        const data = await apiRequest('/api/management/orders/placed');
-        orders = data.orders || [];
-        
-        if (orders.length === 0) {
-            container.innerHTML = '<div class="dash-empty">📦 No orders yet</div>';
-            return;
-        }
-        
-        container.innerHTML = orders.map(order => `
-            <div class="order-row" style="background:#1a1a2e; border-radius:1rem; padding:1rem; margin-bottom:1rem; border:1px solid rgba(255,255,255,0.1);">
-                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">
-                    <div>
-                        <strong style="color:#00e5ff;">${escapeHtml(order.id)}</strong>
-                        <span class="status ${(order.status || 'pending').toLowerCase()}" style="margin-left:0.5rem;">${escapeHtml(order.status || 'Pending')}</span>
-                    </div>
-                    <div>${new Date(order.createdAt).toLocaleString()}</div>
-                </div>
-                <div style="margin-top:0.5rem;">
-                    <div>Customer: <strong>${escapeHtml(order.customer)}</strong> (${escapeHtml(order.email)})</div>
-                    <div>Total: <strong style="color:#20e0a6;">KES ${(order.total || 0).toLocaleString()}</strong> | Deposit: KES ${(order.depositAmount || 0).toLocaleString()}</div>
-                    <div class="order-items" style="margin-top:0.5rem; font-size:0.85rem; color:#888;">
-                        Items: ${(order.items || []).map(i => `${escapeHtml(i.name)} (x${i.qty})`).join(', ')}
-                    </div>
-                </div>
-            </div>
-        `).join('');
-    } catch (err) {
-        console.error('Load orders error:', err);
-        container.innerHTML = '<div class="dash-empty">❌ Failed to load orders</div>';
-    }
+function notifySparePartsUpdated() {
+  // Dispatch storage event so repair page knows to refresh
+  window.dispatchEvent(new StorageEvent('storage', { 
+    key: 'spare_parts_updated',
+    newValue: Date.now().toString(),
+    oldValue: null
+  }));
+  console.log('Dispatched spare_parts_updated event');
 }
 
 // ============================================
-// LOAD REPAIR BOOKINGS
+// PRODUCT BADGE FUNCTIONS
 // ============================================
 
-async function loadRepairBookings() {
-    const container = document.getElementById('repairBookings');
-    if (!container) return;
-    
-    container.innerHTML = '<div class="dash-empty">Loading repair bookings...</div>';
-    
-    try {
-        const data = await apiRequest('/api/management/repair-bookings');
-        repairBookings = data.bookings || [];
-        
-        if (repairBookings.length === 0) {
-            container.innerHTML = '<div class="dash-empty">🔧 No repair bookings yet</div>';
-            return;
-        }
-        
-        container.innerHTML = repairBookings.map(booking => `
-            <div class="order-row" style="background:#1a1a2e; border-radius:1rem; padding:1rem; margin-bottom:1rem; border:1px solid rgba(255,255,255,0.1);">
-                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">
-                    <div><strong>${escapeHtml(booking.name)}</strong> - ${escapeHtml(booking.phone)}</div>
-                    <span class="status pending">${escapeHtml(booking.status || 'Pending')}</span>
-                </div>
-                <div style="margin-top:0.5rem;">
-                    <div>Device: ${escapeHtml(booking.brand)} ${escapeHtml(booking.model)}</div>
-                    <div>Service: ${escapeHtml(booking.repairType)}</div>
-                    <div style="font-size:0.8rem; color:#888;">Booked: ${new Date(booking.createdAt).toLocaleString()}</div>
-                </div>
-            </div>
-        `).join('');
-    } catch (err) {
-        console.error('Load repair bookings error:', err);
-        container.innerHTML = '<div class="dash-empty">❌ Failed to load repair bookings</div>';
-    }
-}
+window.markAsFlashSale = async function(id) {
+  console.log('Flash Sale clicked for ID:', id, typeof id);
+  
+  const productId = String(id);
+  const product = products.find(p => String(p.id) === productId);
+  
+  if (!product) {
+    console.error('Product not found. Available products:', products.map(p => ({ id: p.id, name: p.name })));
+    toast('Product not found. ID: ' + id, 'error');
+    return;
+  }
+  
+  console.log('Found product:', product.name);
+  
+  let wasPrice = product.was;
+  if (!wasPrice) {
+    const input = prompt('Enter original price (for flash sale discount display):', product.price * 1.5);
+    if (!input) return;
+    wasPrice = parseFloat(input);
+  }
+  
+  product.badge = 'sale';
+  product.was = wasPrice;
+  
+  localStorage.setItem('management_products', JSON.stringify(products));
+  renderProducts();
+  toast(`🔥 ${product.name} marked as FLASH SALE!`, 'success');
+};
+
+window.markAsHot = async function(id) {
+  console.log('Hot clicked for ID:', id, typeof id);
+  
+  const productId = String(id);
+  const product = products.find(p => String(p.id) === productId);
+  
+  if (!product) {
+    console.error('Product not found. ID:', id);
+    toast('Product not found', 'error');
+    return;
+  }
+  
+  product.badge = 'hot';
+  
+  localStorage.setItem('management_products', JSON.stringify(products));
+  renderProducts();
+  toast(`⚡ ${product.name} marked as HOT!`, 'success');
+};
+
+window.markAsNew = async function(id) {
+  console.log('New clicked for ID:', id, typeof id);
+  
+  const productId = String(id);
+  const product = products.find(p => String(p.id) === productId);
+  
+  if (!product) {
+    console.error('Product not found. ID:', id);
+    toast('Product not found', 'error');
+    return;
+  }
+  
+  product.badge = 'new';
+  
+  localStorage.setItem('management_products', JSON.stringify(products));
+  renderProducts();
+  toast(`✨ ${product.name} marked as NEW!`, 'success');
+};
+
+window.removeBadge = async function(id) {
+  console.log('Remove Badge clicked for ID:', id, typeof id);
+  
+  const productId = String(id);
+  const product = products.find(p => String(p.id) === productId);
+  
+  if (!product) {
+    console.error('Product not found. ID:', id);
+    toast('Product not found', 'error');
+    return;
+  }
+  
+  product.badge = '';
+  
+  localStorage.setItem('management_products', JSON.stringify(products));
+  renderProducts();
+  toast(`${product.name} badge removed`, 'success');
+};
 
 // ============================================
-// DELIVERY FEE
+// RENDER PRODUCTS
 // ============================================
-
-async function loadDeliveryFee() {
-    try {
-        const data = await apiRequest('/api/admin/delivery-fee');
-        const feeElement = document.getElementById('currentDeliveryFee');
-        if (feeElement) {
-            feeElement.textContent = `Kshs ${(data.fee || 600).toLocaleString()}`;
-        }
-    } catch (err) {
-        console.error('Failed to load delivery fee:', err);
-        const feeElement = document.getElementById('currentDeliveryFee');
-        if (feeElement) feeElement.textContent = 'Kshs 600';
-    }
-}
-
-async function updateDeliveryFee() {
-    const input = document.getElementById('newDeliveryFee');
-    const newFee = parseInt(input.value);
-    
-    if (isNaN(newFee) || newFee < 0) {
-        showToast('Please enter a valid delivery fee amount', 'error');
-        return;
-    }
-    
-    try {
-        const response = await fetch('/api/admin/delivery-fee', {
-            method: 'POST',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ fee: newFee })
-        });
-        
-        if (response.ok) {
-            const feeElement = document.getElementById('currentDeliveryFee');
-            if (feeElement) feeElement.textContent = `Kshs ${newFee.toLocaleString()}`;
-            input.value = '';
-            showToast(`Delivery fee updated to Kshs ${newFee.toLocaleString()}`, 'success');
-        } else {
-            throw new Error('Update failed');
-        }
-    } catch (err) {
-        showToast('Failed to update delivery fee', 'error');
-    }
-}
-
-// ============================================
-// PRODUCT MANAGEMENT
-// ============================================
-
-async function loadProducts() {
-    const container = document.getElementById('productAdmin');
-    if (!container) return;
-    
-    container.innerHTML = '<div class="dash-empty">Loading products...</div>';
-    
-    try {
-        const data = await apiRequest('/api/products');
-        products = data.products || [];
-        renderProducts();
-    } catch (err) {
-        console.error('Load products error:', err);
-        container.innerHTML = '<div class="dash-empty">❌ Failed to load products. Make sure server is running.</div>';
-    }
-}
 
 function renderProducts() {
-    const container = document.getElementById('productAdmin');
-    if (!container) return;
-    
-    if (!products || products.length === 0) {
-        container.innerHTML = '<div class="dash-empty">📦 No products yet. Add your first product above.</div>';
-        return;
-    }
-    
-    container.innerHTML = products.map(product => {
-        let badgeClass = '';
-        let badgeText = 'No Badge';
-        if (product.badge === 'sale') {
-            badgeClass = 'badge-flash-sale';
-            badgeText = '🔥 FLASH SALE';
-        } else if (product.badge === 'hot') {
-            badgeClass = 'badge-hot';
-            badgeText = '⚡ HOT';
-        } else if (product.badge === 'new') {
-            badgeClass = 'badge-new';
-            badgeText = '✨ NEW';
-        }
-        
-        return `
-            <div class="product-item" data-id="${product.id}" style="background:#1a1a2e; border-radius:1rem; padding:1rem; margin-bottom:1rem; border:1px solid rgba(255,255,255,0.1);">
-                <div style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap;">
-                    <img src="${product.img || 'shop/hero-phone.jpg'}" style="width:60px; height:60px; object-fit:cover; border-radius:0.5rem;" onerror="this.src='shop/hero-phone.jpg'">
-                    <div style="flex:1;">
-                        <h4 style="margin:0 0 5px 0;">${escapeHtml(product.name)}</h4>
-                        <div style="display:flex; gap:1rem; flex-wrap:wrap; font-size:0.875rem;">
-                            <span style="color:#00e5ff;">${escapeHtml(product.cat)}</span>
-                            <span style="color:#20e0a6;">KES ${(product.price || 0).toLocaleString()}</span>
-                            ${product.was ? `<span style="color:#888; text-decoration:line-through;">KES ${product.was.toLocaleString()}</span>` : ''}
-                            <span style="${product.inStock !== false ? 'color:#00c853' : 'color:#ff3b30'}">${product.inStock !== false ? '✅ In Stock' : '❌ Out of Stock'}</span>
-                            <span class="${badgeClass}" style="padding:2px 8px; border-radius:12px; font-size:0.7rem;">${badgeText}</span>
-                        </div>
-                        ${product.desc ? `<p style="font-size: 0.75rem; color: #888; margin-top: 5px;">${escapeHtml(product.desc.substring(0, 80))}</p>` : ''}
-                    </div>
-                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                        <button onclick="updateProductBadge('${product.id}', 'sale', ${product.price * 1.5})" class="btn-badge" style="background:#ff2bd6; color:white; border:none; padding:0.5rem 0.8rem; border-radius:0.5rem; cursor:pointer;">🔥 Flash Sale</button>
-                        <button onclick="updateProductBadge('${product.id}', 'hot')" class="btn-badge" style="background:#ff4d6d; color:white; border:none; padding:0.5rem 0.8rem; border-radius:0.5rem; cursor:pointer;">⚡ Hot</button>
-                        <button onclick="updateProductBadge('${product.id}', 'new')" class="btn-badge" style="background:#20e0a6; color:#000; border:none; padding:0.5rem 0.8rem; border-radius:0.5rem; cursor:pointer;">✨ New</button>
-                        <button onclick="updateProductBadge('${product.id}', '')" class="btn-badge" style="background:#888; color:white; border:none; padding:0.5rem 0.8rem; border-radius:0.5rem; cursor:pointer;">Remove</button>
-                        <button onclick="deleteProduct('${product.id}')" class="btn-badge" style="background:#ff3b30; color:#fff; border:none; padding:0.5rem 1rem; border-radius:0.5rem; cursor:pointer;">🗑️ Delete</button>
-                    </div>
-                </div>
-            </div>
-        `;
-    }).join('');
-}
-
-async function addProduct(formData) {
-    try {
-        const response = await fetch('/api/admin/products', {
-            method: 'POST',
-            credentials: 'include',
-            body: formData
-        });
-        
-        if (response.ok) {
-            showToast('✅ Product added successfully!', 'success');
-            await loadProducts();
-            return true;
-        } else {
-            const error = await response.json();
-            showToast(error.error || 'Failed to add product', 'error');
-            return false;
-        }
-    } catch (err) {
-        showToast('Failed to add product: ' + err.message, 'error');
-        return false;
-    }
-}
-
-async function deleteProduct(productId) {
-    if (!confirm('Delete this product? This cannot be undone.')) return;
-    
-    try {
-        const response = await fetch(`/api/admin/products/${productId}`, {
-            method: 'DELETE',
-            credentials: 'include'
-        });
-        
-        if (response.ok) {
-            showToast('Product deleted successfully', 'success');
-            await loadProducts();
-        } else {
-            throw new Error('Delete failed');
-        }
-    } catch (err) {
-        showToast('Failed to delete product', 'error');
-    }
-}
-
-async function updateProductBadge(productId, badgeType, wasPrice = null) {
-    try {
-        const product = products.find(p => p.id === productId);
-        if (!product) {
-            showToast('Product not found', 'error');
-            return;
-        }
-        
-        const updateData = {
-            name: product.name,
-            price: product.price,
-            inStock: product.inStock,
-            cat: product.cat,
-            desc: product.desc,
-            badge: badgeType,
-            was: wasPrice || product.was
-        };
-        
-        const response = await fetch(`/api/admin/products/${productId}`, {
-            method: 'PUT',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(updateData)
-        });
-        
-        if (response.ok) {
-            showToast(`Badge updated to ${badgeType || 'none'}`, 'success');
-            await loadProducts();
-        } else {
-            throw new Error('Update failed');
-        }
-    } catch (err) {
-        showToast('Failed to update badge', 'error');
-    }
-}
-
-// ============================================
-// SPARE PARTS MANAGEMENT
-// ============================================
-
-async function loadSpareParts() {
-    const container = document.getElementById('sparePartAdmin');
-    if (!container) return;
-    
-    container.innerHTML = '<div class="dash-empty">Loading spare parts...</div>';
-    
-    try {
-        const data = await apiRequest('/api/spare-parts');
-        spareParts = data.spares || [];
-        renderSpareParts();
-    } catch (err) {
-        console.error('Load spare parts error:', err);
-        container.innerHTML = '<div class="dash-empty">❌ Failed to load spare parts</div>';
-    }
-}
-
-function renderSpareParts() {
-    const container = document.getElementById('sparePartAdmin');
-    if (!container) return;
-    
-    if (!spareParts || spareParts.length === 0) {
-        container.innerHTML = '<div class="dash-empty">🔩 No spare parts yet. Add your first spare part above.</div>';
-        return;
-    }
-    
-    container.innerHTML = spareParts.map(part => `
-        <div class="spare-item" style="background:#1a1a2e; border-radius:1rem; padding:1rem; margin-bottom:1rem; border:1px solid rgba(255,255,255,0.1);">
-            <div style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap;">
-                <img src="${part.image || part.image_path || 'shop/hero-phone.jpg'}" style="width:60px; height:60px; object-fit:cover; border-radius:0.5rem;" onerror="this.src='shop/hero-phone.jpg'">
-                <div style="flex:1;">
-                    <h4 style="margin:0 0 5px 0;">${escapeHtml(part.name)}</h4>
-                    <div style="display:flex; gap:1rem; flex-wrap:wrap; font-size:0.875rem;">
-                        <span style="color:#00e5ff;">${escapeHtml(part.brand || 'Generic')}</span>
-                        <span style="color:#888;">${escapeHtml(part.category || 'Uncategorized')}</span>
-                        <span style="color:#20e0a6;">KES ${(part.price || 0).toLocaleString()}</span>
-                        <span style="${(part.stock || 0) > 0 ? 'color:#00c853' : 'color:#ff3b30'}">Stock: ${part.stock || 0}</span>
-                    </div>
-                    ${part.description ? `<p style="font-size: 0.75rem; color: #888; margin-top: 5px;">${escapeHtml(part.description.substring(0, 80))}</p>` : ''}
-                </div>
-                <div>
-                    <button onclick="deleteSparePart('${part.id}')" class="btn-badge" style="background:#ff3b30; color:#fff; border:none; padding:0.5rem 1rem; border-radius:0.5rem; cursor:pointer;">🗑️ Delete</button>
-                </div>
-            </div>
+  const el = $('#productAdmin');
+  if (!el) return;
+  if (!products || products.length === 0) {
+    el.innerHTML = '<div class="dash-empty">No products yet.</div>';
+    return;
+  }
+  
+  el.innerHTML = products.map(product => {
+    const productId = product.id;
+    return `
+    <div class="product-item" data-id="${productId}" style="background:#1a1a2e; border-radius:1rem; padding:1rem; margin-bottom:1rem; border:1px solid rgba(255,255,255,0.1);">
+      <div style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap;">
+        <img src="${product.img || 'shop/hero-phone.jpg'}" style="width:60px; height:60px; object-fit:cover; border-radius:0.5rem;">
+        <div style="flex:1;">
+          <h4>${esc(product.name)}</h4>
+          <div style="display:flex; gap:1rem; flex-wrap:wrap; font-size:0.875rem;">
+            <span style="color:#00e5ff;">${esc(product.cat)}</span>
+            <span style="color:#00e5ff;">Price: ${fmt(product.price)}</span>
+            ${product.was ? `<span style="color:#888; text-decoration:line-through;">Original: ${fmt(product.was)}</span>` : ''}
+            <span style="${product.inStock !== false ? 'color:#00c853' : 'color:#ff3b30'}">${product.inStock !== false ? '✅ In Stock' : '❌ Out of Stock'}</span>
+            <span class="badge-status" style="${product.badge === 'sale' ? 'background:#ff2bd6; padding:2px 8px; border-radius:12px; color:white;' : product.badge === 'hot' ? 'background:#ff4d6d; padding:2px 8px; border-radius:12px; color:white;' : product.badge === 'new' ? 'background:#20e0a6; padding:2px 8px; border-radius:12px; color:#000;' : ''}">
+              ${product.badge === 'sale' ? '🔥 FLASH SALE' : product.badge === 'hot' ? '⚡ HOT' : product.badge === 'new' ? '✨ NEW' : 'No Badge'}
+            </span>
+          </div>
+          ${product.desc ? `<p style="font-size: 0.75rem; color: #888; margin-top: 0.25rem;">${esc(product.desc.substring(0, 100))}</p>` : ''}
         </div>
-    `).join('');
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+          <button onclick="window.markAsFlashSale('${productId}')" class="btn-badge" style="background:#ff2bd6; color:white; border:none; padding:0.5rem 0.8rem; border-radius:0.5rem; cursor:pointer; font-weight:500;">🔥 Flash Sale</button>
+          <button onclick="window.markAsHot('${productId}')" class="btn-badge" style="background:#ff4d6d; color:white; border:none; padding:0.5rem 0.8rem; border-radius:0.5rem; cursor:pointer; font-weight:500;">⚡ Hot</button>
+          <button onclick="window.markAsNew('${productId}')" class="btn-badge" style="background:#20e0a6; color:#000; border:none; padding:0.5rem 0.8rem; border-radius:0.5rem; cursor:pointer; font-weight:500;">✨ New</button>
+          <button onclick="window.removeBadge('${productId}')" class="btn-badge" style="background:#888; color:white; border:none; padding:0.5rem 0.8rem; border-radius:0.5rem; cursor:pointer; font-weight:500;">Remove Badge</button>
+          <button class="edit-product" data-id="${productId}" style="background:#00e5ff; color:#000; border:none; padding:0.5rem 1rem; border-radius:0.5rem; cursor:pointer;">✏️ Edit</button>
+          <button class="delete-product" data-id="${productId}" style="background:#ff3b30; color:#fff; border:none; padding:0.5rem 1rem; border-radius:0.5rem; cursor:pointer;">🗑️ Delete</button>
+        </div>
+      </div>
+    </div>
+  `}).join('');
+  
+  $$('.edit-product').forEach(btn => btn.addEventListener('click', () => editProduct(btn.dataset.id)));
+  $$('.delete-product').forEach(btn => btn.addEventListener('click', () => deleteProduct(btn.dataset.id)));
 }
 
-async function addSparePart(formData) {
-    try {
-        const response = await fetch('/api/admin/spare-parts', {
-            method: 'POST',
-            credentials: 'include',
-            body: formData
-        });
-        
-        if (response.ok) {
-            showToast('✅ Spare part added successfully!', 'success');
-            await loadSpareParts();
-            return true;
-        } else {
-            showToast('Failed to add spare part', 'error');
-            return false;
-        }
-    } catch (err) {
-        showToast('Failed to add spare part: ' + err.message, 'error');
-        return false;
+function editProduct(id) {
+  const product = products.find(p => p.id == id);
+  if (!product) { toast('Product not found', 'error'); return; }
+  
+  const newName = prompt('Edit product name:', product.name);
+  if (newName && newName.trim()) {
+    const newPrice = prompt('Edit price (Kshs):', product.price);
+    if (newPrice) {
+      product.name = newName.trim();
+      product.price = parseFloat(newPrice);
+      localStorage.setItem('management_products', JSON.stringify(products));
+      renderProducts();
+      toast('Product updated', 'success');
     }
+  }
 }
 
-async function deleteSparePart(partId) {
-    if (!confirm('Delete this spare part?')) return;
+function deleteProduct(id) {
+  if (!confirm('Delete this product?')) return;
+  products = products.filter(p => p.id != id);
+  localStorage.setItem('management_products', JSON.stringify(products));
+  renderProducts();
+  toast('Product deleted', 'success');
+}
+
+// ============================================
+// SPARE PARTS CRUD - UPDATED WITH STORAGE EVENTS
+// ============================================
+
+function renderAdminSpareParts() {
+  const el = $('#sparePartAdmin');
+  if (!el) return;
+  if (!spareParts || spareParts.length === 0) {
+    el.innerHTML = '<div class="dash-empty">No spare parts yet.</div>';
+    return;
+  }
+  el.innerHTML = spareParts.map(part => `
+    <div class="spare-item" data-id="${part.id}" style="background:#1a1a2e; border-radius:1rem; padding:1rem; margin-bottom:1rem; border:1px solid rgba(255,255,255,0.1);">
+      <div style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap;">
+        <img src="${part.image || part.image_path || 'shop/hero-phone.jpg'}" style="width:60px; height:60px; object-fit:cover; border-radius:0.5rem;">
+        <div style="flex:1;">
+          <h4>${esc(part.name)}</h4>
+          <div style="display:flex; gap:1rem; flex-wrap:wrap; font-size:0.875rem;">
+            <span style="color:#00e5ff;">${esc(part.brand)}</span>
+            <span style="color:#888;">${esc(part.category || 'Uncategorized')}</span>
+            ${part.modelNumber ? `<span style="color:#888;">Model: ${esc(part.modelNumber)}</span>` : ''}
+            <span style="color:#00e5ff;">${fmt(part.price)}</span>
+            <span style="${part.stock > 0 ? 'color:#00c853' : 'color:#ff3b30'}">Stock: ${part.stock}</span>
+          </div>
+        </div>
+        <div>
+          <button class="edit-spare" data-id="${part.id}" style="background:#00e5ff; color:#000; border:none; padding:0.5rem 1rem; border-radius:0.5rem; cursor:pointer; margin-right:0.5rem;">✏️ Edit</button>
+          <button class="delete-spare" data-id="${part.id}" style="background:#ff3b30; color:#fff; border:none; padding:0.5rem 1rem; border-radius:0.5rem; cursor:pointer;">🗑️ Delete</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+  
+  $$('.edit-spare').forEach(btn => btn.addEventListener('click', () => editSparePart(btn.dataset.id)));
+  $$('.delete-spare').forEach(btn => btn.addEventListener('click', async (e) => {
+    e.preventDefault();
+    await deleteSparePart(btn.dataset.id);
+  }));
+}
+
+function editSparePart(id) {
+  const part = spareParts.find(p => p.id == id);
+  if (!part) { toast('Spare part not found', 'error'); return; }
+  
+  const newName = prompt('Edit part name:', part.name);
+  if (newName && newName.trim()) {
+    const newPrice = prompt('Edit price (Kshs):', part.price);
+    if (newPrice) {
+      const newStock = prompt('Edit stock quantity:', part.stock);
+      if (newStock !== null) {
+        part.name = newName.trim();
+        part.price = parseFloat(newPrice);
+        part.stock = parseInt(newStock);
+        localStorage.setItem('spare_parts', JSON.stringify(spareParts));
+        renderAdminSpareParts();
+        // Notify repair page
+        notifySparePartsUpdated();
+        toast('Spare part updated', 'success');
+      }
+    }
+  }
+}
+
+// FIXED: Delete Spare Part with storage event dispatch
+async function deleteSparePart(id) {
+    if (!confirm('Delete this spare part? This cannot be undone.')) return;
     
     try {
-        const response = await fetch(`/api/admin/spare-parts/${partId}`, {
+        const response = await fetch(`/api/admin/spare-parts/${id}`, {
             method: 'DELETE',
             credentials: 'include'
         });
         
         if (response.ok) {
-            showToast('Spare part deleted successfully', 'success');
-            await loadSpareParts();
+            // Remove from local array
+            spareParts = spareParts.filter(p => p.id != id);
+            // Save to localStorage
+            localStorage.setItem('spare_parts', JSON.stringify(spareParts));
+            // IMPORTANT: Notify repair page
+            notifySparePartsUpdated();
+            renderAdminSpareParts();
+            toast('Spare part deleted successfully!', 'success');
         } else {
-            throw new Error('Delete failed');
+            throw new Error('Server delete failed');
         }
     } catch (err) {
-        showToast('Failed to delete spare part', 'error');
+        // Fallback to local deletion only
+        spareParts = spareParts.filter(p => p.id != id);
+        localStorage.setItem('spare_parts', JSON.stringify(spareParts));
+        notifySparePartsUpdated();
+        renderAdminSpareParts();
+        toast('Spare part deleted (local only). Server may be offline.', 'warning');
     }
 }
 
 // ============================================
-// REPAIR SERVICES MANAGEMENT
+// REPAIR SERVICES CRUD
 // ============================================
-
-async function loadRepairServices() {
-    const container = document.getElementById('repairServiceAdmin');
-    if (!container) return;
-    
-    container.innerHTML = '<div class="dash-empty">Loading repair services...</div>';
-    
-    try {
-        const data = await apiRequest('/api/management/repair-services');
-        repairServices = data.services || [];
-        renderRepairServices();
-    } catch (err) {
-        console.error('Load repair services error:', err);
-        container.innerHTML = '<div class="dash-empty">❌ Failed to load repair services</div>';
-    }
-}
 
 function renderRepairServices() {
-    const container = document.getElementById('repairServiceAdmin');
-    if (!container) return;
-    
-    if (!repairServices || repairServices.length === 0) {
-        container.innerHTML = '<div class="dash-empty">🔧 No repair services yet. Add your first service above.</div>';
-        return;
-    }
-    
-    container.innerHTML = repairServices.map(service => `
-        <div class="service-item" style="background:#1a1a2e; border-radius:1rem; padding:1rem; margin-bottom:1rem; border:1px solid rgba(255,255,255,0.1);">
-            <div style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap;">
-                <img src="${service.image || 'shop/hero-phone.jpg'}" style="width:60px; height:60px; object-fit:cover; border-radius:0.5rem;" onerror="this.src='shop/hero-phone.jpg'">
-                <div style="flex:1;">
-                    <h4 style="margin:0 0 5px 0;">${escapeHtml(service.title)}</h4>
-                    <div style="display:flex; gap:1rem; flex-wrap:wrap; font-size:0.875rem;">
-                        <span style="color:#00e5ff;">${escapeHtml(service.brand)}</span>
-                        <span style="color:#888;">${escapeHtml(service.repairType)}</span>
-                        <span style="color:#20e0a6;">KES ${(service.price || 0).toLocaleString()}</span>
-                        <span>⏱️ ${service.duration || 'N/A'}</span>
-                        <span>🔧 ${service.warranty || 'N/A'}</span>
-                        <span style="${service.available ? 'color:#00c853' : 'color:#ff3b30'}">${service.available ? '✅ Available' : '❌ Unavailable'}</span>
-                    </div>
-                    ${service.description ? `<p style="font-size: 0.75rem; color: #888; margin-top: 5px;">${escapeHtml(service.description.substring(0, 80))}</p>` : ''}
-                </div>
-                <div>
-                    <button onclick="deleteRepairService('${service.id}')" class="btn-badge" style="background:#ff3b30; color:#fff; border:none; padding:0.5rem 1rem; border-radius:0.5rem; cursor:pointer;">🗑️ Delete</button>
-                </div>
-            </div>
+  const el = $('#repairServiceAdmin');
+  if (!el) return;
+  if (!repairServices || repairServices.length === 0) {
+    el.innerHTML = '<div class="dash-empty">No repair services yet.</div>';
+    return;
+  }
+  el.innerHTML = repairServices.map(service => `
+    <div class="service-item" data-id="${service.id}" style="background:#1a1a2e; border-radius:1rem; padding:1rem; margin-bottom:1rem; border:1px solid rgba(255,255,255,0.1);">
+      <div style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap;">
+        <div style="flex:1;">
+          <h4>${esc(service.title)}</h4>
+          <div style="display:flex; gap:1rem; flex-wrap:wrap; font-size:0.875rem;">
+            <span style="color:#00e5ff;">${esc(service.brand)}</span>
+            <span style="color:#888;">${esc(service.repairType)}</span>
+            <span style="color:#00e5ff;">${fmt(service.price)}</span>
+            <span style="${service.available ? 'color:#00c853' : 'color:#ff3b30'}">${service.available ? 'Available' : 'Unavailable'}</span>
+          </div>
         </div>
-    `).join('');
+        <div>
+          <button class="edit-service" data-id="${service.id}" style="background:#00e5ff; color:#000; border:none; padding:0.5rem 1rem; border-radius:0.5rem; cursor:pointer; margin-right:0.5rem;">✏️ Edit</button>
+          <button class="delete-service" data-id="${service.id}" style="background:#ff3b30; color:#fff; border:none; padding:0.5rem 1rem; border-radius:0.5rem; cursor:pointer;">🗑️ Delete</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+  
+  $$('.edit-service').forEach(btn => btn.addEventListener('click', () => editRepairService(btn.dataset.id)));
+  $$('.delete-service').forEach(btn => btn.addEventListener('click', () => deleteRepairService(btn.dataset.id)));
 }
 
-async function addRepairService(formData) {
-    try {
-        const response = await fetch('/api/management/repair-services', {
-            method: 'POST',
-            credentials: 'include',
-            body: formData
-        });
-        
-        if (response.ok) {
-            showToast('✅ Repair service added successfully!', 'success');
-            await loadRepairServices();
-            return true;
-        } else {
-            showToast('Failed to add repair service', 'error');
-            return false;
-        }
-    } catch (err) {
-        showToast('Failed to add repair service: ' + err.message, 'error');
-        return false;
+function editRepairService(id) {
+  const service = repairServices.find(s => s.id == id);
+  if (!service) { toast('Service not found', 'error'); return; }
+  
+  const newTitle = prompt('Edit service title:', service.title);
+  if (newTitle && newTitle.trim()) {
+    const newPrice = prompt('Edit price (Kshs):', service.price);
+    if (newPrice) {
+      service.title = newTitle.trim();
+      service.price = parseFloat(newPrice);
+      localStorage.setItem('repair_services', JSON.stringify(repairServices));
+      renderRepairServices();
+      toast('Repair service updated', 'success');
     }
+  }
 }
 
-async function deleteRepairService(serviceId) {
-    if (!confirm('Delete this repair service?')) return;
-    
-    try {
-        const response = await fetch(`/api/management/repair-services/${serviceId}`, {
-            method: 'DELETE',
-            credentials: 'include'
-        });
-        
-        if (response.ok) {
-            showToast('Repair service deleted successfully', 'success');
-            await loadRepairServices();
-        } else {
-            throw new Error('Delete failed');
-        }
-    } catch (err) {
-        showToast('Failed to delete repair service', 'error');
-    }
+function deleteRepairService(id) {
+  if (!confirm('Delete this repair service?')) return;
+  repairServices = repairServices.filter(s => s.id != id);
+  localStorage.setItem('repair_services', JSON.stringify(repairServices));
+  renderRepairServices();
+  toast('Repair service deleted', 'success');
 }
 
 // ============================================
-// STAFF MANAGEMENT
+// LOAD FUNCTIONS
 // ============================================
 
-async function loadStaffList() {
-    const container = document.getElementById('staffList');
-    if (!container) return;
-    
-    container.innerHTML = '<div class="dash-empty">Loading staff...</div>';
-    
-    try {
-        const data = await apiRequest('/api/admin/staff');
-        staff = data.staff || [];
-        
-        if (staff.length === 0) {
-            container.innerHTML = '<div class="dash-empty">No staff accounts</div>';
-            return;
-        }
-        
-        container.innerHTML = staff.map(user => `
-            <div class="staff-row" style="display:flex; justify-content:space-between; align-items:center; padding:0.75rem; border-bottom:1px solid rgba(255,255,255,0.1);">
-                <div>
-                    <strong>${escapeHtml(user.name)}</strong>
-                    <span style="font-size:0.8rem; color:#888; display:block;">${escapeHtml(user.email)}</span>
-                </div>
-                <button onclick="deleteStaff('${user.id}')" class="btn-badge" style="background:#ff3b30; color:white; border:none; padding:0.5rem 1rem; border-radius:0.5rem; cursor:pointer;">Delete</button>
-            </div>
-        `).join('');
-    } catch (err) {
-        console.error('Load staff error:', err);
-        container.innerHTML = '<div class="dash-empty">❌ Failed to load staff</div>';
+async function loadAdminSpareParts() {
+  if (offlineManager) {
+    const stored = localStorage.getItem('spare_parts');
+    spareParts = stored ? JSON.parse(stored) : [];
+    renderAdminSpareParts();
+    return;
+  }
+  try {
+    const data = await api('/api/spare-parts');
+    spareParts = data.spares || [];
+    localStorage.setItem('spare_parts', JSON.stringify(spareParts));
+    renderAdminSpareParts();
+  } catch (err) {
+    const stored = localStorage.getItem('spare_parts');
+    if (stored) {
+      spareParts = JSON.parse(stored);
+      renderAdminSpareParts();
     }
+  }
 }
 
-async function createStaff(name, email, password) {
-    try {
-        await apiRequest('/api/admin/staff', {
-            method: 'POST',
-            body: JSON.stringify({ name, email, password })
-        });
-        showToast('Staff created successfully', 'success');
-        await loadStaffList();
-        return true;
-    } catch (err) {
-        showToast(err.message, 'error');
-        return false;
+async function loadRepairServices() {
+  if (offlineManager) {
+    const stored = localStorage.getItem('repair_services');
+    repairServices = stored ? JSON.parse(stored) : DUMMY_REPAIR_SERVICES;
+    renderRepairServices();
+    return;
+  }
+  try {
+    const data = await api('/api/management/repair-services');
+    repairServices = data.services || [];
+    localStorage.setItem('repair_services', JSON.stringify(repairServices));
+    renderRepairServices();
+  } catch (err) {
+    const stored = localStorage.getItem('repair_services');
+    if (stored) {
+      repairServices = JSON.parse(stored);
+      renderRepairServices();
     }
+  }
 }
 
-async function deleteStaff(userId) {
-    if (!confirm('Delete this staff account?')) return;
-    try {
-        await fetch(`/api/admin/staff/${userId}`, {
-            method: 'DELETE',
-            credentials: 'include'
-        });
-        showToast('Staff deleted', 'success');
-        await loadStaffList();
-    } catch (err) {
-        showToast('Delete failed', 'error');
-    }
+async function loadAdminData() {
+  if (offlineManager) {
+    products = DUMMY_PRODUCTS;
+    staff = DUMMY_STAFF;
+    renderStaff();
+    renderProducts();
+    renderPerformance(DUMMY_ANALYTICS);
+    return;
+  }
+  if ($('#staffList')) $('#staffList').innerHTML = LOADING.staff;
+  if ($('#productAdmin')) $('#productAdmin').innerHTML = LOADING.products;
+  try {
+    api('/api/products').then(d => { products = d.products || []; renderProducts(); }).catch(e => console.error("Products load fail", e));
+    api('/api/admin/staff').then(d => { staff = d.staff || []; renderStaff(); }).catch(e => console.error("Staff load fail", e));
+    api('/api/admin/analytics').then(d => renderPerformance(d)).catch(e => console.error("Analytics load fail", e));
+  } catch (err) {
+    console.error("Admin data load failed:", err);
+    toast("Some management metrics could not be loaded", "error");
+  }
+  await Promise.all([loadRepairServices(), loadTechnicians(), loadRepairCategories(), loadAdminSpareParts()]);
 }
 
 // ============================================
-// TECHNICIANS MANAGEMENT
+// EXISTING FUNCTIONS
 // ============================================
+
+function renderPlacedOrders() {
+  const el = $('#placedOrders');
+  if (!el) return;
+  el.innerHTML = (orders && orders.length) ? orders.map(order => {
+    const loc = order.location || {};
+    return `
+    <article class="order-row manager-order">
+      <div>
+        <b>${esc(order.id)}</b> <span class="status ${esc(order.paymentStatus?.toLowerCase() || 'pending')}">${esc(order.paymentStatus || 'Pending')}</span>
+        <span>${order.createdAt ? new Date(order.createdAt).toLocaleString() : 'Date Unknown'}</span>
+        <small>${esc(order.customer)} · ${esc(order.email)}</small>
+      </div>
+      <div class="order-items">
+        ${(order.items || []).map(item => `${esc(item.name)} x${item.qty}`).join('<br>')}
+        <div class="order-meta">
+           <small>Location: ${esc(loc.county || 'N/A')}, ${esc(loc.constituency || 'N/A')} · ${esc(loc.street || 'N/A')}</small>
+        </div>
+      </div>
+      <div>
+        <b>${fmt(order.total)}</b>
+        <span class="status ${esc(order.status?.toLowerCase() || 'pending')}">${esc(order.status || 'Pending')}</span>
+      </div>
+    </article>`;
+  }).join('') : '<div class="dash-empty">No placed orders yet.</div>';
+}
+
+function renderStaff() {
+  const el = $('#staffList');
+  if (!el) return;
+  el.innerHTML = (staff && staff.length) ? staff.map(user => `
+    <article class="staff-row">
+      <div><b>${esc(user.name)}</b><span>${esc(user.email)}</span></div>
+      <button class="btn ghost js-delete-staff" data-id="${user.id}" type="button">Delete</button>
+    </article>`).join('') : '<div class="dash-empty">No staff accounts yet.</div>';
+  $$('.js-delete-staff').forEach(btn => btn.addEventListener('click', async () => {
+    try {
+      await api(`/api/admin/staff/${encodeURIComponent(btn.dataset.id)}`, { method:'DELETE' });
+      await loadAdminData();
+      toast('Staff account deleted', 'success');
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+  }));
+}
+
+function formatDate(value) {
+  return value ? new Date(value).toLocaleString() : '-';
+}
+
+function renderRepairBookings() {
+  const el = $('#repairBookings');
+  if (!el) return;
+  el.innerHTML = (repairBookings && repairBookings.length) ? repairBookings.map(booking => `
+    <article class="order-row manager-order">
+      <div>
+        <b>${esc(booking.id)}</b>
+        <span>${formatDate(booking.createdAt)}</span>
+        <small>${esc(booking.customer || booking.name)} · ${esc(booking.email)}</small>
+      </div>
+      <div>
+        <small>${esc(booking.brand)} ${esc(booking.model)} · ${esc(booking.repairType)}</small>
+        <small>${esc(booking.pickupDropoff)} · ${esc(booking.status)}</small>
+        <small>${esc(booking.repairServiceTitle || 'Custom repair')}</small>
+      </div>
+      <div>
+        <button class="btn ghost js-update-booking" type="button" data-id="${esc(booking.id)}">Update</button>
+      </div>
+    </article>
+  `).join('') : '<div class="dash-empty">No repair bookings found.</div>';
+}
+
+function renderTechnicians() {
+  const el = $('#technicianList');
+  if (!el) return;
+  el.innerHTML = (technicians && technicians.length) ? technicians.map(tech => `
+    <article class="staff-row">
+      <div><b>${esc(tech.name)}</b><span>${esc(tech.email)}</span></div>
+      <button class="btn ghost danger-btn js-delete-technician" type="button" data-id="${esc(tech.id)}">Delete</button>
+    </article>
+  `).join('') : '<div class="dash-empty">No technicians assigned yet.</div>';
+  $$('.js-delete-technician').forEach(btn => btn.addEventListener('click', async () => {
+    try {
+      await api(`/api/management/repair-technicians/${encodeURIComponent(btn.dataset.id)}`, { method:'DELETE' });
+      await loadTechnicians();
+      toast('Technician removed', 'success');
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+  }));
+}
+
+function renderRepairCategories() {
+  const el = $('#repairCategorySelect');
+  if (!el) return;
+  const cats = (repairCategories && repairCategories.length) ? repairCategories : [];
+  el.innerHTML = '<option value="">Select category</option>' + cats.map(category => `
+    <option value="${esc(category.id)}">${esc(category.name)}</option>
+  `).join('');
+}
+
+function renderPerformance(analytics) {
+  const metrics = $('#metrics');
+  if (metrics) metrics.innerHTML = `
+    <div><b>${fmt(analytics.totalSales)}</b><span>Total Sales</span></div>
+    <div><b>${analytics.totalOrders}</b><span>Total Orders</span></div>
+    <div><b>${analytics.delivered}</b><span>Delivered</span></div>
+    <div><b>${analytics.products}</b><span>Products</span></div>`;
+  const canvas = $('#performanceChart');
+  if (!canvas) return;
+  const data = analytics.days || [];
+  if (!data.length) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
+  const pad = 42;
+  const max = Math.max(1, ...data.map(day => day.sales));
+  ctx.clearRect(0, 0, w, h);
+  ctx.strokeStyle = 'rgba(255,255,255,.16)';
+  for (let i = 0; i < 4; i++) {
+    const y = pad + i * ((h - pad * 2) / 3);
+    ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(w - pad, y); ctx.stroke();
+  }
+  ctx.font = '14px Inter, sans-serif';
+  data.forEach((day, index) => {
+    const x = pad + index * ((w - pad * 2) / Math.max(1, data.length - 1));
+    const barH = (day.sales / max) * (h - pad * 2);
+    const y = h - pad - barH;
+    const gradient = ctx.createLinearGradient(0, y, 0, h - pad);
+    gradient.addColorStop(0, '#00e5ff');
+    gradient.addColorStop(1, '#7c4dff');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(x - 18, y, 36, barH || 2);
+    ctx.fillStyle = '#9aa0b4';
+    ctx.fillText(day.label, x - 14, h - 14);
+  });
+}
+
+async function loadOrders() {
+  if (offlineManager) {
+    orders = DUMMY_ORDERS;
+    renderPlacedOrders();
+    return;
+  }
+  const data = await api('/api/management/orders/placed');
+  orders = data.orders || [];
+  renderPlacedOrders();
+}
+
+async function loadRepairBookings() {
+  if (offlineManager) {
+    repairBookings = DUMMY_REPAIR_BOOKINGS;
+    renderRepairBookings();
+    return;
+  }
+  const data = await api('/api/management/repair-bookings');
+  repairBookings = data.bookings || [];
+  renderRepairBookings();
+}
 
 async function loadTechnicians() {
-    const container = document.getElementById('technicianList');
-    if (!container) return;
-    
-    container.innerHTML = '<div class="dash-empty">Loading technicians...</div>';
-    
-    try {
-        const data = await apiRequest('/api/repair/technicians');
-        technicians = data.technicians || [];
-        
-        if (technicians.length === 0) {
-            container.innerHTML = '<div class="dash-empty">No technicians</div>';
-            return;
-        }
-        
-        container.innerHTML = technicians.map(tech => `
-            <div class="staff-row" style="display:flex; justify-content:space-between; align-items:center; padding:0.75rem; border-bottom:1px solid rgba(255,255,255,0.1);">
-                <div>
-                    <strong>${escapeHtml(tech.name)}</strong>
-                    <span style="font-size:0.8rem; color:#888; display:block;">${escapeHtml(tech.email)}</span>
-                </div>
-                <button onclick="deleteTechnician('${tech.id}')" class="btn-badge" style="background:#ff3b30; color:white; border:none; padding:0.5rem 1rem; border-radius:0.5rem; cursor:pointer;">Delete</button>
-            </div>
-        `).join('');
-    } catch (err) {
-        console.error('Load technicians error:', err);
-        container.innerHTML = '<div class="dash-empty">❌ Failed to load technicians</div>';
-    }
+  if (offlineManager) {
+    technicians = DUMMY_TECHNICIANS;
+    renderTechnicians();
+    return;
+  }
+  const data = await api('/api/repair/technicians');
+  technicians = data.technicians || [];
+  renderTechnicians();
 }
 
-async function addTechnician(name, email) {
-    try {
-        await apiRequest('/api/management/repair-technicians', {
-            method: 'POST',
-            body: JSON.stringify({ name, email })
-        });
-        showToast('Technician added successfully', 'success');
-        await loadTechnicians();
-        return true;
-    } catch (err) {
-        showToast(err.message, 'error');
-        return false;
-    }
+async function loadRepairCategories() {
+  if (offlineManager) {
+    repairCategories = DUMMY_REPAIR_CATEGORIES;
+    renderRepairCategories();
+    return;
+  }
+  const data = await api('/api/repair/categories');
+  repairCategories = data.categories || [];
+  renderRepairCategories();
 }
 
-async function deleteTechnician(techId) {
-    if (!confirm('Delete this technician?')) return;
-    try {
-        await fetch(`/api/management/repair-technicians/${techId}`, {
-            method: 'DELETE',
-            credentials: 'include'
-        });
-        showToast('Technician deleted', 'success');
-        await loadTechnicians();
-    } catch (err) {
-        showToast('Delete failed', 'error');
+async function updateView() {
+  let data = null;
+  try {
+    data = await api('/api/auth/me');
+    offlineManager = false;
+  } catch (err) {
+    if (localStorage.getItem('smd_mgmt_offline') === '1') {
+      offlineManager = true;
+      manager = OFFLINE_MANAGER;
+    } else {
+      manager = null;
     }
-}
-
-// ============================================
-// METRICS
-// ============================================
-
-async function loadMetrics() {
-    try {
-        const data = await apiRequest('/api/management/orders/placed');
-        const ordersData = data.orders || [];
-        
-        const totalOrders = ordersData.length;
-        const totalRevenue = ordersData.reduce((sum, o) => sum + (o.total || 0), 0);
-        const totalDeposits = ordersData.reduce((sum, o) => sum + (o.depositAmount || 0), 0);
-        
-        const metricsDiv = document.getElementById('metrics');
-        if (metricsDiv) {
-            metricsDiv.innerHTML = `
-                <div><b>${totalOrders}</b><span>Total Orders</span></div>
-                <div><b>KES ${totalRevenue.toLocaleString()}</b><span>Total Revenue</span></div>
-                <div><b>KES ${totalDeposits.toLocaleString()}</b><span>Total Deposits</span></div>
-                <div><b>${products.length}</b><span>Products</span></div>
-            `;
-        }
-    } catch (err) {
-        console.error('Failed to load metrics:', err);
-    }
+  }
+  if (data?.user && ['admin', 'staff'].includes(data.user.role)) {
+    manager = data.user;
+    offlineManager = false;
+  }
+  if ($('#managerLogin')) $('#managerLogin').hidden = !!manager;
+  if ($('#managerOrders')) $('#managerOrders').hidden = !manager;
+  const revObs = new IntersectionObserver(es => es.forEach(e => {
+    if (e.isIntersecting) e.target.classList.add('in');
+  }), { threshold: .1 });
+  document.querySelectorAll('.reveal').forEach(el => revObs.observe(el));
+  if (!manager) return;
+  const isAdmin = manager.role === 'admin';
+  if ($('#managerRole')) $('#managerRole').textContent = isAdmin ? 'Admin' : 'Staff';
+  if ($('#managerTitle')) $('#managerTitle').textContent = isAdmin ? 'Admin Management' : 'Orders Placed';
+  if ($('#adminSections')) $('#adminSections').hidden = !isAdmin;
+  if ($('#placedOrders')) $('#placedOrders').innerHTML = LOADING.orders;
+  if ($('#repairBookings')) $('#repairBookings').innerHTML = LOADING.bookings;
+  return Promise.allSettled([
+    loadOrders().catch(e => console.error("Orders fail:", e)),
+    loadRepairBookings().catch(e => console.error("Bookings fail:", e)),
+    isAdmin ? loadAdminData().catch(e => console.error("Admin data fail:", e)) : Promise.resolve()
+  ]);
 }
 
 // ============================================
 // EVENT LISTENERS
 // ============================================
 
-// Login form
-const loginForm = document.getElementById('managerLoginForm');
-if (loginForm) {
-    loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const email = loginForm.querySelector('input[type="email"]').value;
-        const password = loginForm.querySelector('input[type="password"]').value;
-        await managerLogin(email, password);
+$('#managerLoginForm')?.addEventListener('submit', async e => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const email = String(fd.get('email') || '').trim();
+  const password = String(fd.get('password') || '');
+  try {
+    await api('/api/auth/management-login', {
+      method:'POST',
+      body:JSON.stringify({ email, password })
     });
-}
-
-// Logout
-const logoutBtn = document.getElementById('managerLogout');
-if (logoutBtn) {
-    logoutBtn.addEventListener('click', async () => {
-        await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
-        location.reload();
-    });
-}
-
-// Staff creation
-const staffForm = document.getElementById('staffForm');
-if (staffForm) {
-    staffForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const name = staffForm.querySelector('input[name="name"]').value;
-        const email = staffForm.querySelector('input[name="email"]').value;
-        const password = staffForm.querySelector('input[name="password"]').value;
-        await createStaff(name, email, password);
-        staffForm.reset();
-    });
-}
-
-// Product addition
-const productForm = document.getElementById('productForm');
-if (productForm) {
-    productForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const formData = new FormData(productForm);
-        await addProduct(formData);
-        productForm.reset();
-    });
-}
-
-// Spare part addition
-const sparePartForm = document.getElementById('sparePartForm');
-if (sparePartForm) {
-    sparePartForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const formData = new FormData(sparePartForm);
-        await addSparePart(formData);
-        sparePartForm.reset();
-    });
-}
-
-// Repair service addition
-const repairServiceForm = document.getElementById('repairServiceForm');
-if (repairServiceForm) {
-    repairServiceForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const formData = new FormData(repairServiceForm);
-        await addRepairService(formData);
-        repairServiceForm.reset();
-    });
-}
-
-// Technician addition
-const technicianForm = document.getElementById('technicianForm');
-if (technicianForm) {
-    technicianForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const name = technicianForm.querySelector('input[name="name"]').value;
-        const email = technicianForm.querySelector('input[name="email"]').value;
-        await addTechnician(name, email);
-        technicianForm.reset();
-    });
-}
-
-// Delivery fee update
-const updateFeeBtn = document.getElementById('updateDeliveryFeeBtn');
-if (updateFeeBtn) {
-    updateFeeBtn.addEventListener('click', updateDeliveryFee);
-}
-const feeInput = document.getElementById('newDeliveryFee');
-if (feeInput) {
-    feeInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') updateDeliveryFee();
-    });
-}
-
-// Make functions global for onclick handlers
-window.deleteProduct = deleteProduct;
-window.deleteSparePart = deleteSparePart;
-window.deleteRepairService = deleteRepairService;
-window.deleteStaff = deleteStaff;
-window.deleteTechnician = deleteTechnician;
-window.updateProductBadge = updateProductBadge;
-
-// Check if user is already logged in on page load
-async function checkAuth() {
-    try {
-        const data = await apiRequest('/api/auth/me');
-        if (data.user && (data.user.role === 'admin' || data.user.role === 'staff')) {
-            currentUser = data.user;
-            await loadManagementPanel();
-        } else {
-            // Show login form
-            const loginSection = document.getElementById('managerLogin');
-            const ordersSection = document.getElementById('managerOrders');
-            if (loginSection) loginSection.hidden = false;
-            if (ordersSection) ordersSection.hidden = true;
-        }
-    } catch (err) {
-        console.log('Not authenticated');
-        const loginSection = document.getElementById('managerLogin');
-        const ordersSection = document.getElementById('managerOrders');
-        if (loginSection) loginSection.hidden = false;
-        if (ordersSection) ordersSection.hidden = true;
+    localStorage.removeItem('smd_mgmt_offline');
+    e.target.reset();
+    await updateView();
+    toast('Login successful', 'success');
+  } catch (err) {
+    if (err.network && email && password) {
+      offlineManager = true;
+      localStorage.setItem('smd_mgmt_offline', '1');
+      await updateView();
+      toast('Login successful (offline fallback)', 'success');
+      return;
     }
-}
+    toast(err.message, 'error');
+  }
+});
 
-// Initialize
-checkAuth();
+$('#sparePartForm')?.addEventListener('submit', async e => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  try {
+    await api('/api/admin/spare-parts', { method:'POST', body:fd });
+    await loadAdminSpareParts();
+    notifySparePartsUpdated();
+    e.target.reset();
+    toast('Spare part added', 'success');
+  } catch (err) {
+    const newPart = {
+      id: Date.now(),
+      name: fd.get('name'),
+      brand: fd.get('brand'),
+      category: fd.get('category'),
+      modelNumber: fd.get('modelNumber'),
+      price: parseInt(fd.get('price')),
+      stock: parseInt(fd.get('stock')),
+      description: fd.get('description'),
+      image: 'shop/hero-phone.jpg'
+    };
+    const existing = JSON.parse(localStorage.getItem('spare_parts') || '[]');
+    existing.push(newPart);
+    localStorage.setItem('spare_parts', JSON.stringify(existing));
+    await loadAdminSpareParts();
+    notifySparePartsUpdated();
+    e.target.reset();
+    toast('Spare part added (offline)', 'success');
+  }
+});
+
+$('#staffForm')?.addEventListener('submit', async e => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  try {
+    await api('/api/admin/staff', {
+      method:'POST',
+      body:JSON.stringify({ name:fd.get('name').trim(), email:fd.get('email').trim(), password:fd.get('password') })
+    });
+    e.target.reset();
+    await loadAdminData();
+    toast('Staff account created', 'success');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+});
+
+$('#technicianForm')?.addEventListener('submit', async e => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  try {
+    await api('/api/management/repair-technicians', {
+      method:'POST',
+      body: JSON.stringify({ name: fd.get('name').trim(), email: fd.get('email').trim() })
+    });
+    e.target.reset();
+    await loadTechnicians();
+    toast('Technician added', 'success');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+});
+
+$('#repairServiceForm')?.addEventListener('submit', async e => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  try {
+    await api('/api/management/repair-services', { method: 'POST', body: fd });
+    await loadRepairServices();
+    e.target.reset();
+    toast('Repair service added', 'success');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+});
+
+$('#repairBookings')?.addEventListener('click', async e => {
+  if (!e.target.matches('.js-update-booking')) return;
+  const bookingId = e.target.dataset.id;
+  if (!bookingId) return;
+  const status = prompt('Enter new status: Pending, Received, Diagnosing, Repairing, Completed, Ready for pickup');
+  if (!status) return;
+  try {
+    await api(`/api/management/repair-bookings/${encodeURIComponent(bookingId)}`, {
+      method: 'PUT',
+      body: JSON.stringify({ status })
+    });
+    await loadRepairBookings();
+    toast('Booking status updated', 'success');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+});
+
+$('#productForm')?.addEventListener('submit', async e => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  
+  const badge = fd.get('badge');
+  const wasPrice = fd.get('was');
+  if (wasPrice) {
+    fd.append('was', wasPrice);
+  }
+  if (badge && badge !== '') {
+    fd.append('badge', badge);
+  }
+  
+  try {
+    await api('/api/admin/products', { method:'POST', body:fd });
+    e.target.reset();
+    await loadAdminData();
+    toast('Product added successfully!', 'success');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+});
+
+$('#managerLogout')?.addEventListener('click', async () => {
+  await api('/api/auth/logout', { method:'POST', body:JSON.stringify({}) });
+  manager = null;
+  orders = [];
+  products = [];
+  staff = [];
+  repairBookings = [];
+  repairServices = [];
+  technicians = [];
+  await updateView();
+});
+
+updateView().catch(() => {
+  const login = $('#managerLogin');
+  if (login) login.hidden = false;
+  const ordersPanel = $('#managerOrders');
+  if (ordersPanel) ordersPanel.hidden = true;
+});
