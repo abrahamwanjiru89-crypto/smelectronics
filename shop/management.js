@@ -232,29 +232,42 @@ function renderProducts() {
   $$('.delete-product').forEach(btn => btn.addEventListener('click', () => deleteProduct(btn.dataset.id)));
 }
 
-function editProduct(id) {
+async function editProduct(id) {
   const product = products.find(p => p.id == id);
   if (!product) { toast('Product not found', 'error'); return; }
-  
+
   const newName = prompt('Edit product name:', product.name);
-  if (newName && newName.trim()) {
-    const newPrice = prompt('Edit price (Kshs):', product.price);
-    if (newPrice) {
-      product.name = newName.trim();
-      product.price = parseFloat(newPrice);
-      localStorage.setItem('management_products', JSON.stringify(products));
-      renderProducts();
-      toast('Product updated', 'success');
-    }
+  if (!newName || !newName.trim()) return;
+  const newPrice = prompt('Edit price (Kshs):', product.price);
+  if (!newPrice) return;
+
+  try {
+    await api(`/api/admin/products/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        name: newName.trim(),
+        price: parseFloat(newPrice),
+        inStock: product.inStock !== false,
+        cat: product.cat,
+        desc: product.desc
+      })
+    });
+    await loadAdminData();
+    toast('Product updated', 'success');
+  } catch (err) {
+    toast(err.message || 'Failed to update product', 'error');
   }
 }
 
-function deleteProduct(id) {
+async function deleteProduct(id) {
   if (!confirm('Delete this product?')) return;
-  products = products.filter(p => p.id != id);
-  localStorage.setItem('management_products', JSON.stringify(products));
-  renderProducts();
-  toast('Product deleted', 'success');
+  try {
+    await api(`/api/admin/products/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    await loadAdminData();
+    toast('Product deleted', 'success');
+  } catch (err) {
+    toast(err.message || 'Failed to delete product', 'error');
+  }
 }
 
 // ============================================
@@ -829,8 +842,7 @@ $('#repairBookings')?.addEventListener('click', async e => {
 $('#productForm')?.addEventListener('submit', async e => {
   e.preventDefault();
   const fd = new FormData(e.target);
-  // FormData already contains all form fields (name, cat, price, was, badge, img, desc)
-  // No need to manually re-append them — doing so duplicates keys and corrupts the multipart body
+  // FormData already includes all form fields; no need to re-append badge/was
 
   try {
     await api('/api/admin/products', { method:'POST', body:fd });
