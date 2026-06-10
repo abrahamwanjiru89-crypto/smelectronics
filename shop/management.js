@@ -829,16 +829,9 @@ $('#repairBookings')?.addEventListener('click', async e => {
 $('#productForm')?.addEventListener('submit', async e => {
   e.preventDefault();
   const fd = new FormData(e.target);
-  
-  const badge = fd.get('badge');
-  const wasPrice = fd.get('was');
-  if (wasPrice) {
-    fd.append('was', wasPrice);
-  }
-  if (badge && badge !== '') {
-    fd.append('badge', badge);
-  }
-  
+  // FormData already contains all form fields (name, cat, price, was, badge, img, desc)
+  // No need to manually re-append them — doing so duplicates keys and corrupts the multipart body
+
   try {
     await api('/api/admin/products', { method:'POST', body:fd });
     e.target.reset();
