@@ -1,6 +1,5 @@
-// Guard against re-declaration when app.js (or another script) already defines $ / $$
-if (typeof $ === 'undefined') { var $ = (s, p=document) => p.querySelector(s); }
-if (typeof $$ === 'undefined') { var $$ = (s, p=document) => [...p.querySelectorAll(s)]; }
+const $ = (s, p=document) => p.querySelector(s);
+const $$ = (s, p=document) => [...p.querySelectorAll(s)];
 let manager = null;
 let offlineManager = false;
 let orders = [];
@@ -96,74 +95,93 @@ function notifySparePartsUpdated() {
   console.log('Dispatched spare_parts_updated event');
 }
 
-async function bustProductsCache() {
-  try {
-    const cache = await caches.open('sm-dynamics-cache-v4');
-    await cache.delete('/api/products');
-  } catch (_) {}
-  // Tell every open tab (including the main shop page) to reload product data
-  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-    navigator.serviceWorker.controller.postMessage({ type: 'BUST_PRODUCTS_CACHE' });
-  }
-}
-
-// Shared helper — sends badge + was changes to the server and refreshes the list
-async function saveBadge(productId, badge, was) {
-  const product = products.find(p => String(p.id) === String(productId));
-  if (!product) { toast('Product not found', 'error'); return; }
-  try {
-    await api(`/api/admin/products/${encodeURIComponent(productId)}`, {
-      method: 'PUT',
-      body: JSON.stringify({
-        name: product.name,
-        price: product.price,
-        was: was !== undefined ? was : product.was,
-        inStock: product.inStock !== false,
-        cat: product.cat,
-        desc: product.desc,
-        badge: badge,
-        img: product.img,
-      })
-    });
-    await bustProductsCache();
-    await loadAdminData();
-  } catch (err) {
-    toast(err.message || 'Failed to update badge', 'error');
-  }
-}
+// ============================================
+// PRODUCT BADGE FUNCTIONS
+// ============================================
 
 window.markAsFlashSale = async function(id) {
-  const product = products.find(p => String(p.id) === String(id));
-  if (!product) { toast('Product not found. ID: ' + id, 'error'); return; }
+  console.log('Flash Sale clicked for ID:', id, typeof id);
+  
+  const productId = String(id);
+  const product = products.find(p => String(p.id) === productId);
+  
+  if (!product) {
+    console.error('Product not found. Available products:', products.map(p => ({ id: p.id, name: p.name })));
+    toast('Product not found. ID: ' + id, 'error');
+    return;
+  }
+  
+  console.log('Found product:', product.name);
+  
   let wasPrice = product.was;
   if (!wasPrice) {
     const input = prompt('Enter original price (for flash sale discount display):', product.price * 1.5);
     if (!input) return;
     wasPrice = parseFloat(input);
-    if (isNaN(wasPrice)) return;
   }
-  await saveBadge(id, 'sale', wasPrice);
+  
+  product.badge = 'sale';
+  product.was = wasPrice;
+  
+  localStorage.setItem('management_products', JSON.stringify(products));
+  renderProducts();
   toast(`🔥 ${product.name} marked as FLASH SALE!`, 'success');
 };
 
 window.markAsHot = async function(id) {
-  const product = products.find(p => String(p.id) === String(id));
-  if (!product) { toast('Product not found', 'error'); return; }
-  await saveBadge(id, 'hot', product.was);
+  console.log('Hot clicked for ID:', id, typeof id);
+  
+  const productId = String(id);
+  const product = products.find(p => String(p.id) === productId);
+  
+  if (!product) {
+    console.error('Product not found. ID:', id);
+    toast('Product not found', 'error');
+    return;
+  }
+  
+  product.badge = 'hot';
+  
+  localStorage.setItem('management_products', JSON.stringify(products));
+  renderProducts();
   toast(`⚡ ${product.name} marked as HOT!`, 'success');
 };
 
 window.markAsNew = async function(id) {
-  const product = products.find(p => String(p.id) === String(id));
-  if (!product) { toast('Product not found', 'error'); return; }
-  await saveBadge(id, 'new', product.was);
+  console.log('New clicked for ID:', id, typeof id);
+  
+  const productId = String(id);
+  const product = products.find(p => String(p.id) === productId);
+  
+  if (!product) {
+    console.error('Product not found. ID:', id);
+    toast('Product not found', 'error');
+    return;
+  }
+  
+  product.badge = 'new';
+  
+  localStorage.setItem('management_products', JSON.stringify(products));
+  renderProducts();
   toast(`✨ ${product.name} marked as NEW!`, 'success');
 };
 
 window.removeBadge = async function(id) {
-  const product = products.find(p => String(p.id) === String(id));
-  if (!product) { toast('Product not found', 'error'); return; }
-  await saveBadge(id, '', null);
+  console.log('Remove Badge clicked for ID:', id, typeof id);
+  
+  const productId = String(id);
+  const product = products.find(p => String(p.id) === productId);
+  
+  if (!product) {
+    console.error('Product not found. ID:', id);
+    toast('Product not found', 'error');
+    return;
+  }
+  
+  product.badge = '';
+  
+  localStorage.setItem('management_products', JSON.stringify(products));
+  renderProducts();
   toast(`${product.name} badge removed`, 'success');
 };
 
@@ -229,15 +247,11 @@ async function editProduct(id) {
       body: JSON.stringify({
         name: newName.trim(),
         price: parseFloat(newPrice),
-        was: product.was,
         inStock: product.inStock !== false,
         cat: product.cat,
-        desc: product.desc,
-        badge: product.badge || '',
-        img: product.img,
+        desc: product.desc
       })
     });
-    await bustProductsCache();
     await loadAdminData();
     toast('Product updated', 'success');
   } catch (err) {
@@ -249,7 +263,6 @@ async function deleteProduct(id) {
   if (!confirm('Delete this product?')) return;
   try {
     await api(`/api/admin/products/${encodeURIComponent(id)}`, { method: 'DELETE' });
-    await bustProductsCache();
     await loadAdminData();
     toast('Product deleted', 'success');
   } catch (err) {
@@ -829,12 +842,11 @@ $('#repairBookings')?.addEventListener('click', async e => {
 $('#productForm')?.addEventListener('submit', async e => {
   e.preventDefault();
   const fd = new FormData(e.target);
+  // FormData already includes all form fields; no need to re-append badge/was
 
   try {
     await api('/api/admin/products', { method:'POST', body:fd });
     e.target.reset();
-
-    await bustProductsCache();
     await loadAdminData();
     toast('Product added successfully!', 'success');
   } catch (err) {
