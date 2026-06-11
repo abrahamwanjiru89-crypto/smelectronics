@@ -1,3 +1,6 @@
+if (typeof window.__mgmtLoaded === 'undefined') {
+  window.__mgmtLoaded = true;
+  (function() {
 const $ = (s, p=document) => p.querySelector(s);
 const $$ = (s, p=document) => [...p.querySelectorAll(s)];
 let manager = null;
@@ -872,3 +875,6 @@ updateView().catch(() => {
   const ordersPanel = $('#managerOrders');
   if (ordersPanel) ordersPanel.hidden = true;
 });
+
+  })();
+}
