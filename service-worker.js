@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sm-dynamics-cache-v4';
+const CACHE_NAME = 'sm-dynamics-cache-v2';
 const ASSETS = [
   '/',
   '/index.html',
@@ -17,17 +17,13 @@ const ASSETS = [
   '/shop/brand logo.png'
 ];
 
-// Requests that should always try network first so management/repair pages,
-// their admin scripts, and product/spare-parts API responses load fresh content.
+// Requests that should always try network first so management/repair pages
+// and their admin scripts load fresh content on each navigation.
 const NETWORK_FIRST = [
   '/management.html',
   '/repair.html',
   '/shop/management.js',
-  '/shop/repair.js',
-  '/api/products',
-  '/api/spare-parts',
-  '/api/management',
-  '/api/admin'
+  '/shop/repair.js'
 ];
 
 self.addEventListener('install', event => {
@@ -51,11 +47,9 @@ self.addEventListener('fetch', event => {
   const requestURL = new URL(event.request.url);
   if (requestURL.origin !== location.origin) return;
 
-  // Network-first for navigations and specific admin pages/scripts/API routes
+  // Network-first for navigations and specific admin pages/scripts
   const pathname = requestURL.pathname;
-  const isNetworkFirst = event.request.mode === 'navigate' ||
-    NETWORK_FIRST.some(p => pathname === p || pathname.startsWith(p + '/') || pathname.startsWith(p + '?'));
-  if (isNetworkFirst) {
+  if (event.request.mode === 'navigate' || NETWORK_FIRST.includes(pathname)) {
     event.respondWith(
       fetch(event.request).then(response => {
         try { caches.open(CACHE_NAME).then(cache => cache.put(event.request, response.clone())); } catch (e) {}
@@ -84,9 +78,6 @@ self.addEventListener('fetch', event => {
 self.addEventListener('message', event => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
-  }
-  if (event.data && event.data.type === 'BUST_PRODUCTS_CACHE') {
-    caches.open(CACHE_NAME).then(cache => cache.delete('/api/products')).catch(() => {});
   }
 });
 
