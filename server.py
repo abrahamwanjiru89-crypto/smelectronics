@@ -400,6 +400,29 @@ def init_db():
         """)
 
         now = datetime.now(timezone.utc).isoformat()
+        # ── Schema migrations ──────────────────────────────────────────────────
+        # CREATE TABLE IF NOT EXISTS never adds columns to an existing table.
+        # Columns added after the initial schema release must be back-filled here
+        # so older databases don't cause an IndexError in row_order() (and other
+        # row helpers) when they try to access a column that was never created.
+        _order_migrations = [
+            ("delivery_fee",     "REAL DEFAULT 0"),
+            ("deposit_amount",   "REAL DEFAULT 0"),
+            ("remaining_amount", "REAL DEFAULT 0"),
+            ("payment_status",   "TEXT DEFAULT 'Pending'"),
+            ("county",           "TEXT"),
+            ("constituency",     "TEXT"),
+            ("street",           "TEXT"),
+            ("deposit_mpesa",    "TEXT"),
+        ]
+        existing_order_cols = {
+            row[1]
+            for row in conn.execute("PRAGMA table_info(orders)").fetchall()
+        }
+        for col_name, col_def in _order_migrations:
+            if col_name not in existing_order_cols:
+                conn.execute(f"ALTER TABLE orders ADD COLUMN {col_name} {col_def}")
+
         if conn.execute("SELECT COUNT(*) FROM users").fetchone()[0] == 0:
             conn.executemany(
                 "INSERT INTO users (id,name,email,password_hash,role,created_at) VALUES (?,?,?,?,?,?)",
@@ -471,21 +494,24 @@ def public_user(row):
 def row_order(conn, row):
     items = conn.execute("SELECT * FROM order_items WHERE order_id = ?", (row["id"],)).fetchall()
     user = conn.execute("SELECT name,email FROM users WHERE id = ?", (row["user_id"],)).fetchone()
+    # Use dict(row) so we can call .get() with safe defaults — guards against any
+    # column that may be absent on databases that pre-date a schema migration.
+    r = dict(row)
     return {
-        "id": row["id"],
-        "userId": row["user_id"],
+        "id": r["id"],
+        "userId": r["user_id"],
         "customer": user["name"] if user else "Unknown",
         "email": user["email"] if user else "Unknown",
-        "total": row["total"],
-        "deliveryFee": row["delivery_fee"],
-        "depositAmount": row["deposit_amount"],
-        "remainingAmount": row["remaining_amount"],
-        "paymentStatus": row["payment_status"],
-        "status": row["status"],
-        "createdAt": row["created_at"],
+        "total": r["total"],
+        "deliveryFee": r.get("delivery_fee", 0) or 0,
+        "depositAmount": r.get("deposit_amount", 0) or 0,
+        "remainingAmount": r.get("remaining_amount", 0) or 0,
+        "paymentStatus": r.get("payment_status", "Pending") or "Pending",
+        "status": r["status"],
+        "createdAt": r["created_at"],
         "items": [{"id": i["product_id"], "name": i["name"], "price": i["price"], "qty": i["qty"], "img": i["img"]} for i in items],
-        "location": {"county": row["county"], "constituency": row["constituency"], "street": row["street"]},
-        "depositMpesa": row["deposit_mpesa"]
+        "location": {"county": r.get("county"), "constituency": r.get("constituency"), "street": r.get("street")},
+        "depositMpesa": r.get("deposit_mpesa"),
     }
 
 
