@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sm-dynamics-cache-v3';
+const CACHE_NAME = 'sm-dynamics-cache-v4';
 const ASSETS = [
   '/',
   '/index.html',
@@ -17,13 +17,17 @@ const ASSETS = [
   '/shop/brand logo.png'
 ];
 
-// Requests that should always try network first so management/repair pages
-// and their admin scripts load fresh content on each navigation.
+// Requests that should always try network first so management/repair pages,
+// their admin scripts, and product/spare-parts API responses load fresh content.
 const NETWORK_FIRST = [
   '/management.html',
   '/repair.html',
   '/shop/management.js',
-  '/shop/repair.js'
+  '/shop/repair.js',
+  '/api/products',
+  '/api/spare-parts',
+  '/api/management',
+  '/api/admin'
 ];
 
 self.addEventListener('install', event => {
@@ -47,19 +51,11 @@ self.addEventListener('fetch', event => {
   const requestURL = new URL(event.request.url);
   if (requestURL.origin !== location.origin) return;
 
+  // Network-first for navigations and specific admin pages/scripts/API routes
   const pathname = requestURL.pathname;
-
-  // ── Network-only for all API calls ──────────────────────────────────────
-  // Never cache API responses. Product/order/badge updates from the
-  // management dashboard must always be fetched live so the main page
-  // reflects the latest server state immediately.
-  if (pathname.startsWith('/api/')) {
-    event.respondWith(fetch(event.request));
-    return;
-  }
-
-  // Network-first for navigations and specific admin pages/scripts
-  if (event.request.mode === 'navigate' || NETWORK_FIRST.includes(pathname)) {
+  const isNetworkFirst = event.request.mode === 'navigate' ||
+    NETWORK_FIRST.some(p => pathname === p || pathname.startsWith(p + '/') || pathname.startsWith(p + '?'));
+  if (isNetworkFirst) {
     event.respondWith(
       fetch(event.request).then(response => {
         try { caches.open(CACHE_NAME).then(cache => cache.put(event.request, response.clone())); } catch (e) {}
@@ -89,21 +85,8 @@ self.addEventListener('message', event => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
-  // ── Cache invalidation message from management page ──────────────────────
-  // management.js can post { type: 'CLEAR_API_CACHE' } after any product
-  // add / edit / delete so any previously cached API responses are purged.
-  if (event.data && event.data.type === 'CLEAR_API_CACHE') {
-    caches.keys().then(keys =>
-      Promise.all(keys.map(async key => {
-        const cache = await caches.open(key);
-        const requests = await cache.keys();
-        return Promise.all(
-          requests
-            .filter(req => new URL(req.url).pathname.startsWith('/api/'))
-            .map(req => cache.delete(req))
-        );
-      }))
-    );
+  if (event.data && event.data.type === 'BUST_PRODUCTS_CACHE') {
+    caches.open(CACHE_NAME).then(cache => cache.delete('/api/products')).catch(() => {});
   }
 });
 
