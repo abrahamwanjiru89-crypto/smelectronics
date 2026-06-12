@@ -1090,7 +1090,7 @@ window.addEventListener('storage', (e) => {
   
   // Load delivery fee from server
   try {
-    const feeData = await api('/api/admin/delivery-fee');
+    const feeData = await api('/api/delivery-fee');
     if (feeData && feeData.fee) {
       deliveryFee = feeData.fee;
       updateCartTotals();
