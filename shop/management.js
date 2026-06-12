@@ -7,6 +7,7 @@ let orders = [];
 let products = [];
 let staff = [];
 let repairBookings = [];
+let repairServices = window.repairServices;
 let mgmtRepairServices = [];
 let spareParts = [];
 let technicians = [];
