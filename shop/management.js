@@ -1,6 +1,4 @@
 // $ and $$ are provided by app.js — do not redeclare them here
-if (typeof $ === 'undefined') { var $ = (s, p=document) => p.querySelector(s); }
-if (typeof $$ === 'undefined') { var $$ = (s, p=document) => [...p.querySelectorAll(s)]; }
 let manager = null;
 let offlineManager = false;
 let orders = [];
