@@ -1,6 +1,7 @@
 // ============================================
 // S.M DYNAMICS REPAIR PAGE JS - FULLY FUNCTIONAL
 // ============================================
+(function() {
 
 let repairServices = [];
 let spareParts = [];
@@ -62,7 +63,7 @@ async function fetchServices() {
     }
     
     try {
-        const res = await fetch('/api/repair/services', { 
+        const res = await fetch('/api/management/repair-services', { 
             cache: 'no-store',
             headers: { 'Cache-Control': 'no-cache' }
         });
@@ -452,3 +453,5 @@ document.addEventListener('DOMContentLoaded', () => {
 // Make functions global for onclick handlers
 window.addToCart = addToCart;
 window.openBooking = openBooking;
+
+})();
