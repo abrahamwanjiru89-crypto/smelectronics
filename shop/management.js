@@ -1,8 +1,6 @@
-if (typeof window.__mgmtLoaded === 'undefined') {
-  window.__mgmtLoaded = true;
-  (function() {
-const $ = (s, p=document) => p.querySelector(s);
-const $$ = (s, p=document) => [...p.querySelectorAll(s)];
+// Guard against re-declaration when app.js (or another script) already defines $ / $$
+if (typeof $ === 'undefined') { var $ = (s, p=document) => p.querySelector(s); }
+if (typeof $$ === 'undefined') { var $$ = (s, p=document) => [...p.querySelectorAll(s)]; }
 let manager = null;
 let offlineManager = false;
 let orders = [];
@@ -57,32 +55,18 @@ async function api(path, options = {}) {
   if (!(options.body instanceof FormData)) {
     headers['Content-Type'] = 'application/json';
   }
-  // Retry up to 3 times for 502/503 (Render cold-start wake-up)
-  const maxRetries = (options.method || 'GET') === 'GET' ? 3 : 1;
-  let lastErr;
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    if (attempt > 0) await new Promise(r => setTimeout(r, 2000 * attempt));
-    try {
-      res = await fetch(path, {
-        credentials: 'include',
-        method: options.method || 'GET',
-        body: options.body,
-        headers: Object.keys(headers).length > 0 ? headers : undefined
-      });
-      if (res.status === 502 || res.status === 503) {
-        lastErr = new Error('Server starting up, retrying...');
-        continue; // retry
-      }
-      break; // success or non-retryable status
-    } catch (err) {
-      lastErr = err;
-      if (attempt < maxRetries - 1) continue;
-      const error = new Error(err.message || 'Network request failed');
-      error.network = true;
-      throw error;
-    }
+  try {
+    res = await fetch(path, {
+      credentials: 'include',
+      method: options.method || 'GET',
+      body: options.body,
+      headers: Object.keys(headers).length > 0 ? headers : undefined
+    });
+  } catch (err) {
+    const error = new Error(err.message || 'Network request failed');
+    error.network = true;
+    throw error;
   }
-  if (!res) { const e = new Error(lastErr?.message || 'Request failed'); e.network = true; throw e; }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || 'Request failed');
   return data;
@@ -112,93 +96,74 @@ function notifySparePartsUpdated() {
   console.log('Dispatched spare_parts_updated event');
 }
 
-// ============================================
-// PRODUCT BADGE FUNCTIONS
-// ============================================
+async function bustProductsCache() {
+  try {
+    const cache = await caches.open('sm-dynamics-cache-v4');
+    await cache.delete('/api/products');
+  } catch (_) {}
+  // Tell every open tab (including the main shop page) to reload product data
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.controller.postMessage({ type: 'BUST_PRODUCTS_CACHE' });
+  }
+}
+
+// Shared helper — sends badge + was changes to the server and refreshes the list
+async function saveBadge(productId, badge, was) {
+  const product = products.find(p => String(p.id) === String(productId));
+  if (!product) { toast('Product not found', 'error'); return; }
+  try {
+    await api(`/api/admin/products/${encodeURIComponent(productId)}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        name: product.name,
+        price: product.price,
+        was: was !== undefined ? was : product.was,
+        inStock: product.inStock !== false,
+        cat: product.cat,
+        desc: product.desc,
+        badge: badge,
+        img: product.img,
+      })
+    });
+    await bustProductsCache();
+    await loadAdminData();
+  } catch (err) {
+    toast(err.message || 'Failed to update badge', 'error');
+  }
+}
 
 window.markAsFlashSale = async function(id) {
-  console.log('Flash Sale clicked for ID:', id, typeof id);
-  
-  const productId = String(id);
-  const product = products.find(p => String(p.id) === productId);
-  
-  if (!product) {
-    console.error('Product not found. Available products:', products.map(p => ({ id: p.id, name: p.name })));
-    toast('Product not found. ID: ' + id, 'error');
-    return;
-  }
-  
-  console.log('Found product:', product.name);
-  
+  const product = products.find(p => String(p.id) === String(id));
+  if (!product) { toast('Product not found. ID: ' + id, 'error'); return; }
   let wasPrice = product.was;
   if (!wasPrice) {
     const input = prompt('Enter original price (for flash sale discount display):', product.price * 1.5);
     if (!input) return;
     wasPrice = parseFloat(input);
+    if (isNaN(wasPrice)) return;
   }
-  
-  product.badge = 'sale';
-  product.was = wasPrice;
-  
-  localStorage.setItem('management_products', JSON.stringify(products));
-  renderProducts();
+  await saveBadge(id, 'sale', wasPrice);
   toast(`🔥 ${product.name} marked as FLASH SALE!`, 'success');
 };
 
 window.markAsHot = async function(id) {
-  console.log('Hot clicked for ID:', id, typeof id);
-  
-  const productId = String(id);
-  const product = products.find(p => String(p.id) === productId);
-  
-  if (!product) {
-    console.error('Product not found. ID:', id);
-    toast('Product not found', 'error');
-    return;
-  }
-  
-  product.badge = 'hot';
-  
-  localStorage.setItem('management_products', JSON.stringify(products));
-  renderProducts();
+  const product = products.find(p => String(p.id) === String(id));
+  if (!product) { toast('Product not found', 'error'); return; }
+  await saveBadge(id, 'hot', product.was);
   toast(`⚡ ${product.name} marked as HOT!`, 'success');
 };
 
 window.markAsNew = async function(id) {
-  console.log('New clicked for ID:', id, typeof id);
-  
-  const productId = String(id);
-  const product = products.find(p => String(p.id) === productId);
-  
-  if (!product) {
-    console.error('Product not found. ID:', id);
-    toast('Product not found', 'error');
-    return;
-  }
-  
-  product.badge = 'new';
-  
-  localStorage.setItem('management_products', JSON.stringify(products));
-  renderProducts();
+  const product = products.find(p => String(p.id) === String(id));
+  if (!product) { toast('Product not found', 'error'); return; }
+  await saveBadge(id, 'new', product.was);
   toast(`✨ ${product.name} marked as NEW!`, 'success');
 };
 
 window.removeBadge = async function(id) {
-  console.log('Remove Badge clicked for ID:', id, typeof id);
-  
-  const productId = String(id);
-  const product = products.find(p => String(p.id) === productId);
-  
-  if (!product) {
-    console.error('Product not found. ID:', id);
-    toast('Product not found', 'error');
-    return;
-  }
-  
-  product.badge = '';
-  
-  localStorage.setItem('management_products', JSON.stringify(products));
-  renderProducts();
+  const product = products.find(p => String(p.id) === String(id));
+  if (!product) { toast('Product not found', 'error'); return; }
+  await saveBadge(id, '', null);
   toast(`${product.name} badge removed`, 'success');
 };
 
@@ -265,16 +230,14 @@ async function editProduct(id) {
         name: newName.trim(),
         price: parseFloat(newPrice),
         was: product.was,
-        badge: product.badge,
-        img: product.img,
-        rating: product.rating,
-        reviews: product.reviews,
         inStock: product.inStock !== false,
         cat: product.cat,
-        desc: product.desc
+        desc: product.desc,
+        badge: product.badge || '',
+        img: product.img,
       })
     });
-    if (window.clearApiCache) await window.clearApiCache();
+    await bustProductsCache();
     await loadAdminData();
     toast('Product updated', 'success');
   } catch (err) {
@@ -286,7 +249,7 @@ async function deleteProduct(id) {
   if (!confirm('Delete this product?')) return;
   try {
     await api(`/api/admin/products/${encodeURIComponent(id)}`, { method: 'DELETE' });
-    if (window.clearApiCache) await window.clearApiCache();
+    await bustProductsCache();
     await loadAdminData();
     toast('Product deleted', 'success');
   } catch (err) {
@@ -506,13 +469,15 @@ async function loadAdminData() {
   }
   if ($('#staffList')) $('#staffList').innerHTML = LOADING.staff;
   if ($('#productAdmin')) $('#productAdmin').innerHTML = LOADING.products;
-  // Await products so editProduct/deleteProduct always find the right product
-  await Promise.allSettled([
-    api('/api/products').then(d => { products = d.products || []; renderProducts(); }).catch(e => console.error("Products load fail", e)),
-    api('/api/admin/staff').then(d => { staff = d.staff || []; renderStaff(); }).catch(e => console.error("Staff load fail", e)),
-    api('/api/admin/analytics').then(d => renderPerformance(d)).catch(e => console.error("Analytics load fail", e)),
-    loadRepairServices(), loadTechnicians(), loadRepairCategories(), loadAdminSpareParts()
-  ]);
+  try {
+    api('/api/products').then(d => { products = d.products || []; renderProducts(); }).catch(e => console.error("Products load fail", e));
+    api('/api/admin/staff').then(d => { staff = d.staff || []; renderStaff(); }).catch(e => console.error("Staff load fail", e));
+    api('/api/admin/analytics').then(d => renderPerformance(d)).catch(e => console.error("Analytics load fail", e));
+  } catch (err) {
+    console.error("Admin data load failed:", err);
+    toast("Some management metrics could not be loaded", "error");
+  }
+  await Promise.all([loadRepairServices(), loadTechnicians(), loadRepairCategories(), loadAdminSpareParts()]);
 }
 
 // ============================================
@@ -864,11 +829,12 @@ $('#repairBookings')?.addEventListener('click', async e => {
 $('#productForm')?.addEventListener('submit', async e => {
   e.preventDefault();
   const fd = new FormData(e.target);
-  // FormData already includes all form fields; no need to re-append badge/was
 
   try {
     await api('/api/admin/products', { method:'POST', body:fd });
     e.target.reset();
+
+    await bustProductsCache();
     await loadAdminData();
     toast('Product added successfully!', 'success');
   } catch (err) {
@@ -894,6 +860,3 @@ updateView().catch(() => {
   const ordersPanel = $('#managerOrders');
   if (ordersPanel) ordersPanel.hidden = true;
 });
-
-  })();
-}
