@@ -4,7 +4,6 @@
 (function() {
 window.repairServices = window.repairServices | | [];
 let repairServices = window.repairServices;
-let repairServices = [];
 let spareParts = [];
 let currentCategory = 'all';
 let searchTerm = '';
