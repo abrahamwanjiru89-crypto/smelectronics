@@ -1,14 +1,11 @@
-// Guard against re-declaration when app.js (or another script) already defines $ / $$
-if (typeof $ === 'undefined') { var $ = (s, p=document) => p.querySelector(s); }
-if (typeof $$ === 'undefined') { var $$ = (s, p=document) => [...p.querySelectorAll(s)]; }
+// $ and $$ are provided by app.js — do not redeclare them here
 let manager = null;
 let offlineManager = false;
 let orders = [];
 let products = [];
 let staff = [];
 let repairBookings = [];
-let repairServices = window.repairServices;
-let mgmtRepairServices = [];
+let repairServices = [];
 let spareParts = [];
 let technicians = [];
 let repairCategories = [];
