@@ -5,11 +5,11 @@ const urlsToCache = [
   '/index.html',
   '/repair.html',
   '/management.html',
-  '/app.js',
-  '/repair.js',
-  '/pwa.js',
-  '/management.js',
-  '/style.css',
+  '/shop/app.js',
+  '/shop/repair.js',
+  '/shop/pwa.js',
+  '/shop/management.js',
+  '/shop/styles.css',
   '/service-worker.js',
   '/shop/brand%20logo.png'
 ];
