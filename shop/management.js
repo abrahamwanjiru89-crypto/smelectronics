@@ -1,5 +1,5 @@
-const $ = (s, p=document) => p.querySelector(s);
-const $$ = (s, p=document) => [...p.querySelectorAll(s)];
+const q = (s,p=document)=>p.querySelector(s);
+const qq = (s,p=document)=>[...p.querySelectorAll(s)];
 let manager = null;
 let offlineManager = false;
 let orders = [];
@@ -45,8 +45,7 @@ const DUMMY_ANALYTICS = { totalSales:0, totalOrders:0, delivered:0, products:1, 
   { label:'Sun', sales:0, orders:0 }
 ]};
 
-const fmt = n => 'Kshs ' + Number(n || 0).toLocaleString('en-KE', { minimumFractionDigits: 0 });
-const esc = v => String(v ?? '').replace(/[&<>"']/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch]));
+
 
 async function api(path, options = {}) {
   let res;
