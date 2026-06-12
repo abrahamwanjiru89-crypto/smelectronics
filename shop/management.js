@@ -1,3 +1,6 @@
+if (typeof window.__mgmtLoaded === 'undefined') {
+  window.__mgmtLoaded = true;
+  (function() {
 const $ = (s, p=document) => p.querySelector(s);
 const $$ = (s, p=document) => [...p.querySelectorAll(s)];
 let manager = null;
@@ -54,18 +57,32 @@ async function api(path, options = {}) {
   if (!(options.body instanceof FormData)) {
     headers['Content-Type'] = 'application/json';
   }
-  try {
-    res = await fetch(path, {
-      credentials: 'include',
-      method: options.method || 'GET',
-      body: options.body,
-      headers: Object.keys(headers).length > 0 ? headers : undefined
-    });
-  } catch (err) {
-    const error = new Error(err.message || 'Network request failed');
-    error.network = true;
-    throw error;
+  // Retry up to 3 times for 502/503 (Render cold-start wake-up)
+  const maxRetries = (options.method || 'GET') === 'GET' ? 3 : 1;
+  let lastErr;
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    if (attempt > 0) await new Promise(r => setTimeout(r, 2000 * attempt));
+    try {
+      res = await fetch(path, {
+        credentials: 'include',
+        method: options.method || 'GET',
+        body: options.body,
+        headers: Object.keys(headers).length > 0 ? headers : undefined
+      });
+      if (res.status === 502 || res.status === 503) {
+        lastErr = new Error('Server starting up, retrying...');
+        continue; // retry
+      }
+      break; // success or non-retryable status
+    } catch (err) {
+      lastErr = err;
+      if (attempt < maxRetries - 1) continue;
+      const error = new Error(err.message || 'Network request failed');
+      error.network = true;
+      throw error;
+    }
   }
+  if (!res) { const e = new Error(lastErr?.message || 'Request failed'); e.network = true; throw e; }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || 'Request failed');
   return data;
@@ -247,11 +264,17 @@ async function editProduct(id) {
       body: JSON.stringify({
         name: newName.trim(),
         price: parseFloat(newPrice),
+        was: product.was,
+        badge: product.badge,
+        img: product.img,
+        rating: product.rating,
+        reviews: product.reviews,
         inStock: product.inStock !== false,
         cat: product.cat,
         desc: product.desc
       })
     });
+    if (window.clearApiCache) await window.clearApiCache();
     await loadAdminData();
     toast('Product updated', 'success');
   } catch (err) {
@@ -263,6 +286,7 @@ async function deleteProduct(id) {
   if (!confirm('Delete this product?')) return;
   try {
     await api(`/api/admin/products/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    if (window.clearApiCache) await window.clearApiCache();
     await loadAdminData();
     toast('Product deleted', 'success');
   } catch (err) {
@@ -482,15 +506,13 @@ async function loadAdminData() {
   }
   if ($('#staffList')) $('#staffList').innerHTML = LOADING.staff;
   if ($('#productAdmin')) $('#productAdmin').innerHTML = LOADING.products;
-  try {
-    api('/api/products').then(d => { products = d.products || []; renderProducts(); }).catch(e => console.error("Products load fail", e));
-    api('/api/admin/staff').then(d => { staff = d.staff || []; renderStaff(); }).catch(e => console.error("Staff load fail", e));
-    api('/api/admin/analytics').then(d => renderPerformance(d)).catch(e => console.error("Analytics load fail", e));
-  } catch (err) {
-    console.error("Admin data load failed:", err);
-    toast("Some management metrics could not be loaded", "error");
-  }
-  await Promise.all([loadRepairServices(), loadTechnicians(), loadRepairCategories(), loadAdminSpareParts()]);
+  // Await products so editProduct/deleteProduct always find the right product
+  await Promise.allSettled([
+    api('/api/products').then(d => { products = d.products || []; renderProducts(); }).catch(e => console.error("Products load fail", e)),
+    api('/api/admin/staff').then(d => { staff = d.staff || []; renderStaff(); }).catch(e => console.error("Staff load fail", e)),
+    api('/api/admin/analytics').then(d => renderPerformance(d)).catch(e => console.error("Analytics load fail", e)),
+    loadRepairServices(), loadTechnicians(), loadRepairCategories(), loadAdminSpareParts()
+  ]);
 }
 
 // ============================================
@@ -872,3 +894,6 @@ updateView().catch(() => {
   const ordersPanel = $('#managerOrders');
   if (ordersPanel) ordersPanel.hidden = true;
 });
+
+  })();
+}
