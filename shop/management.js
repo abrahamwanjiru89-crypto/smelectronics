@@ -1,4 +1,4 @@
-// $ and $$ are provided by app.js — do not redeclare them here
+
 let manager = null;
 let offlineManager = false;
 let orders = [];
@@ -44,8 +44,7 @@ const DUMMY_ANALYTICS = { totalSales:0, totalOrders:0, delivered:0, products:1, 
   { label:'Sun', sales:0, orders:0 }
 ]};
 
-// const fmt = n => 'Kshs ' + Number(n || 0).toLocaleString('en-KE', { minimumFractionDigits: 0 });
-const esc = v => String(v ?? '').replace(/[&<>"']/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch]));
+
 
 async function api(path, options = {}) {
   let res;
