@@ -1,5 +1,5 @@
 // Guard against re-declaration when app.js (or another script) already defines $ / $$
-// if (typeof $ === 'undefined') { var $ = (s, p=document) => p.querySelector(s); }
+if (typeof $ === 'undefined') { var $ = (s, p=document) => p.querySelector(s); }
 if (typeof $$ === 'undefined') { var $$ = (s, p=document) => [...p.querySelectorAll(s)]; }
 let manager = null;
 let offlineManager = false;
