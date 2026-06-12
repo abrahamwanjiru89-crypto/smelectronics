@@ -105,4 +105,8 @@ window.addEventListener('load', () => {
   if (notifyBtn) {
     notifyBtn.addEventListener('click', requestNotificationPermission);
   }
+  // If beforeinstallprompt fired before DOM was ready, show the button now
+  if (deferredPrompt) {
+    showInstallButton();
+  }
 });
