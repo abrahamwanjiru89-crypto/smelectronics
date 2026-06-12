@@ -62,7 +62,7 @@ async function fetchServices() {
     }
     
     try {
-        const res = await fetch('/api/management/repair-services', { 
+        const res = await fetch('/api/repair/services', { 
             cache: 'no-store',
             headers: { 'Cache-Control': 'no-cache' }
         });
