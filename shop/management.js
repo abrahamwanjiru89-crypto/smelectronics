@@ -1,4 +1,5 @@
-
+window.$ = window.$ || ((s,p=document)=>p.querySelector(s));
+window.$$ = window.$$ || ((s,p=document)=>[...p.querySelectorAll(s)]);
 let manager = null;
 let offlineManager = false;
 let orders = [];
