@@ -1,19 +1,22 @@
 const CACHE_NAME = 'sm-dynamics-v1';
 
-// Only cache files that are guaranteed to exist
-const STATIC_ASSETS = [
+// ✅ Define this array — list all files your app needs offline:
+const urlsToCache = [
   '/',
   '/index.html',
-  '/shop/app.js',
-  '/shop/pwa.js',
-  '/shop/repair.js',
-  '/shop/management.js',
+  '/repair.html',
+  '/app.js',
+  '/repair.js',
+  '/pwa.js',
+  '/style.css',
+  '/shop/brand%20logo.png'
+  // add any other assets
 ];
 
-// Install: cache static assets, skip on failure
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache =>
+      // Use allSettled so one bad URL doesn't break everything
       Promise.allSettled(
         urlsToCache.map(url =>
           cache.add(url).catch(err => console.warn('Failed to cache:', url, err))
@@ -21,46 +24,22 @@ self.addEventListener('install', event => {
       )
     )
   );
-})
+});
 
-// Activate: remove old caches
+self.addEventListener('fetch', event => {
+  event.respondWith(
+    caches.match(event.request).then(response => response || fetch(event.request))
+  );
+});
+
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(
-        keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
-      )
-    ).then(() => self.clients.claim())
+      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
+    )
   );
 });
 
-// Fetch: network first, fall back to cache
-self.addEventListener('fetch', event => {
-  // Skip non-GET and cross-origin requests
-  if (event.request.method !== 'GET') return;
-  if (!event.request.url.startsWith(self.location.origin)) return;
-
-  // For API calls: network only, no caching
-  const url = new URL(event.request.url);
-  if (url.pathname.startsWith('/api/')) return;
-
-  event.respondWith(
-    fetch(event.request)
-      .then(response => {
-        // Cache successful responses
-        if (response && response.status === 200) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-        }
-        return response;
-      })
-      .catch(() => caches.match(event.request))
-  );
-});
-
-// Handle SKIP_WAITING message from pwa.js
 self.addEventListener('message', event => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting();
-  }
-});
+  if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
+})
