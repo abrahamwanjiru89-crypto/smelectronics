@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sm-dynamics-v1';
+const CACHE_NAME = 'sm-dynamics-v2';
 
 const urlsToCache = [
   '/',
