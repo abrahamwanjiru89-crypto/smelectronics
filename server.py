@@ -791,6 +791,32 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"categories": [{"id": r["id"], "name": r["name"], "slug": r["slug"]} for r in rows]})
             return
 
+        # Public endpoint: repair services (no auth required — storefront & repair page)
+        if path == "/api/repair/services":
+            with db() as conn:
+                rows = conn.execute(
+                    "SELECT r.*, c.name AS category_name FROM repair_services r "
+                    "LEFT JOIN repair_categories c ON r.category_id = c.id "
+                    "ORDER BY r.created_at DESC"
+                ).fetchall()
+                self.send_json({"services": [row_repair_service(r) for r in rows]})
+            return
+
+        # Public endpoint: delivery fee (no auth required — storefront app.js)
+        if path == "/api/delivery-fee":
+            with db() as conn:
+                setting = conn.execute("SELECT value FROM settings WHERE key = 'delivery_fee'").fetchone()
+                fee = int(setting['value']) if setting else 600
+                self.send_json({"fee": fee})
+            return
+
+        # Public endpoint: counties list (no auth required — checkout dropdown)
+        if path == "/api/locations/counties":
+            with db() as conn:
+                rows = conn.execute("SELECT id, name FROM counties ORDER BY name").fetchall()
+                self.send_json({"counties": [{"id": r["id"], "name": r["name"]} for r in rows]})
+            return
+
         if path == "/api/admin/analytics":
             if not self.require({"admin"}):
                 return
