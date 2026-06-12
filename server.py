@@ -732,8 +732,7 @@ class Handler(BaseHTTPRequestHandler):
                 return
             with db() as conn:
                 rows = conn.execute("SELECT * FROM orders ORDER BY created_at DESC").fetchall()
-                result = [row_order(conn, r) for r in rows]
-            self.send_json({"orders": result})
+                self.send_json({"orders": [row_order(conn, r) for r in rows]})
             return
         
         if path == "/api/management/repair-bookings":
@@ -745,16 +744,14 @@ class Handler(BaseHTTPRequestHandler):
             return
         
         if path == "/api/management/repair-services":
-            if not self.require({"admin"}):
-                return
+            # Public — repair.js on the main shop page needs this without auth
             with db() as conn:
                 rows = conn.execute("SELECT r.*, c.name AS category_name FROM repair_services r LEFT JOIN repair_categories c ON r.category_id = c.id ORDER BY r.created_at DESC").fetchall()
                 self.send_json({"services": [row_repair_service(r) for r in rows]})
             return
         
         if path == "/api/admin/delivery-fee":
-            if not self.require({"admin"}):
-                return
+            # GET is public — shop page reads fee; POST (below) stays admin-only
             with db() as conn:
                 setting = conn.execute("SELECT value FROM settings WHERE key = 'delivery_fee'").fetchone()
                 fee = int(setting['value']) if setting else 600
@@ -763,7 +760,7 @@ class Handler(BaseHTTPRequestHandler):
         
         if path == "/api/repair/categories":
             with db() as conn:
-                rows = conn.execute("SELECT id, name, slug FROM repair_categories ORDER BY name").fetchall()
+                rows = conn.execute("SELECT * FROM repair_categories ORDER BY name").fetchall()
                 self.send_json({"categories": [{"id": r["id"], "name": r["name"], "slug": r["slug"]} for r in rows]})
             return
 
@@ -771,29 +768,39 @@ class Handler(BaseHTTPRequestHandler):
             if not self.require({"admin"}):
                 return
             with db() as conn:
-                total_sales = conn.execute("SELECT COALESCE(SUM(total), 0) FROM orders").fetchone()[0]
                 total_orders = conn.execute("SELECT COUNT(*) FROM orders").fetchone()[0]
-                delivered = conn.execute("SELECT COUNT(*) FROM orders WHERE status = 'Delivered'").fetchone()[0]
-                product_count = conn.execute("SELECT COUNT(*) FROM products").fetchone()[0]
-                days_data = []
-                for i in range(6, -1, -1):
-                    day_label = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][(datetime.now(timezone.utc).weekday() - i) % 7]
-                    offset = timedelta(days=i)
-                    day_start = (datetime.now(timezone.utc) - offset).strftime("%Y-%m-%d")
-                    day_sales = conn.execute(
-                        "SELECT COALESCE(SUM(total), 0) FROM orders WHERE DATE(created_at) = ?", (day_start,)
-                    ).fetchone()[0]
-                    day_orders = conn.execute(
-                        "SELECT COUNT(*) FROM orders WHERE DATE(created_at) = ?", (day_start,)
-                    ).fetchone()[0]
-                    days_data.append({"label": day_label, "sales": day_sales, "orders": day_orders})
-                self.send_json({
-                    "totalSales": total_sales,
-                    "totalOrders": total_orders,
-                    "delivered": delivered,
-                    "products": product_count,
-                    "days": days_data
-                })
+                total_sales  = conn.execute("SELECT COALESCE(SUM(total), 0) FROM orders").fetchone()[0]
+                delivered    = conn.execute("SELECT COUNT(*) FROM orders WHERE status = 'Delivered'").fetchone()[0]
+                total_prods  = conn.execute("SELECT COUNT(*) FROM products").fetchone()[0]
+                days_data = conn.execute("""
+                    SELECT strftime('%w', created_at) as dow,
+                           strftime('%Y-%m-%d', created_at) as day,
+                           COALESCE(SUM(total), 0) as sales,
+                           COUNT(*) as orders
+                    FROM orders
+                    WHERE created_at >= datetime('now', '-7 days')
+                    GROUP BY day ORDER BY day ASC
+                """).fetchall()
+                day_labels = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]
+                days = [{"label": day_labels[int(r["dow"])], "sales": r["sales"], "orders": r["orders"]} for r in days_data]
+                if len(days) < 7:
+                    days = days + [{"label": day_labels[i % 7], "sales": 0, "orders": 0} for i in range(len(days), 7)]
+                self.send_json({"totalSales": total_sales, "totalOrders": total_orders,
+                                "delivered": delivered, "products": total_prods, "days": days})
+            return
+
+        if path == "/api/locations/counties":
+            # Public — used by checkout county dropdown in app.js
+            kenya_counties = [
+                "Baringo","Bomet","Bungoma","Busia","Elgeyo-Marakwet","Embu","Garissa",
+                "Homa Bay","Isiolo","Kajiado","Kakamega","Kericho","Kiambu","Kilifi",
+                "Kirinyaga","Kisii","Kisumu","Kitui","Kwale","Laikipia","Lamu","Machakos",
+                "Makueni","Mandera","Marsabit","Meru","Migori","Mombasa","Murang\'a",
+                "Nairobi","Nakuru","Nandi","Narok","Nyamira","Nyandarua","Nyeri",
+                "Samburu","Siaya","Taita-Taveta","Tana River","Tharaka-Nithi","Trans Nzoia",
+                "Turkana","Uasin Gishu","Vihiga","Wajir","West Pokot"
+            ]
+            self.send_json({"counties": kenya_counties})
             return
 
         if path == "/api/products":
@@ -859,7 +866,7 @@ class Handler(BaseHTTPRequestHandler):
     # POST HANDLERS
     # ============================================
     def do_POST(self):
-        path = urlparse(self.path).path.rstrip("/")
+        path = urlparse(self.path).path
         
         # ============================================
         # MANAGEMENT LOGIN ENDPOINT
@@ -1280,11 +1287,25 @@ class Handler(BaseHTTPRequestHandler):
                 return
             product_id = path.split("/")[-1]
             data = self.read_json()
-            
             with db() as conn:
                 conn.execute(
-                    "UPDATE products SET name = ?, price = ?, in_stock = ?, cat = ?, desc = ? WHERE id = ?",
-                    (data.get("name"), data.get("price"), 1 if data.get("inStock") else 0, data.get("cat"), data.get("desc"), product_id),
+                    """UPDATE products
+                       SET name=?, price=?, was=?, badge=?, img=?, rating=?,
+                           reviews=?, in_stock=?, cat=?, desc=?
+                       WHERE id=?""",
+                    (
+                        data.get("name"),
+                        data.get("price"),
+                        data.get("was"),
+                        data.get("badge", ""),
+                        data.get("img"),
+                        data.get("rating"),
+                        data.get("reviews"),
+                        1 if data.get("inStock") else 0,
+                        data.get("cat"),
+                        data.get("desc"),
+                        product_id,
+                    ),
                 )
             self.send_json({"ok": True})
             return
