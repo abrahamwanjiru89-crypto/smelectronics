@@ -133,90 +133,94 @@ async function bustProductsCache() {
 // PRODUCT BADGE FUNCTIONS
 // ============================================
 
-async function persistProduct(product) {
-  // Send the full product payload so the server keeps was/badge/img/rating/reviews intact.
-  await api(`/api/admin/products/${encodeURIComponent(product.id)}`, {
-    method: 'PUT',
-    body: JSON.stringify({
-      name: product.name,
-      price: product.price,
-      was: product.was ?? null,
-      badge: product.badge || '',
-      img: product.img,
-      rating: product.rating,
-      reviews: product.reviews,
-      inStock: product.inStock !== false,
-      cat: product.cat,
-      desc: product.desc
-    })
-  });
-  localStorage.setItem('management_products', JSON.stringify(products));
-  if (window.clearApiCache) await window.clearApiCache();
-  await bustProductsCache();
-  notifyProductsUpdated();
-}
-
 window.markAsFlashSale = async function(id) {
+  console.log('Flash Sale clicked for ID:', id, typeof id);
+  
   const productId = String(id);
   const product = products.find(p => String(p.id) === productId);
-  if (!product) { toast('Product not found', 'error'); return; }
-
+  
+  if (!product) {
+    console.error('Product not found. Available products:', products.map(p => ({ id: p.id, name: p.name })));
+    toast('Product not found. ID: ' + id, 'error');
+    return;
+  }
+  
+  console.log('Found product:', product.name);
+  
   let wasPrice = product.was;
   if (!wasPrice) {
     const input = prompt('Enter original price (for flash sale discount display):', product.price * 1.5);
     if (!input) return;
     wasPrice = parseFloat(input);
   }
-
+  
   product.badge = 'sale';
   product.was = wasPrice;
-
-  try {
-    await persistProduct(product);
-    renderProducts();
-    toast(`🔥 ${product.name} marked as FLASH SALE!`, 'success');
-  } catch (err) {
-    toast('Failed to save: ' + (err.message || 'server error'), 'error');
-  }
+  
+  localStorage.setItem('management_products', JSON.stringify(products));
+  notifyProductsUpdated();
+  renderProducts();
+  toast(`🔥 ${product.name} marked as FLASH SALE!`, 'success');
 };
 
 window.markAsHot = async function(id) {
-  const product = products.find(p => String(p.id) === String(id));
-  if (!product) { toast('Product not found', 'error'); return; }
-  product.badge = 'hot';
-  try {
-    await persistProduct(product);
-    renderProducts();
-    toast(`⚡ ${product.name} marked as HOT!`, 'success');
-  } catch (err) {
-    toast('Failed to save: ' + (err.message || 'server error'), 'error');
+  console.log('Hot clicked for ID:', id, typeof id);
+  
+  const productId = String(id);
+  const product = products.find(p => String(p.id) === productId);
+  
+  if (!product) {
+    console.error('Product not found. ID:', id);
+    toast('Product not found', 'error');
+    return;
   }
+  
+  product.badge = 'hot';
+  
+  localStorage.setItem('management_products', JSON.stringify(products));
+  notifyProductsUpdated();
+  renderProducts();
+  toast(`⚡ ${product.name} marked as HOT!`, 'success');
 };
 
 window.markAsNew = async function(id) {
-  const product = products.find(p => String(p.id) === String(id));
-  if (!product) { toast('Product not found', 'error'); return; }
-  product.badge = 'new';
-  try {
-    await persistProduct(product);
-    renderProducts();
-    toast(`✨ ${product.name} marked as NEW!`, 'success');
-  } catch (err) {
-    toast('Failed to save: ' + (err.message || 'server error'), 'error');
+  console.log('New clicked for ID:', id, typeof id);
+  
+  const productId = String(id);
+  const product = products.find(p => String(p.id) === productId);
+  
+  if (!product) {
+    console.error('Product not found. ID:', id);
+    toast('Product not found', 'error');
+    return;
   }
+  
+  product.badge = 'new';
+  
+  localStorage.setItem('management_products', JSON.stringify(products));
+  notifyProductsUpdated();
+  renderProducts();
+  toast(`✨ ${product.name} marked as NEW!`, 'success');
 };
 
 window.removeBadge = async function(id) {
-  const product = products.find(p => String(p.id) === String(id));
-  if (!product) { toast('Product not found', 'error'); return; }
-  product.badge = '';
-  try {
-    await persistProduct(product);
-    renderProducts();
-    toast(`${product.name} badge removed`, 'success');
-  } catch (err) {
-    toast('Failed to save: ' + (err.message || 'server error'), 'error');
+  console.log('Remove Badge clicked for ID:', id, typeof id);
+  
+  const productId = String(id);
+  const product = products.find(p => String(p.id) === productId);
+  
+  if (!product) {
+    console.error('Product not found. ID:', id);
+    toast('Product not found', 'error');
+    return;
   }
+  
+  product.badge = '';
+  
+  localStorage.setItem('management_products', JSON.stringify(products));
+  notifyProductsUpdated();
+  renderProducts();
+  toast(`${product.name} badge removed`, 'success');
 };
 
 // ============================================
@@ -351,39 +355,26 @@ function renderAdminSpareParts() {
   }));
 }
 
-async function editSparePart(id) {
+function editSparePart(id) {
   const part = spareParts.find(p => p.id == id);
   if (!part) { toast('Spare part not found', 'error'); return; }
-
+  
   const newName = prompt('Edit part name:', part.name);
-  if (!newName || !newName.trim()) return;
-  const newPrice = prompt('Edit price (Kshs):', part.price);
-  if (newPrice === null) return;
-  const newStock = prompt('Edit stock quantity:', part.stock);
-  if (newStock === null) return;
-
-  const updated = {
-    name: newName.trim(),
-    brand: part.brand,
-    category: part.category,
-    price: parseFloat(newPrice),
-    stock: parseInt(newStock),
-    image_path: part.image_path || part.image || '',
-    description: part.description || ''
-  };
-
-  try {
-    await api(`/api/admin/spare-parts/${encodeURIComponent(id)}`, {
-      method: 'PUT',
-      body: JSON.stringify(updated)
-    });
-    Object.assign(part, updated);
-    localStorage.setItem('spare_parts', JSON.stringify(spareParts));
-    renderAdminSpareParts();
-    notifySparePartsUpdated();
-    toast('Spare part updated', 'success');
-  } catch (err) {
-    toast('Failed to save: ' + (err.message || 'server error'), 'error');
+  if (newName && newName.trim()) {
+    const newPrice = prompt('Edit price (Kshs):', part.price);
+    if (newPrice) {
+      const newStock = prompt('Edit stock quantity:', part.stock);
+      if (newStock !== null) {
+        part.name = newName.trim();
+        part.price = parseFloat(newPrice);
+        part.stock = parseInt(newStock);
+        localStorage.setItem('spare_parts', JSON.stringify(spareParts));
+        renderAdminSpareParts();
+        // Notify repair page
+        notifySparePartsUpdated();
+        toast('Spare part updated', 'success');
+      }
+    }
   }
 }
 
