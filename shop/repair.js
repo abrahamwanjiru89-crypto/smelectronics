@@ -2,7 +2,7 @@
 // S.M DYNAMICS REPAIR PAGE JS - FULLY FUNCTIONAL
 // ============================================
 (function() {
-window.repairServices = window.repairServices | | [];
+window.repairServices = window.repairServices || [];
 let repairServices = [];
 let spareParts = [];
 let currentCategory = 'all';
@@ -375,6 +375,19 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchServices();
     fetchParts();
     updateCartCount();
+
+    // Refresh data when the page becomes visible again (e.g. switching back
+    // from another tab/app), so management updates show up without a manual reload
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            fetchServices();
+            fetchParts();
+        }
+    });
+    window.addEventListener('focus', () => {
+        fetchServices();
+        fetchParts();
+    });
     
     // Tab listeners
     document.querySelectorAll('.repair-tab').forEach(tab => {
