@@ -1,4 +1,10 @@
+/* =========================================================
+   S.M Dynamics Electronics — Premium electronics storefront (vanilla JS)
+   UPDATED: Partial Payment System - Pay delivery fee only upfront
+   UPDATED: Spare parts integration from repair page
+========================================================= */
 
+// ----- PRODUCT DATA -----
 const DEFAULT_PRODUCTS = [
   { id:'p1', name:'S.M Dynamics Phone 16 Pro', cat:'phones', price:1299, was:1499, rating:4.9, reviews:1283, badge:'hot', img:'/shop/hero-phone.jpg', desc:'A flagship redefined. Titanium frame, 6.7" OLED 120Hz display and the new A18X bionic chip.', specs:{ Display:'6.7" OLED 120Hz', Chip:'A18X Bionic', Storage:'256GB', Camera:'Triple 48MP', Battery:'4800mAh' } },
   { id:'p2', name:'Aura Studio Pro', cat:'audio', price:449, was:549, rating:4.8, reviews:842, badge:'sale', img:'/shop/headphones.jpg', desc:'Reference-grade over-ear with adaptive noise cancellation and 60h battery.', specs:{ Driver:'40mm planar', ANC:'Adaptive', Battery:'60h', Codec:'LDAC/aptX', Weight:'248g' } },
@@ -466,28 +472,20 @@ async function api(path, options = {}) {
 }
 
 // ============================================
-// UPDATED: refreshProducts - Checks localStorage first
+// refreshProducts — server is always the source of truth.
+// localStorage is only used as fallback when server is unreachable.
 // ============================================
 async function refreshProducts() {
-  // First try to load from localStorage (management page saves here)
-  if (loadProductsFromLocalStorage()) {
-    renderProducts();
-    renderFlash();
-    renderCart();
-    renderRecent();
-    return;
-  }
-  
-  // Fallback to server
   try {
     const data = await api('/api/products');
-    if (data && data.products) {
+    if (data && data.products && data.products.length > 0) {
       PRODUCTS = data.products;
-      // Save to localStorage for consistency
+      // Keep localStorage in sync for offline use
       localStorage.setItem('management_products', JSON.stringify(PRODUCTS));
     }
   } catch (err) {
-    console.error('Failed to refresh products:', err);
+    console.error('Failed to refresh products from server, using localStorage fallback:', err);
+    loadProductsFromLocalStorage();
   }
   renderProducts();
   renderFlash();
@@ -1052,11 +1050,8 @@ window.setDeliveryFee = async function(fee) {
 window.addEventListener('storage', (e) => {
   if (e.key === 'management_products') {
     console.log('Products updated from management page, refreshing...');
-    loadProductsFromLocalStorage();
-    renderProducts();
-    renderFlash();
-    renderCart();
-    renderRecent();
+    // Always re-fetch from server so edits made via admin API are reflected
+    refreshProducts();
   }
   if (e.key === 'nova_cart') {
     console.log('Cart updated from another page, refreshing...');
