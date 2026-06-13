@@ -797,6 +797,14 @@ function addCart(id) {
   toast(`${p.name} added to cart`, 'success');
 }
 function rmCart(id) { state.cart = state.cart.filter(c => c.id !== id); save('nova_cart', state.cart); renderCart(); }
+function clearCart() {
+  if (!state.cart.length) return;
+  if (!confirm('Remove all items from your cart?')) return;
+  state.cart = [];
+  save('nova_cart', state.cart);
+  renderCart();
+  toast('Cart cleared', 'info');
+}
 function setQty(id, q) {
   const it = state.cart.find(c => c.id === id); if (!it) return;
   it.qty = Math.max(1, q); save('nova_cart', state.cart); renderCart();
@@ -853,6 +861,7 @@ function openCart(open) {
 }
 $('#cartBtn').addEventListener('click', () => openCart(true));
 $('#cartClose').addEventListener('click', () => openCart(false));
+$('#cartClear')?.addEventListener('click', clearCart);
 $('#overlay').addEventListener('click', () => { openCart(false); closeModal(); closeAuth(); });
 
 // ----- WISHLIST -----
