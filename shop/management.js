@@ -1,10 +1,11 @@
 // ============================================
-// STANDALONE HELPERS (management.html does not load app.js)
+// STANDALONE HELPERS — safe guards so these work whether or not app.js is loaded
 // ============================================
 if (typeof $ === 'undefined')   var $ = (s, p=document) => p.querySelector(s);
 if (typeof $$ === 'undefined')  var $$ = (s, p=document) => [...p.querySelectorAll(s)];
 if (typeof fmt === 'undefined') var fmt = n => 'KES ' + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 0 });
-if (typeof esc === 'undefined') var esc = v => String(v ?? '').replace(/[&<>\"']/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '\"':'&quot;', "'": '&#39;' }[ch]));
+if (typeof esc === 'undefined') var esc = v => String(v ?? '').replace(/[&<>"']/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch]));
+
 let manager = null;
 let offlineManager = false;
 let orders = [];
