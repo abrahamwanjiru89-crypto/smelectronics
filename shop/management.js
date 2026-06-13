@@ -1,14 +1,18 @@
-// Guard against re-declaration when app.js (or another script) already defines $ / $$
-if (typeof $ === 'undefined') { var $ = (s, p=document) => p.querySelector(s); }
-if (typeof $$ === 'undefined') { var $$ = (s, p=document) => [...p.querySelectorAll(s)]; }
+// ============================================
+// STANDALONE HELPERS (management.html does not load app.js)
+// ============================================
+const $ = (s, p=document) => p.querySelector(s);
+const $$ = (s, p=document) => [...p.querySelectorAll(s)];
+const fmt = n => 'KES ' + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 0 });
+const esc = v => String(v ?? '').replace(/[&<>"']/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch]));
+
 let manager = null;
 let offlineManager = false;
 let orders = [];
 let products = [];
 let staff = [];
 let repairBookings = [];
-let repairServices = window.repairServices;
-let mgmtRepairServices = [];
+let repairServices = [];
 let spareParts = [];
 let technicians = [];
 let repairCategories = [];
@@ -47,8 +51,6 @@ const DUMMY_ANALYTICS = { totalSales:0, totalOrders:0, delivered:0, products:1, 
   { label:'Sun', sales:0, orders:0 }
 ]};
 
-if (typeof fmt === 'undefined') { var fmt = n => 'KES ' + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 0 }); }
-if (typeof esc === 'undefined') { var esc = v => String(v ?? '').replace(/[&<>"']/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch])); }
 
 async function api(path, options = {}) {
   let res;
