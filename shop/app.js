@@ -1094,9 +1094,10 @@ window.addEventListener('storage', (e) => {
       state.user = session.user;
       await refreshOrders();
     }
-    await refreshProducts();
   } catch (err) {
-    toast('Using fallback product data until the server is available', 'error');
+    // Auth check failed (not logged in or server down) — fine, continue
   }
+  // Always refresh products from server regardless of auth state
+  await refreshProducts();
   updateAccountUi();
 })();
