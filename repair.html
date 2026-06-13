@@ -739,10 +739,10 @@ function addToCart(item) {
         img: item.image || '/shop/hero-phone.jpg'
     };
     localStorage.setItem('nova_spare_parts', JSON.stringify(spareStore));
-    
+
     const cart = getCart();
     const existing = cart.find(i => i.id === item.id);
-    
+
     if (existing) {
         existing.qty = (existing.qty || 1) + 1;
         showToast(`✓ Added another ${item.name}`, 'success');
@@ -750,7 +750,7 @@ function addToCart(item) {
         cart.push({ id: item.id, qty: 1 });
         showToast(`✓ ${item.name} added to cart`, 'success');
     }
-    
+
     saveCart(cart);
 }
 
@@ -769,14 +769,15 @@ function loadSparePartsFromLocalStorage() {
 // ============== FETCH FROM SERVER (Fallback) ==============
 async function fetchServices() {
     try {
-        const res = await fetch('/api/management/repair-services', { cache: 'no-store' });
+        // Public endpoint - works for all visitors (not just logged-in staff)
+        const res = await fetch('/api/repair/services', { cache: 'no-store' });
         if (res.ok) {
             const data = await res.json();
             repairServices = data.services || [];
         } else {
             repairServices = getDefaultServices();
         }
-    } catch(e) {
+    } catch (e) {
         repairServices = getDefaultServices();
     }
     renderServices();
@@ -784,7 +785,7 @@ async function fetchServices() {
 
 async function fetchPartsFromServer() {
     try {
-        const res = await fetch(`/api/spare-parts?_=${Date.now()}`, { 
+        const res = await fetch(`/api/spare-parts?_=${Date.now()}`, {
             cache: 'no-store',
             headers: { 'Cache-Control': 'no-cache' }
         });
@@ -801,7 +802,7 @@ async function fetchPartsFromServer() {
                 renderParts();
             }
         }
-    } catch(e) {
+    } catch (e) {
         console.error('Error fetching spare parts:', e);
         // Fallback to localStorage
         loadSparePartsFromLocalStorage();
@@ -816,12 +817,12 @@ function refreshSpareParts() {
 
 function getDefaultServices() {
     return [
-        { id: "1", title: "Screen Replacement", category: "screen", price: 3500, description: "Professional LCD/OLED replacement" },
-        { id: "2", title: "Battery Replacement", category: "battery", price: 2500, description: "Genuine battery with warranty" },
-        { id: "3", title: "Charging Port", category: "charging", price: 1800, description: "Fix charging issues" },
-        { id: "4", title: "Speaker/Mic Repair", category: "speaker", price: 1500, description: "Fix audio problems" },
-        { id: "5", title: "Water Damage", category: "water", price: 3000, description: "Ultrasonic cleaning" },
-        { id: "6", title: "Software Update", category: "software", price: 1000, description: "OS update & reset" }
+        { id: "1", title: "Screen Replacement", repairType: "Screen replacement", price: 3500, description: "Professional LCD/OLED replacement" },
+        { id: "2", title: "Battery Replacement", repairType: "Battery replacement", price: 2500, description: "Genuine battery with warranty" },
+        { id: "3", title: "Charging Port", repairType: "Charging port repair", price: 1800, description: "Fix charging issues" },
+        { id: "4", title: "Speaker/Mic Repair", repairType: "Speaker repair", price: 1500, description: "Fix audio problems" },
+        { id: "5", title: "Water Damage", repairType: "Water damage repair", price: 3000, description: "Ultrasonic cleaning" },
+        { id: "6", title: "Software Update", repairType: "Software / OS issues", price: 1000, description: "OS update & reset" }
     ];
 }
 
@@ -829,121 +830,176 @@ function getDefaultServices() {
 function renderServices() {
     const grid = document.getElementById('servicesGrid');
     if (!grid) return;
-    
-    let filtered = repairServices.filter(s => currentCategory === 'all' || s.category === currentCategory);
-    
+
+    let filtered = repairServices.filter(s => {
+        if (currentCategory === 'all') return true;
+        const type = (s.repairType || s.category || '').toLowerCase();
+        const title = (s.title || '').toLowerCase();
+        return type.includes(currentCategory) || title.includes(currentCategory);
+    });
+
     if (filtered.length === 0) {
         grid.innerHTML = '<div class="empty-state"><div class="empty-icon">🔧</div><h4>No services found</h4></div>';
         return;
     }
-    
+
     grid.innerHTML = filtered.map(s => `
-        <div class="service-card" onclick="openBooking('${s.id}', '${escapeHtml(s.title)}', ${s.price})">
-            <div class="service-icon"><span>${getIcon(s.category)}</span></div>
+        <div class="service-card" data-service-id="${escapeAttr(s.id)}" data-title="${escapeAttr(s.title)}" data-price="${s.price || 0}">
+            <div class="service-icon"><span>${getIcon(s.repairType || s.category)}</span></div>
             <div class="service-content">
                 <h3>${escapeHtml(s.title)}</h3>
-                <div class="service-price">KES ${s.price.toLocaleString()}</div>
-                <div class="service-desc">${escapeHtml(s.description)}</div>
+                <div class="service-price">KES ${(s.price || 0).toLocaleString()}</div>
+                <div class="service-desc">${escapeHtml(s.description || '')}</div>
                 <div style="font-size:0.7rem;color:var(--primary);">📞 Click to book</div>
             </div>
         </div>
     `).join('');
+
+    // Attach click handlers via JS (avoids breaking on quotes/apostrophes in titles)
+    grid.querySelectorAll('.service-card').forEach(card => {
+        card.addEventListener('click', () => {
+            openBooking(card.dataset.serviceId, card.dataset.title, Number(card.dataset.price));
+        });
+    });
 }
 
 function renderParts() {
     const grid = document.getElementById('partsGrid');
     if (!grid) return;
-    
+
     let filtered = spareParts.filter(p => {
         if (!searchTerm) return true;
-        return p.name.toLowerCase().includes(searchTerm) || 
+        return (p.name || '').toLowerCase().includes(searchTerm) ||
                (p.brand && p.brand.toLowerCase().includes(searchTerm));
     });
-    
+
     if (filtered.length === 0) {
         grid.innerHTML = '<div class="empty-state"><div class="empty-icon">🔩</div><h4>No spare parts found</h4><p>Add parts in Management page</p></div>';
         return;
     }
-    
+
     grid.innerHTML = filtered.map(p => {
         const img = p.image || p.image_path || '/shop/hero-phone.jpg';
-        const stockClass = (p.stock || 0) < 5 ? 'low' : '';
-        
+        const stock = p.stock || 0;
+        const stockClass = stock < 5 ? 'low' : '';
+        const stockText = stock === 0 ? 'Out of stock' : `${stock} in stock`;
+
         return `
             <div class="spare-card">
                 <div class="spare-image-wrapper">
                     <img src="${img}" alt="${escapeHtml(p.name)}" class="spare-image" onerror="this.src='/shop/hero-phone.jpg'">
-                    <span class="spare-stock ${stockClass}">${p.stock || 0} in stock</span>
+                    <span class="spare-stock ${stockClass}">${stockText}</span>
                 </div>
                 <div class="spare-info">
                     <h3>${escapeHtml(p.name.length > 30 ? p.name.substring(0, 27) + '...' : p.name)}</h3>
                     <span class="spare-brand">${escapeHtml(p.brand || 'Generic')}</span>
                     <div class="spare-price">KES ${(p.price || 0).toLocaleString()}</div>
                     <div class="spare-desc">${escapeHtml((p.description || 'Genuine replacement part').substring(0, 60))}</div>
-                    <button class="add-to-cart-btn" onclick="event.stopPropagation(); addToCart({id:'${p.id}', name:'${escapeHtml(p.name)}', price:${p.price}, image:'${img}'})">
-                        🛒 Add to Cart
-                    </button>
+                    ${stock > 0
+                        ? `<button class="add-to-cart-btn" data-part-id="${escapeAttr(p.id)}" data-name="${escapeAttr(p.name)}" data-price="${p.price || 0}" data-image="${escapeAttr(img)}">
+                            🛒 Add to Cart
+                        </button>`
+                        : `<button class="add-to-cart-btn" style="opacity:0.5; cursor:not-allowed;" disabled>
+                            ❌ Out of Stock
+                        </button>`
+                    }
                 </div>
             </div>
         `;
     }).join('');
+
+    // Attach add-to-cart handlers via JS (avoids breaking on quotes/apostrophes in names)
+    grid.querySelectorAll('.add-to-cart-btn[data-part-id]').forEach(btn => {
+        btn.addEventListener('click', e => {
+            e.stopPropagation();
+            addToCart({
+                id: btn.dataset.partId,
+                name: btn.dataset.name,
+                price: Number(btn.dataset.price),
+                image: btn.dataset.image
+            });
+        });
+    });
 }
 
 function getIcon(cat) {
-    const icons = { screen: '📱', battery: '🔋', charging: '🔌', speaker: '🔊', water: '💧', software: '💻' };
-    return icons[cat] || '🔧';
+    const type = (cat || '').toLowerCase();
+    if (type.includes('screen') || type.includes('display')) return '📱';
+    if (type.includes('battery')) return '🔋';
+    if (type.includes('charging') || type.includes('port')) return '🔌';
+    if (type.includes('speaker') || type.includes('audio') || type.includes('mic')) return '🔊';
+    if (type.includes('water') || type.includes('liquid')) return '💧';
+    if (type.includes('software') || type.includes('os')) return '💻';
+    return '🔧';
 }
 
 // ============== BOOKING FUNCTIONS ==============
 function openBooking(id, title, price) {
     selectedService = { id, title, price };
-    document.getElementById('modalTitle').textContent = title;
-    document.getElementById('modalPrice').textContent = `KES ${price.toLocaleString()}`;
-    document.getElementById('bookingModal').classList.add('open');
+    const titleEl = document.getElementById('modalTitle');
+    const priceEl = document.getElementById('modalPrice');
+    const modal = document.getElementById('bookingModal');
+    if (titleEl) titleEl.textContent = title;
+    if (priceEl) priceEl.textContent = `KES ${(price || 0).toLocaleString()}`;
+    if (modal) modal.classList.add('open');
 }
 
 function closeBooking() {
-    document.getElementById('bookingModal').classList.remove('open');
-    document.getElementById('bookingForm').reset();
+    const modal = document.getElementById('bookingModal');
+    const form = document.getElementById('bookingForm');
+    if (modal) modal.classList.remove('open');
+    if (form) form.reset();
     selectedService = null;
 }
 
 async function submitBooking(e) {
     e.preventDefault();
-    
+
+    if (!selectedService) {
+        showToast('Please select a service first', 'error');
+        return;
+    }
+
     const data = {
-        name: document.getElementById('customerName').value,
-        phone: document.getElementById('customerPhone').value,
-        email: document.getElementById('customerEmail').value,
-        brand: document.getElementById('phoneBrand').value,
-        model: document.getElementById('phoneModel').value,
+        name: document.getElementById('customerName')?.value || '',
+        phone: document.getElementById('customerPhone')?.value || '',
+        email: document.getElementById('customerEmail')?.value || '',
+        brand: document.getElementById('phoneBrand')?.value || '',
+        model: document.getElementById('phoneModel')?.value || '',
         repairServiceId: selectedService?.id,
         repairType: selectedService?.title,
-        description: document.getElementById('bookingNotes').value,
+        description: document.getElementById('bookingNotes')?.value || '',
         pickupDropoff: 'Dropoff',
         preferredAt: new Date().toISOString().split('T')[0]
     };
-    
+
+    if (!data.name || !data.phone || !data.brand || !data.model) {
+        showToast('Please fill all required fields (Name, Phone, Brand, Model)', 'error');
+        return;
+    }
+
     try {
         const res = await fetch('/api/repair/bookings', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         });
-        
+
         if (res.ok) {
             showToast('✓ Booking request sent!', 'success');
             closeBooking();
         } else {
-            showToast('❌ Booking failed', 'error');
+            const err = await res.json().catch(() => ({}));
+            showToast(err.error || '❌ Booking failed', 'error');
         }
-    } catch(e) {
+    } catch (e) {
         showToast('❌ Connection error', 'error');
     }
 }
 
 function showToast(msg, type) {
     const container = document.getElementById('toastContainer');
+    if (!container) return console.log(`Toast (${type}): ${msg}`);
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
     toast.textContent = msg;
@@ -956,22 +1012,29 @@ function escapeHtml(str) {
     return String(str).replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
 }
 
+// Escapes a value for safe use inside an HTML attribute (handles quotes too)
+function escapeAttr(str) {
+    return String(str ?? '').replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[m]));
+}
+
 // ============== TAB SWITCHING ==============
 function switchTab(tab) {
     const servicesSection = document.getElementById('servicesSection');
     const partsSection = document.getElementById('partsSection');
     const tabs = document.querySelectorAll('.repair-tab');
-    
+
     tabs.forEach(t => t.classList.remove('active'));
-    
+
     if (tab === 'services') {
-        servicesSection.classList.remove('hidden-section');
-        partsSection.classList.add('hidden-section');
-        tabs[0].classList.add('active');
+        if (servicesSection) servicesSection.classList.remove('hidden-section');
+        if (partsSection) partsSection.classList.add('hidden-section');
+        if (tabs[0]) tabs[0].classList.add('active');
     } else {
-        servicesSection.classList.add('hidden-section');
-        partsSection.classList.remove('hidden-section');
-        tabs[1].classList.add('active');
+        if (servicesSection) servicesSection.classList.add('hidden-section');
+        if (partsSection) partsSection.classList.remove('hidden-section');
+        if (tabs[1]) tabs[1].classList.add('active');
         refreshSpareParts();
     }
 }
@@ -982,7 +1045,7 @@ function filterServices(category) {
 }
 
 function searchParts() {
-    searchTerm = document.getElementById('partSearch').value.toLowerCase();
+    searchTerm = (document.getElementById('partSearch')?.value || '').toLowerCase();
     renderParts();
 }
 
@@ -996,6 +1059,19 @@ window.addEventListener('storage', (e) => {
     }
 });
 
+// Refresh data when the page becomes visible again, so management updates
+// show up without a manual reload (cross-device / cross-tab)
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+        fetchServices();
+        fetchPartsFromServer();
+    }
+});
+window.addEventListener('focus', () => {
+    fetchServices();
+    fetchPartsFromServer();
+});
+
 // ============== INIT ==============
 document.addEventListener('DOMContentLoaded', () => {
     // First try localStorage
@@ -1003,12 +1079,12 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchServices();
     fetchPartsFromServer(); // This will also update localStorage
     updateCartCount();
-    
+
     // Tab listeners
     document.querySelectorAll('.repair-tab').forEach(tab => {
         tab.addEventListener('click', () => switchTab(tab.dataset.tab));
     });
-    
+
     // Filter listeners
     document.querySelectorAll('.filter-chip').forEach(chip => {
         chip.addEventListener('click', () => {
@@ -1017,20 +1093,20 @@ document.addEventListener('DOMContentLoaded', () => {
             filterServices(chip.dataset.cat);
         });
     });
-    
+
     // Search
     document.getElementById('searchBtn')?.addEventListener('click', searchParts);
     document.getElementById('refreshBtn')?.addEventListener('click', refreshSpareParts);
     document.getElementById('partSearch')?.addEventListener('keypress', e => e.key === 'Enter' && searchParts());
-    
+
     // Modal
     document.getElementById('bookingForm')?.addEventListener('submit', submitBooking);
     document.getElementById('closeModal')?.addEventListener('click', closeBooking);
     document.getElementById('bookingModal')?.addEventListener('click', e => e.target === document.getElementById('bookingModal') && closeBooking());
-    
+
     // Cart button
     document.getElementById('cartBtn')?.addEventListener('click', () => window.location.href = 'index.html');
-    
+
     // Theme
     const themeBtn = document.getElementById('themeBtn');
     const html = document.documentElement;
@@ -1041,7 +1117,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     const saved = localStorage.getItem('nova_theme') || 'dark';
     html.setAttribute('data-theme', saved);
-    
+
     // Mobile menu
     const toggle = document.getElementById('menuToggle');
     const mobile = document.getElementById('mobileMenu');
