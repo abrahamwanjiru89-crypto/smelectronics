@@ -17,8 +17,10 @@ from urllib.parse import unquote, urlparse, parse_qs, urlencode
 import urllib.request
 
 ROOT = Path(__file__).parent.resolve()
-DB_PATH = ROOT / "shop.db"
-UPLOAD_DIR = ROOT / "uploads"
+DATA_DIR = Path(os.environ.get("DATA_DIR", str(ROOT)))
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+DB_PATH = DATA_DIR / "shop.db"
+UPLOAD_DIR = DATA_DIR / "uploads"
 UPLOAD_DIR.mkdir(exist_ok=True)
 SESSIONS = {}
 
