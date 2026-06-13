@@ -22,7 +22,8 @@ DATA_DIR.mkdir(parents=True, exist_ok=True)
 DB_PATH = DATA_DIR / "shop.db"
 UPLOAD_DIR = DATA_DIR / "uploads"
 UPLOAD_DIR.mkdir(exist_ok=True)
-SESSIONS = {}
+# Session tokens are persisted in the `sessions` table (see init_db) so
+# logins survive server restarts/redeploys.
 
 # Cache for static files to improve loading speed
 STATIC_CACHE = {}
@@ -229,6 +230,11 @@ def init_db():
           email TEXT NOT NULL UNIQUE,
           password_hash TEXT NOT NULL,
           role TEXT NOT NULL CHECK(role IN ('customer','staff','admin')),
+          created_at TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS sessions (
+          sid TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
           created_at TEXT NOT NULL
         );
         CREATE TABLE IF NOT EXISTS products (
@@ -671,22 +677,32 @@ class Handler(BaseHTTPRequestHandler):
     def current_user(self):
         jar = cookies.SimpleCookie(self.headers.get("Cookie"))
         sid = jar.get("sid")
-        uid = SESSIONS.get(sid.value) if sid else None
-        if not uid:
+        if not sid:
             return None
         with db() as conn:
-            return conn.execute("SELECT * FROM users WHERE id = ?", (uid,)).fetchone()
+            session = conn.execute("SELECT user_id FROM sessions WHERE sid = ?", (sid.value,)).fetchone()
+            if not session:
+                return None
+            return conn.execute("SELECT * FROM users WHERE id = ?", (session["user_id"],)).fetchone()
 
     def set_session(self, user_id):
         sid = secrets.token_urlsafe(32)
-        SESSIONS[sid] = user_id
+        with db() as conn:
+            conn.execute(
+                "INSERT INTO sessions (sid, user_id, created_at) VALUES (?,?,?)",
+                (sid, user_id, datetime.now(timezone.utc).isoformat())
+            )
+            # Prune sessions older than 30 days
+            cutoff = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
+            conn.execute("DELETE FROM sessions WHERE created_at < ?", (cutoff,))
         self.send_header("Set-Cookie", f"sid={sid}; HttpOnly; SameSite=Lax; Path=/")
 
     def clear_session(self):
         jar = cookies.SimpleCookie(self.headers.get("Cookie"))
         sid = jar.get("sid")
         if sid:
-            SESSIONS.pop(sid.value, None)
+            with db() as conn:
+                conn.execute("DELETE FROM sessions WHERE sid = ?", (sid.value,))
         self.send_header("Set-Cookie", "sid=; Max-Age=0; HttpOnly; SameSite=Lax; Path=/")
 
     def require(self, roles):
