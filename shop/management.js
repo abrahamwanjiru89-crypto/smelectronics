@@ -47,8 +47,8 @@ const DUMMY_ANALYTICS = { totalSales:0, totalOrders:0, delivered:0, products:1, 
   { label:'Sun', sales:0, orders:0 }
 ]};
 
-
-
+const fmt = n => 'Kshs ' + Number(n || 0).toLocaleString('en-KE', { minimumFractionDigits: 0 });
+const esc = v => String(v ?? '').replace(/[&<>"']/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch]));
 
 async function api(path, options = {}) {
   let res;
@@ -356,7 +356,7 @@ function renderAdminSpareParts() {
   }));
 }
 
-async function editSparePart(id) {
+function editSparePart(id) {
   const part = spareParts.find(p => p.id == id);
   if (!part) { toast('Spare part not found', 'error'); return; }
   
@@ -366,31 +366,14 @@ async function editSparePart(id) {
     if (newPrice) {
       const newStock = prompt('Edit stock quantity:', part.stock);
       if (newStock !== null) {
-        const updated = {
-          ...part,
-          name: newName.trim(),
-          price: parseFloat(newPrice),
-          stock: parseInt(newStock)
-        };
-
-        try {
-          await api(`/api/admin/spare-parts/${encodeURIComponent(id)}`, {
-            method: 'PUT',
-            body: JSON.stringify(updated)
-          });
-          await loadAdminSpareParts();
-          notifySparePartsUpdated();
-          toast('Spare part updated', 'success');
-        } catch (err) {
-          // Fallback: update locally only (won't sync to other devices)
-          part.name = updated.name;
-          part.price = updated.price;
-          part.stock = updated.stock;
-          localStorage.setItem('spare_parts', JSON.stringify(spareParts));
-          renderAdminSpareParts();
-          notifySparePartsUpdated();
-          toast(err.message || 'Update saved locally only. Server may be offline.', 'warning');
-        }
+        part.name = newName.trim();
+        part.price = parseFloat(newPrice);
+        part.stock = parseInt(newStock);
+        localStorage.setItem('spare_parts', JSON.stringify(spareParts));
+        renderAdminSpareParts();
+        // Notify repair page
+        notifySparePartsUpdated();
+        toast('Spare part updated', 'success');
       }
     }
   }
