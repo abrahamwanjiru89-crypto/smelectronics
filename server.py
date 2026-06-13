@@ -1335,8 +1335,8 @@ class Handler(BaseHTTPRequestHandler):
             
             with db() as conn:
                 conn.execute(
-                    "UPDATE products SET name = ?, price = ?, was = ?, badge = ?, img = ?, rating = ?, reviews = ?, in_stock = ?, cat = ?, desc = ? WHERE id = ?",
-                    (data.get("name"), data.get("price"), data.get("was"), data.get("badge"), data.get("img"), data.get("rating"), data.get("reviews"), 1 if data.get("inStock") else 0, data.get("cat"), data.get("desc"), product_id),
+                    "UPDATE products SET name = ?, price = ?, in_stock = ?, cat = ?, desc = ? WHERE id = ?",
+                    (data.get("name"), data.get("price"), 1 if data.get("inStock") else 0, data.get("cat"), data.get("desc"), product_id),
                 )
             self.send_json({"ok": True})
             return
