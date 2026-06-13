@@ -119,6 +119,11 @@ function showCheckoutModal(subtotal, deliveryFeeAmount, onConfirm) {
         <hr style="margin: 1rem 0; border-color: rgba(255,255,255,0.1);">
         <p style="font-size: 0.85rem;">✅ You will only pay the delivery fee now via M-Pesa</p>
         <p style="font-size: 0.85rem;">📦 The remaining amount (${fmt(remainingAmount)}) will be paid when you receive your product</p>
+        <div style="margin-top:1rem;">
+          <label for="mpesaPhoneInput" style="display:block; font-size:0.85rem; margin-bottom:0.35rem;">M-Pesa Phone Number</label>
+          <input type="tel" id="mpesaPhoneInput" placeholder="e.g. 0712345678" class="input" style="width:100%; padding:0.6rem 0.75rem; border-radius:0.5rem; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.05); color:inherit;">
+          <p class="checkout-error" style="color:#ff4d6d; font-size:0.8rem; margin-top:0.35rem; display:none;"></p>
+        </div>
       </div>
       <div class="checkout-actions">
         <button class="btn-cancel">Cancel</button>
@@ -135,10 +140,22 @@ function showCheckoutModal(subtotal, deliveryFeeAmount, onConfirm) {
     setTimeout(() => modal.remove(), 300);
   });
   
-  modal.querySelector('.btn-confirm').addEventListener('click', () => {
-    modal.classList.remove('show');
-    setTimeout(() => modal.remove(), 300);
-    if (onConfirm) onConfirm();
+  const confirmBtn = modal.querySelector('.btn-confirm');
+  const phoneInput = modal.querySelector('#mpesaPhoneInput');
+  const errorEl = modal.querySelector('.checkout-error');
+
+  confirmBtn.addEventListener('click', async () => {
+    const phone = phoneInput.value.trim();
+    if (!phone || phone.length < 10) {
+      errorEl.textContent = 'Please enter a valid M-Pesa phone number';
+      errorEl.style.display = 'block';
+      phoneInput.focus();
+      return;
+    }
+    errorEl.style.display = 'none';
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = 'Processing...';
+    if (onConfirm) await onConfirm(phone, modal);
   });
   
   modal.addEventListener('click', (e) => {
@@ -147,6 +164,39 @@ function showCheckoutModal(subtotal, deliveryFeeAmount, onConfirm) {
       setTimeout(() => modal.remove(), 300);
     }
   });
+}
+
+function showOrderSuccessModal(order, deliveryFee, remaining) {
+  const existing = document.querySelector('.checkout-modal');
+  if (existing) { existing.classList.remove('show'); setTimeout(() => existing.remove(), 300); }
+
+  const modal = document.createElement('div');
+  modal.className = 'checkout-modal';
+  modal.innerHTML = `
+    <div class="checkout-card">
+      <h3>✅ Order Placed!</h3>
+      <div class="details" style="text-align: left;">
+        <p><strong>Order ID:</strong> ${esc(order.id)}</p>
+        <p><strong>Delivery fee paid:</strong> <span style="color:#00e5ff;">${fmt(deliveryFee)}</span></p>
+        <p><strong>Remaining on delivery:</strong> ${fmt(remaining)}</p>
+        <hr style="margin: 1rem 0; border-color: rgba(255,255,255,0.1);">
+        <p style="font-size: 0.85rem;">📲 Check your phone for the M-Pesa prompt to complete the delivery fee payment.</p>
+        <p style="font-size: 0.85rem;">📦 We'll prepare your order and contact you when it's ready for delivery.</p>
+      </div>
+      <div class="checkout-actions">
+        <button class="btn-confirm">Done</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  setTimeout(() => modal.classList.add('show'), 10);
+
+  const close = () => {
+    modal.classList.remove('show');
+    setTimeout(() => modal.remove(), 300);
+  };
+  modal.querySelector('.btn-confirm').addEventListener('click', close);
+  modal.addEventListener('click', e => { if (e.target === modal) close(); });
 }
 
 async function updateCartTotals() {
@@ -253,13 +303,7 @@ async function handleCheckout() {
   const total = subtotal + deliveryFee;
 
   // Show modal with partial payment info
-  showCheckoutModal(subtotal, deliveryFee, async () => {
-    const phone = prompt("Enter M-Pesa Phone Number to pay delivery fee (e.g., 0712345678):");
-    if (!phone || phone.length < 10) {
-      toast("Valid phone number required", "error");
-      return;
-    }
-
+  showCheckoutModal(subtotal, deliveryFee, async (phone, modal) => {
     try {
       // Create order with partial payment (only delivery fee upfront)
       const orderResp = await api('/api/orders', {
@@ -274,28 +318,47 @@ async function handleCheckout() {
         })
       });
       const order = orderResp.order;
-      
-      // Process M-Pesa payment for delivery fee only
-      toast("Processing delivery fee payment...", "info");
-      await api('/api/payments/stk-push', { 
-        method: 'POST', 
-        body: JSON.stringify({ 
-          phone, 
-          amount: deliveryFee, 
-          orderId: order.id,
-          paymentType: 'delivery_fee'
-        }) 
-      });
 
+      // Order is placed — clear the cart immediately so it doesn't double-charge
+      // or get stuck if the STK push step below fails/times out.
       state.orders.unshift(order);
-      toast(`✅ Delivery fee of ${fmt(deliveryFee)} paid! Remaining ${fmt(subtotal)} to be paid on delivery.`, 'success');
-      state.cart = []; 
-      save('nova_cart', state.cart); 
-      renderCart(); 
+      state.cart = [];
+      save('nova_cart', state.cart);
+      renderCart();
+
+      // Show on-screen confirmation right away
       openCart(false);
+      showOrderSuccessModal(order, deliveryFee, subtotal);
       renderDashboard();
+
+      // Process M-Pesa payment for delivery fee only (best-effort, non-blocking)
+      try {
+        await api('/api/payments/stk-push', {
+          method: 'POST',
+          body: JSON.stringify({
+            phone,
+            amount: deliveryFee,
+            orderId: order.id,
+            paymentType: 'delivery_fee'
+          })
+        });
+        toast(`✅ M-Pesa prompt sent for ${fmt(deliveryFee)}`, 'success');
+      } catch (stkErr) {
+        toast('Order placed, but the M-Pesa prompt could not be sent. Please contact us to complete payment.', 'warning');
+      }
     } catch (err) {
-      toast("Checkout failed: " + err.message, 'error');
+      const errorEl = modal?.querySelector('.checkout-error');
+      const confirmBtn = modal?.querySelector('.btn-confirm');
+      if (errorEl) {
+        errorEl.textContent = 'Checkout failed: ' + err.message;
+        errorEl.style.display = 'block';
+      } else {
+        toast("Checkout failed: " + err.message, 'error');
+      }
+      if (confirmBtn) {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = `Pay Delivery Fee (${fmt(deliveryFee)})`;
+      }
     }
   });
 }
