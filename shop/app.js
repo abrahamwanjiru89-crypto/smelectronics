@@ -266,7 +266,7 @@ async function handleCheckout() {
         method: 'POST',
         body: JSON.stringify({
           items: state.cart,
-          county: $('#county option:checked').text(),
+          county: $('#county option:checked')?.textContent || '',
           constituency: subLocation.name,
           street,
           depositAmount: deliveryFee,
