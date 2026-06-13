@@ -356,7 +356,7 @@ function renderAdminSpareParts() {
   }));
 }
 
-function editSparePart(id) {
+async function editSparePart(id) {
   const part = spareParts.find(p => p.id == id);
   if (!part) { toast('Spare part not found', 'error'); return; }
   
@@ -366,14 +366,31 @@ function editSparePart(id) {
     if (newPrice) {
       const newStock = prompt('Edit stock quantity:', part.stock);
       if (newStock !== null) {
-        part.name = newName.trim();
-        part.price = parseFloat(newPrice);
-        part.stock = parseInt(newStock);
-        localStorage.setItem('spare_parts', JSON.stringify(spareParts));
-        renderAdminSpareParts();
-        // Notify repair page
-        notifySparePartsUpdated();
-        toast('Spare part updated', 'success');
+        const updated = {
+          ...part,
+          name: newName.trim(),
+          price: parseFloat(newPrice),
+          stock: parseInt(newStock)
+        };
+
+        try {
+          await api(`/api/admin/spare-parts/${encodeURIComponent(id)}`, {
+            method: 'PUT',
+            body: JSON.stringify(updated)
+          });
+          await loadAdminSpareParts();
+          notifySparePartsUpdated();
+          toast('Spare part updated', 'success');
+        } catch (err) {
+          // Fallback: update locally only (won't sync to other devices)
+          part.name = updated.name;
+          part.price = updated.price;
+          part.stock = updated.stock;
+          localStorage.setItem('spare_parts', JSON.stringify(spareParts));
+          renderAdminSpareParts();
+          notifySparePartsUpdated();
+          toast(err.message || 'Update saved locally only. Server may be offline.', 'warning');
+        }
       }
     }
   }
