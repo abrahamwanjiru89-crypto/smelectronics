@@ -1,53 +1,454 @@
-if (typeof $ === 'undefined')   var $ = (s, p=document) => p.querySelector(s);
-if (typeof $$ === 'undefined')  var $$ = (s, p=document) => [...p.querySelectorAll(s)];
-if (typeof fmt === 'undefined') var fmt = n => 'KES ' + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 0 });
-if (typeof esc === 'undefined') var esc = v => String(v ?? '').replace(/[&<>"']/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch]));
-let manager = null;
-let offlineManager = false;
-let orders = [];
-let products = [];
-let staff = [];
-let repairBookings = [];
-let repairServices = [];
-let spareParts = [];
-let technicians = [];
-let repairCategories = [];
-let counties = [];
-let subLocations = [];
-let deliveryZones = [];
-let deliveryRates = [];
+/* =========================================================
+   S.M Dynamics Electronics — Premium electronics storefront (vanilla JS)
+   UPDATED: Partial Payment System - Pay delivery fee only upfront
+   UPDATED: Spare parts integration from repair page
+========================================================= */
 
-const LOADING = {
-  orders: '<p class="muted" style="padding:1rem">Fetching orders...</p>',
-  bookings: '<p class="muted" style="padding:1rem">Loading repair bookings...</p>',
-  products: '<p class="muted" style="padding:1.25rem">Loading products...</p>',
-  staff: '<p class="muted" style="padding:1rem">Loading staff accounts...</p>',
-  spares: '<p class="muted" style="padding:1rem">Loading inventory...</p>'
+// ----- PRODUCT DATA -----
+const DEFAULT_PRODUCTS = [
+  { id:'p1', name:'S.M Dynamics Phone 16 Pro', cat:'phones', price:1299, was:1499, rating:4.9, reviews:1283, badge:'hot', img:'/shop/hero-phone.jpg', desc:'A flagship redefined. Titanium frame, 6.7" OLED 120Hz display and the new A18X bionic chip.', specs:{ Display:'6.7" OLED 120Hz', Chip:'A18X Bionic', Storage:'256GB', Camera:'Triple 48MP', Battery:'4800mAh' } },
+  { id:'p2', name:'Aura Studio Pro', cat:'audio', price:449, was:549, rating:4.8, reviews:842, badge:'sale', img:'/shop/headphones.jpg', desc:'Reference-grade over-ear with adaptive noise cancellation and 60h battery.', specs:{ Driver:'40mm planar', ANC:'Adaptive', Battery:'60h', Codec:'LDAC/aptX', Weight:'248g' } },
+  { id:'p3', name:'S.M Dynamics Book X1', cat:'laptops', price:2199, rating:4.9, reviews:512, badge:'new', img:'/shop/Sm%20dynamic.jpg', desc:'Carbon-fiber chassis, 14" mini-LED, 32GB RAM and 18-hour battery.', specs:{ CPU:'M4 Pro', RAM:'32GB', Storage:'1TB SSD', Display:'14" mini-LED', Battery:'18h' } },
+  { id:'p4', name:'Orbit Watch Ultra', cat:'wearables', price:599, was:699, rating:4.7, reviews:301, badge:'sale', img:'/shop/watch.jpg', desc:'Sapphire crystal, dual-frequency GPS and 7-day battery in titanium.', specs:{ Display:'AMOLED 1.9"', GPS:'Dual-band', Battery:'7 days', Water:'10 ATM', Material:'Titanium' } },
+  { id:'p5', name:'Vision Lens VR', cat:'gaming', price:899, rating:4.6, reviews:178, badge:'new', img:'/shop/vr.jpg', desc:'4K-per-eye micro-OLED with 120Hz tracking. The future of immersion.', specs:{ Display:'4K per eye', Refresh:'120Hz', Audio:'Spatial', Tracking:'Inside-out', Weight:'420g' } },
+  { id:'p6', name:'Echo Buds 3', cat:'audio', price:179, was:229, rating:4.7, reviews:921, badge:'sale', img:'/shop/earbuds.jpg', desc:'Hi-Res certified earbuds with hybrid ANC and 32h total battery.', specs:{ Driver:'11mm dynamic', ANC:'Hybrid', Battery:'32h', Codec:'LHDC', Case:'Wireless charging' } },
+  { id:'p7', name:'Lumen R7 Camera', cat:'wearables', price:1499, rating:4.8, reviews:215, img:'/shop/camera.jpg', desc:'45MP full-frame mirrorless with 8K video and AI subject tracking.', specs:{ Sensor:'45MP FF', Video:'8K 60p', ISO:'100-51200', AF:'AI subject', Stabilization:'8-stop IBIS' } },
+  { id:'p8', name:'Apex Pad Ultra', cat:'gaming', price:79, rating:4.6, reviews:1502, badge:'hot', img:'/shop/console.jpg', desc:'Pro-grade wireless controller with haptic triggers and RGB.', specs:{ Connectivity:'BT 5.3', Battery:'40h', Triggers:'Hall-effect', RGB:'16M colors', Weight:'280g' } },
+  { id:'p9', name:'Glide Tab 12', cat:'laptops', price:899, rating:4.5, reviews:402, img:'/shop/tablet.jpg', desc:'12.4" 2K tablet with pressure-sensitive stylus, perfect for creators.', specs:{ Display:'12.4" 2K 120Hz', Storage:'256GB', Stylus:'Included', Battery:'14h', Speakers:'Quad' } },
+  { id:'p10', name:'Pulse Sound 360', cat:'home', price:249, was:299, rating:4.7, reviews:687, badge:'sale', img:'/shop/speaker.jpg', desc:'360° smart speaker with built-in voice assistant and room calibration.', specs:{ Drivers:'5x', Power:'120W', Voice:'Built-in AI', Bass:'Adaptive', Battery:'20h' } },
+  { id:'p11', name:'Falcon Drone 4K', cat:'gaming', price:1199, rating:4.8, reviews:243, badge:'new', img:'/shop/drone.jpg', desc:'4K stabilized drone with 40-minute flight time and obstacle avoidance.', specs:{ Camera:'4K 60p', Range:'12km', Flight:'40 min', Obstacle:'6-direction', Weight:'595g' } },
+  { id:'p12', name:'Nest Hub Mini', cat:'home', price:129, rating:4.5, reviews:1109, img:'/shop/hub.jpg', desc:'Smart home command center with ambient display and voice control.', specs:{ Display:'7" touch', Voice:'Built-in', Hub:'Matter/Thread', Audio:'Stereo', Camera:'1080p' } },
+  { id:'p13', name:'Forge Keyboard RGB', cat:'gaming', price:189, was:229, rating:4.7, reviews:534, badge:'sale', img:'/shop/keyboard.jpg', desc:'Mechanical RGB keyboard with hot-swap switches and aluminum frame.', specs:{ Switches:'Hot-swap', Layout:'87-key TKL', RGB:'Per-key', Connect:'USB-C / BT', Build:'Aluminum' } },
+];
+
+let PRODUCTS = DEFAULT_PRODUCTS.slice();
+
+// ============================================
+// SPARE PARTS INTEGRATION - For repair page cart items
+// ============================================
+
+function getProductWithSpares(productId) {
+    // First check regular products
+    let product = PRODUCTS.find(p => p.id === productId);
+    if (product) return product;
+    
+    // Check spare parts stored in localStorage (added from repair page)
+    const sparePartsStore = JSON.parse(localStorage.getItem('nova_spare_parts') || '{}');
+    const sparePart = sparePartsStore[productId];
+    if (sparePart) {
+        return {
+            id: productId,
+            name: sparePart.name,
+            price: sparePart.price,
+            img: sparePart.img,
+            cat: 'spare_parts',
+            inStock: true,
+            desc: 'Replacement spare part',
+            rating: 5,
+            reviews: 0,
+            specs: { Type: 'Spare Part', Warranty: '3 months' }
+        };
+    }
+    return null;
+}
+
+// ----- STATE -----
+const state = {
+  cart: load('nova_cart', []),
+  wish: load('nova_wish', []),
+  recent: load('nova_recent', []),
+  user: null,
+  orders: [],
+  filter: 'all',
+  sort: 'featured',
 };
 
-const OFFLINE_MANAGER = { id:'local-admin', name:'Offline Admin', role:'admin' };
-const DUMMY_ORDERS = [{ id:'ORD-0001', customer:'Local Admin', email:'admin@local', createdAt:new Date().toISOString(), items:[{name:'Demo product', qty:1}], total:0 }];
-const DUMMY_PRODUCTS = [{ id:'prod-0001', name:'Demo Product', cat:'phones', price:999, was:1199, rating:4.5, reviews:76, img:'/shop/hero-phone.jpg', desc:'This is a local demo product for the management dashboard.' }];
-const DUMMY_STAFF = [{ id:'staff-0001', name:'Staff Member', email:'staff@local' }];
-const DUMMY_REPAIR_BOOKINGS = [{ id:'BKG-0001', name:'Jane Doe', email:'jane@local', brand:'Samsung', model:'Galaxy S23', repairType:'Screen repair', pickupDropoff:'Dropoff', status:'Pending', repairServiceTitle:'Screen Replacement' }];
-const DUMMY_REPAIR_SERVICES = [{ id:'svc-0001', title:'Screen Replacement', brand:'Samsung', repairType:'Screen repair', price:4500, available:true }];
-const DUMMY_TECHNICIANS = [{ id:'tech-0001', name:'Alex Mwangi', email:'alex@local' }];
-const DUMMY_REPAIR_CATEGORIES = [{ id:'cat-0001', name:'Phones' }];
-const DUMMY_COUNTIES = [{ id:'c-0001', name:'Nairobi' }];
-const DUMMY_SUB_LOCATIONS = [{ id:'sl-0001', countyId:'c-0001', name:'Westlands', deliveryZoneId:'dz-0001' }];
-const DUMMY_DELIVERY_ZONES = [{ id:'dz-0001', name:'Nairobi Central', description:'Central areas of Nairobi' }];
-const DUMMY_DELIVERY_RATES = [{ id:'dr-0001', deliveryZoneId:'dz-0001', baseFee:300 }];
-const DUMMY_ANALYTICS = { totalSales:0, totalOrders:0, delivered:0, products:1, days:[
-  { label:'Mon', sales:0, orders:0 },
-  { label:'Tue', sales:0, orders:0 },
-  { label:'Wed', sales:0, orders:0 },
-  { label:'Thu', sales:0, orders:0 },
-  { label:'Fri', sales:0, orders:0 },
-  { label:'Sat', sales:0, orders:0 },
-  { label:'Sun', sales:0, orders:0 }
-]};
+function load(k, fb) { try { return JSON.parse(localStorage.getItem(k)) ?? fb; } catch { return fb; } }
+function save(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
+const $ = (s, p=document) => p.querySelector(s);
+const $$ = (s, p=document) => [...p.querySelectorAll(s)];
+const fmt = n => 'KES ' + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 0 });
+const currentUser = () => state.user;
 
+let deliveryFee = 600;
+let countySubLocations = [];
 
+function normalizeAreaName(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function getSelectedSubLocation() {
+  const value = normalizeAreaName($('#subLocation')?.value);
+  if (!value) return null;
+  return countySubLocations.find(sl => normalizeAreaName(sl.name) === value) || null;
+}
+
+// ============================================
+// LOAD PRODUCTS FROM LOCALSTORAGE (SYNC WITH MANAGEMENT PAGE)
+// ============================================
+
+function loadProductsFromLocalStorage() {
+  const stored = localStorage.getItem('management_products');
+  if (stored && JSON.parse(stored).length > 0) {
+    PRODUCTS = JSON.parse(stored);
+    console.log('Loaded products from management page:', PRODUCTS.length);
+    return true;
+  }
+  return false;
+}
+
+// ============================================
+// UPDATED: CHECKOUT MODAL - Partial Payment (Only Delivery Fee)
+// ============================================
+function showCheckoutModal(subtotal, deliveryFeeAmount, onConfirm) {
+  const existingModal = document.querySelector('.checkout-modal');
+  if (existingModal) existingModal.remove();
+  
+  const total = subtotal + deliveryFeeAmount;
+  const remainingAmount = subtotal;
+  
+  const modal = document.createElement('div');
+  modal.className = 'checkout-modal';
+  modal.innerHTML = `
+    <div class="checkout-card">
+      <h3>💰 Payment Summary</h3>
+      <div class="details" style="text-align: left;">
+        <p><strong>Subtotal:</strong> ${fmt(subtotal)}</p>
+        <p><strong>Delivery Fee (Pay Now):</strong> <span style="color: #00e5ff;">${fmt(deliveryFeeAmount)}</span></p>
+        <p><strong>Remaining on Delivery:</strong> ${fmt(remainingAmount)}</p>
+        <hr style="margin: 1rem 0; border-color: rgba(255,255,255,0.1);">
+        <p style="font-size: 0.85rem;">✅ You will only pay the delivery fee now via M-Pesa</p>
+        <p style="font-size: 0.85rem;">📦 The remaining amount (${fmt(remainingAmount)}) will be paid when you receive your product</p>
+      </div>
+      <div class="checkout-actions">
+        <button class="btn-cancel">Cancel</button>
+        <button class="btn-confirm">Pay Delivery Fee (${fmt(deliveryFeeAmount)})</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  
+  setTimeout(() => modal.classList.add('show'), 10);
+  
+  modal.querySelector('.btn-cancel').addEventListener('click', () => {
+    modal.classList.remove('show');
+    setTimeout(() => modal.remove(), 300);
+  });
+  
+  modal.querySelector('.btn-confirm').addEventListener('click', () => {
+    modal.classList.remove('show');
+    setTimeout(() => modal.remove(), 300);
+    if (onConfirm) onConfirm();
+  });
+  
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      modal.classList.remove('show');
+      setTimeout(() => modal.remove(), 300);
+    }
+  });
+}
+
+async function updateCartTotals() {
+  const subtotal = state.cart.reduce((s, c) => {
+    const p = getProductWithSpares(c.id);
+    return s + (p?.price || 0) * c.qty;
+  }, 0);
+  const subLocId = getSelectedSubLocation()?.id;
+  const weight = state.cart.reduce((w, c) => {
+    const p = getProductWithSpares(c.id);
+    return w + (p?.weight || 0.5) * c.qty;
+  }, 0);
+  
+  if (subLocId) {
+    try {
+      const data = await api('/api/delivery/calculate', { method: 'POST', body: JSON.stringify({ subLocationId: subLocId, weight, distanceKm: 0 }) });
+      deliveryFee = data.fee;
+      if (data.breakdown && $('#deliveryBreakdown')) {
+        $('#deliveryBreakdown').textContent = `Zone: ${data.breakdown.zone || 'N/A'} · Base ${fmt(data.breakdown.base)} · Weight ${data.breakdown.weight}kg`;
+      }
+    } catch (e) { deliveryFee = 600; }
+  } else {
+    deliveryFee = 600;
+  }
+
+  if ($('#deliveryFee')) $('#deliveryFee').textContent = fmt(deliveryFee);
+  
+  // Update cart footer with partial payment breakdown
+  updateCartFooter(subtotal);
+}
+
+function updateCartFooter(subtotal) {
+  const cartFooter = $('.cart-foot');
+  if (cartFooter) {
+    const total = subtotal + deliveryFee;
+    const remainingOnDelivery = subtotal;
+    
+    cartFooter.innerHTML = `
+      <div class="cart-total">
+        <div style="margin-bottom: 0.75rem;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span>Subtotal:</span>
+            <b>${fmt(subtotal)}</b>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span>Delivery Fee (Pay Now):</span>
+            <b style="color: #00e5ff;">${fmt(deliveryFee)}</b>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.1);">
+            <span>Remaining on Delivery:</span>
+            <b>${fmt(remainingOnDelivery)}</b>
+          </div>
+        </div>
+        <div style="background: rgba(0,229,255,0.1); padding: 0.75rem; border-radius: 0.75rem; margin-top: 0.5rem;">
+          <small>💡 You only pay delivery fee (${fmt(deliveryFee)}) now. The remaining ${fmt(remainingOnDelivery)} will be paid when you receive your product.</small>
+        </div>
+      </div>
+      <button class="btn primary block" id="checkoutBtn">Pay Delivery Fee & Place Order</button>
+    `;
+    
+    // Re-attach checkout event listener
+    const newCheckoutBtn = document.getElementById('checkoutBtn');
+    if (newCheckoutBtn) {
+      newCheckoutBtn.addEventListener('click', handleCheckout);
+    }
+  }
+}
+
+// ============================================
+// UPDATED: CHECKOUT HANDLER - Partial Payment
+// ============================================
+async function handleCheckout() {
+  if (!state.cart.length) {
+    toast('Cart is empty', 'error');
+    return;
+  }
+  
+  const user = currentUser();
+  if (!user || user.role !== 'customer') {
+    toast('Please login as a customer to place an order', 'error');
+    openCart(false);
+    openAuth();
+    return;
+  }
+  
+  const countyId = $('#county').value;
+  const subLocationText = $('#subLocation').value.trim();
+  const subLocation = getSelectedSubLocation();
+  const street = $('#street').value.trim();
+  
+  if (!countyId || !subLocationText || !street) {
+    toast('Please fill in your delivery location', 'error');
+    return;
+  }
+  if (!subLocation) {
+    toast('Please choose a listed sub-location for the selected county', 'error');
+    return;
+  }
+
+  const subtotal = state.cart.reduce((s, c) => {
+    const p = getProductWithSpares(c.id);
+    return s + (p?.price || 0) * c.qty;
+  }, 0);
+  const total = subtotal + deliveryFee;
+
+  // Show modal with partial payment info
+  showCheckoutModal(subtotal, deliveryFee, async () => {
+    const phone = prompt("Enter M-Pesa Phone Number to pay delivery fee (e.g., 0712345678):");
+    if (!phone || phone.length < 10) {
+      toast("Valid phone number required", "error");
+      return;
+    }
+
+    try {
+      // Create order with partial payment (only delivery fee upfront)
+      const orderResp = await api('/api/orders', {
+        method: 'POST',
+        body: JSON.stringify({
+          items: state.cart,
+          county: $('#county option:checked').text(),
+          constituency: subLocation.name,
+          street,
+          depositAmount: deliveryFee,
+          depositMpesa: "MOCK-" + Date.now(),
+        })
+      });
+      const order = orderResp.order;
+      
+      // Process M-Pesa payment for delivery fee only
+      toast("Processing delivery fee payment...", "info");
+      await api('/api/payments/stk-push', { 
+        method: 'POST', 
+        body: JSON.stringify({ 
+          phone, 
+          amount: deliveryFee, 
+          orderId: order.id,
+          paymentType: 'delivery_fee'
+        }) 
+      });
+
+      state.orders.unshift(order);
+      toast(`✅ Delivery fee of ${fmt(deliveryFee)} paid! Remaining ${fmt(subtotal)} to be paid on delivery.`, 'success');
+      state.cart = []; 
+      save('nova_cart', state.cart); 
+      renderCart(); 
+      openCart(false);
+      renderDashboard();
+    } catch (err) {
+      toast("Checkout failed: " + err.message, 'error');
+    }
+  });
+}
+
+// ============================================
+// FIXED: loadCounties with immediate fallback AND populates countySubLocations
+// ============================================
+async function loadCounties() {
+  const el = $('#county');
+  if (!el) return;
+  
+  // IMMEDIATELY populate with fallback counties so dropdown works right away
+  const fallbackCounties = [
+    { id: 'c-nairobi', name: 'Nairobi' },
+    { id: 'c-mombasa', name: 'Mombasa' },
+    { id: 'c-kisumu', name: 'Kisumu' },
+    { id: 'c-nakuru', name: 'Nakuru' },
+    { id: 'c-kiambu', name: 'Kiambu' },
+    { id: 'c-eldoret', name: 'Uasin Gishu' },
+    { id: 'c-machakos', name: 'Machakos' },
+    { id: 'c-kajiado', name: 'Kajiado' },
+    { id: 'c-thika', name: 'Thika' },
+    { id: 'c-malindi', name: 'Malindi' },
+    { id: 'c-garissa', name: 'Garissa' },
+    { id: 'c-kakamega', name: 'Kakamega' },
+    { id: 'c-bungoma', name: 'Bungoma' },
+    { id: 'c-nyeri', name: 'Nyeri' },
+    { id: 'c-meru', name: 'Meru' },
+    { id: 'c-embu', name: 'Embu' },
+    { id: 'c-kitui', name: 'Kitui' },
+    { id: 'c-muranga', name: 'Muranga' },
+    { id: 'c-kericho', name: 'Kericho' },
+    { id: 'c-kisii', name: 'Kisii' },
+    { id: 'c-kwale', name: 'Kwale' },
+    { id: 'c-kilifi', name: 'Kilifi' },
+    { id: 'c-lamu', name: 'Lamu' },
+    { id: 'c-tana-river', name: 'Tana River' },
+    { id: 'c-taita-taveta', name: 'Taita Taveta' },
+    { id: 'c-vihiga', name: 'Vihiga' },
+    { id: 'c-siaya', name: 'Siaya' },
+    { id: 'c-homa-bay', name: 'Homa Bay' },
+    { id: 'c-migori', name: 'Migori' },
+    { id: 'c-nyamira', name: 'Nyamira' },
+    { id: 'c-trans-nzoia', name: 'Trans Nzoia' },
+    { id: 'c-west-pokot', name: 'West Pokot' },
+    { id: 'c-nyandarua', name: 'Nyandarua' },
+    { id: 'c-laikipia', name: 'Laikipia' },
+    { id: 'c-samburu', name: 'Samburu' },
+    { id: 'c-isiolo', name: 'Isiolo' },
+    { id: 'c-marsabit', name: 'Marsabit' },
+    { id: 'c-wajir', name: 'Wajir' },
+    { id: 'c-mandera', name: 'Mandera' }
+  ];
+  
+  // Populate dropdown immediately
+  el.innerHTML = '<option value="">Select County</option>' + 
+    fallbackCounties.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  
+  // Then try to fetch from server and update if successful
+  try {
+    const data = await api('/api/locations/counties');
+    if (data && data.counties && data.counties.length > 0) {
+      el.innerHTML = '<option value="">Select County</option>' + 
+        data.counties.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    }
+  } catch (err) {
+    console.error('Failed to load counties from server, using fallback');
+  }
+  
+  // Remove existing event listener to avoid duplicates
+  const oldListener = el._changeListener;
+  if (oldListener) el.removeEventListener('change', oldListener);
+  
+  // Add change event listener
+  const changeHandler = async () => {
+    const subEl = $('#subLocation');
+    const datalist = $('#sublocationsList');
+    const countyName = el.options[el.selectedIndex]?.text || '';
+    const selectedCountyId = el.value;
+    
+    if (!selectedCountyId) {
+      countySubLocations = []; // Clear sublocations
+      if (subEl) subEl.value = '';
+      if (datalist) datalist.innerHTML = '';
+      updateCartTotals();
+      return;
+    }
+    
+    // Create fallback sublocations for the selected county
+    const fallbackSubLocationsData = {
+      'Nairobi': ['CBD', 'Westlands', 'Kilimani', 'Karen', 'Langata', 'Eastleigh', 'South B', 'South C', 'Buruburu', 'Donholm', 'Kasarani', 'Ruaraka', 'Embakasi', 'Mathare', 'Kibera', 'Dagoretti'],
+      'Mombasa': ['Nyali', 'Bamburi', 'Mtwapa', 'Likoni', 'Changamwe', 'Kisauni', 'Mombasa CBD', 'Shanzu', 'Tudor', 'Miritini'],
+      'Kisumu': ['Milimani', 'Kondele', 'Nyalenda', 'Kibos', 'Kisumu East', 'Kisumu West', 'Nyando', 'Muhoroni', 'Ahero'],
+      'Nakuru': ['CBD', 'Milimani', 'Lanet', 'Rhoda', 'Kaptembwo', 'London', 'Bondeni', 'Free Area', 'Menengai', 'Nakuru West', 'Nakuru East', 'Bahati', 'Njoro', 'Molo'],
+      'Kiambu': ['Kiambu Town', 'Thika', 'Ruiru', 'Kikuyu', 'Limuru', 'Githunguri', 'Juja', 'Gatundu', 'Lari'],
+      'Uasin Gishu': ['Eldoret CBD', 'Kapsoya', 'Langas', 'Huruma', 'Kimumu', 'Kamukunji', 'Elgon View', 'Pioneer', 'Racecourse'],
+      'Machakos': ['Machakos Town', 'Athi River', 'Mavoko', 'Kangundo', 'Tala', 'Matuu', 'Masii'],
+      'Kajiado': ['Kajiado Town', 'Kitengela', 'Ngong', 'Ongata Rongai', 'Isinya', 'Loitokitok', 'Namanga']
+    };
+    
+    const locations = fallbackSubLocationsData[countyName] || 
+      ['Town Centre', 'Estate', 'Phase 1', 'Phase 2', 'Central', 'North', 'South', 'East', 'West'];
+    
+    // CRITICAL FIX: Populate countySubLocations with proper objects for validation
+    countySubLocations = locations.map((loc, index) => ({
+      id: `sl-${selectedCountyId}-${index}`,
+      name: loc,
+      countyId: selectedCountyId
+    }));
+    
+    if (datalist) {
+      datalist.innerHTML = locations.map(loc => `<option value="${loc}"></option>`).join('');
+    }
+    
+    if (subEl) {
+      subEl.placeholder = `Type area in ${countyName}...`;
+      subEl.value = '';
+    }
+    
+    updateCartTotals();
+  };
+  
+  el._changeListener = changeHandler;
+  el.addEventListener('change', changeHandler);
+  
+  $('#subLocation')?.addEventListener('change', updateCartTotals);
+  $('#subLocation')?.addEventListener('input', debounce(updateCartTotals, 250));
+}
+
+function debounce(fn, wait=300) {
+  let t;
+  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), wait); };
+}
+
+function setupPlaceAutocomplete(countyName) {
+  const streetInput = $('#street');
+  const streetDatalist = $('#streetsList');
+  if (!streetInput || !streetDatalist) return;
+
+  streetInput.removeEventListener('input', streetInput._placeListener || (()=>{}));
+  streetInput._placeListener = debounce(async (e) => {
+    const q = e.target.value.trim();
+    if (!q) return;
+    try {
+      const res = await api(`/api/places/autocomplete?q=${encodeURIComponent(q)}&type=street&countyName=${encodeURIComponent(countyName)}`);
+      const preds = res.predictions || [];
+      streetDatalist.innerHTML = preds.map(p => `<option value="${esc(p.description)}"></option>`).join('');
+    } catch (err) {
+      console.warn('Street autocomplete failed', err);
+    }
+  }, 250);
+  streetInput.addEventListener('input', streetInput._placeListener);
+}
 
 async function api(path, options = {}) {
   let res;
@@ -55,872 +456,648 @@ async function api(path, options = {}) {
   if (!(options.body instanceof FormData)) {
     headers['Content-Type'] = 'application/json';
   }
-  // Retry up to 3 times for 502/503 (Render cold-start wake-up)
-  const maxRetries = (options.method || 'GET') === 'GET' ? 3 : 1;
-  let lastErr;
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    if (attempt > 0) await new Promise(r => setTimeout(r, 2000 * attempt));
-    try {
-      res = await fetch(path, {
-        credentials: 'include',
-        method: options.method || 'GET',
-        body: options.body,
-        headers: Object.keys(headers).length > 0 ? headers : undefined
-      });
-      if (res.status === 502 || res.status === 503) {
-        lastErr = new Error('Server starting up, retrying...');
-        continue; // retry
-      }
-      break; // success or non-retryable status
-    } catch (err) {
-      lastErr = err;
-      if (attempt < maxRetries - 1) continue;
-      const error = new Error(err.message || 'Network request failed');
-      error.network = true;
-      throw error;
-    }
+  try {
+    res = await fetch(path, {
+      credentials: 'include',
+      method: options.method || 'GET',
+      body: options.body,
+      headers: Object.keys(headers).length > 0 ? headers : undefined
+    });
+  } catch (err) {
+    throw new Error('Network request failed. Please check your server connection.');
   }
-  if (!res) { const e = new Error(lastErr?.message || 'Request failed'); e.network = true; throw e; }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || 'Request failed');
   return data;
 }
 
+// ============================================
+// refreshProducts — server is always the source of truth.
+// localStorage is only used as fallback when server is unreachable.
+// ============================================
+async function refreshProducts() {
+  try {
+    const data = await api('/api/products');
+    if (data && data.products && data.products.length > 0) {
+      PRODUCTS = data.products;
+      // Keep localStorage in sync for offline use
+      localStorage.setItem('management_products', JSON.stringify(PRODUCTS));
+    }
+  } catch (err) {
+    console.error('Failed to refresh products from server, using localStorage fallback:', err);
+    loadProductsFromLocalStorage();
+  }
+  renderProducts();
+  renderFlash();
+  renderCart();
+  renderRecent();
+}
+
+async function refreshOrders() {
+  if (!state.user) return;
+  try {
+    const data = await api('/api/orders/my');
+    state.orders = data.orders;
+    renderDashboard();
+  } catch (err) {
+    console.error('Failed to refresh orders:', err);
+  }
+}
+
+// ----- LOADER -----
+window.addEventListener('load', () => {
+  setTimeout(() => $('#loader')?.classList.add('hide'), 600);
+});
+
+// ----- NAV scroll -----
+addEventListener('scroll', () => {
+  $('#nav').classList.toggle('scrolled', scrollY > 20);
+  $('#toTop').classList.toggle('show', scrollY > 600);
+}, { passive: true });
+
+// ----- THEME -----
+const savedTheme = localStorage.getItem('nova_theme') || 'dark';
+document.documentElement.dataset.theme = savedTheme;
+$('#themeBtn').addEventListener('click', () => {
+  const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = next;
+  localStorage.setItem('nova_theme', next);
+  toast(`Switched to ${next} mode`, 'info');
+});
+
+// ----- MOBILE MENU -----
+$('#menuToggle').addEventListener('click', e => {
+  e.currentTarget.classList.toggle('open');
+  $('#mobileMenu').classList.toggle('open');
+});
+$$('#mobileMenu a').forEach(a => a.addEventListener('click', () => {
+  $('#menuToggle').classList.remove('open');
+  $('#mobileMenu').classList.remove('open');
+}));
+
+// ----- SEARCH -----
+const searchPanel = $('#searchPanel');
+$('#searchBtn').addEventListener('click', () => { searchPanel.classList.toggle('open'); $('#searchInput').focus(); });
+$('#searchClose').addEventListener('click', () => searchPanel.classList.remove('open'));
+addEventListener('keydown', e => { if (e.key === 'Escape') searchPanel.classList.remove('open'); });
+$('#searchInput').addEventListener('input', e => {
+  const q = e.target.value.toLowerCase().trim();
+  const r = $('#searchResults');
+  if (!q) { r.innerHTML = ''; return; }
+  const hits = PRODUCTS.filter(p => p.name.toLowerCase().includes(q) || p.cat.includes(q)).slice(0, 8);
+  r.innerHTML = hits.length ? hits.map(p => `
+    <button class="sr-item" data-id="${p.id}">
+      <img src="${p.img}" alt="${p.name}" loading="lazy" onerror="this.src='/shop/hero-phone.jpg'">
+      <div><div>${p.name}</div><small>${fmt(p.price)} · ${p.cat}</small></div>
+    </button>`).join('') : '<p class="muted" style="padding:1rem">No matches.</p>';
+  r.querySelectorAll('.sr-item').forEach(b => b.addEventListener('click', () => { openModal(b.dataset.id); searchPanel.classList.remove('open'); }));
+});
+
+// ----- PARTICLES -----
+const canvas = $('#particles');
+const ctx = canvas?.getContext('2d');
+let particles = [], W, H;
+function resizeCanvas() {
+  if (!canvas || !ctx) return;
+  W = canvas.width = canvas.offsetWidth * devicePixelRatio;
+  H = canvas.height = canvas.offsetHeight * devicePixelRatio;
+}
+function initParticles() {
+  if (!canvas || !ctx) return;
+  resizeCanvas();
+  particles = Array.from({ length: 60 }, () => ({
+    x: Math.random() * W, y: Math.random() * H,
+    r: Math.random() * 2 + .5,
+    vx: (Math.random() - .5) * .3, vy: (Math.random() - .5) * .3,
+    c: ['#00e5ff', '#7c4dff', '#ff2bd6'][Math.floor(Math.random() * 3)]
+  }));
+}
+function drawParticles() {
+  if (!canvas || !ctx) return;
+  ctx.clearRect(0, 0, W, H);
+  particles.forEach((p, i) => {
+    p.x += p.vx; p.y += p.vy;
+    if (p.x < 0 || p.x > W) p.vx *= -1;
+    if (p.y < 0 || p.y > H) p.vy *= -1;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.r * devicePixelRatio, 0, Math.PI * 2);
+    ctx.fillStyle = p.c; ctx.shadowBlur = 15; ctx.shadowColor = p.c; ctx.fill();
+    for (let j = i+1; j < particles.length; j++) {
+      const q = particles[j], dx = p.x - q.x, dy = p.y - q.y, d = Math.hypot(dx, dy);
+      if (d < 120 * devicePixelRatio) {
+        ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y);
+        ctx.strokeStyle = `rgba(124,77,255,${.15 * (1 - d / (120*devicePixelRatio))})`;
+        ctx.lineWidth = 1; ctx.shadowBlur = 0; ctx.stroke();
+      }
+    }
+  });
+  requestAnimationFrame(drawParticles);
+}
+if (canvas && ctx) {
+  initParticles(); drawParticles();
+  addEventListener('resize', initParticles);
+}
+
+// ----- HERO SLIDER -----
+const slides = $$('.hero-slide');
+const dotsBox = $('.hero-dots');
+let slideIdx = 0;
+if (slides.length && dotsBox) {
+  slides.forEach((_, i) => {
+    const b = document.createElement('button');
+    if (i === 0) b.classList.add('active');
+    b.addEventListener('click', () => setSlide(i));
+    dotsBox.appendChild(b);
+  });
+  function setSlide(i) {
+    slides.forEach(s => s.classList.remove('active'));
+    $$('.hero-dots button').forEach(d => d.classList.remove('active'));
+    slides[i].classList.add('active');
+    $$('.hero-dots button')[i].classList.add('active');
+    slideIdx = i;
+  }
+  setInterval(() => setSlide((slideIdx + 1) % slides.length), 5000);
+} else {
+  function setSlide() {}
+}
+
+// ----- COUNTERS -----
+const counters = $$('[data-count]');
+const counterObs = new IntersectionObserver(es => {
+  es.forEach(e => {
+    if (e.isIntersecting) {
+      const el = e.target, target = +el.dataset.count;
+      let cur = 0, step = Math.ceil(target / 50);
+      const t = setInterval(() => { cur += step; if (cur >= target) { cur = target; clearInterval(t); } el.textContent = cur; }, 30);
+      counterObs.unobserve(el);
+    }
+  });
+});
+counters.forEach(c => counterObs.observe(c));
+
+// ----- REVEAL -----
+const revObs = new IntersectionObserver(es => es.forEach(e => e.isIntersecting && e.target.classList.add('in')), { threshold: .12 });
+$$('.reveal').forEach(el => revObs.observe(el));
+
+// ----- COUNTDOWN -----
+const endTime = Date.now() + 6 * 3600 * 1000;
+setInterval(() => {
+  const d = Math.max(0, endTime - Date.now());
+  const h = String(Math.floor(d / 3600000)).padStart(2, '0');
+  const m = String(Math.floor(d % 3600000 / 60000)).padStart(2, '0');
+  const s = String(Math.floor(d % 60000 / 1000)).padStart(2, '0');
+  $('#countdown').textContent = `${h}:${m}:${s}`;
+}, 1000);
+
+// ----- PRODUCT RENDER -----
+function star(r) { return '★'.repeat(Math.round(r)) + '☆'.repeat(5 - Math.round(r)); }
+
+function card(p, opts = {}) {
+  const isWish = state.wish.includes(p.id);
+  const stockPct = opts.stock || Math.floor(Math.random() * 60 + 20);
+  const out = p.inStock === false;
+  return `
+    <article class="card ${out ? 'out-of-stock' : ''}" data-id="${p.id}">
+      <div class="card-media">
+        <img src="${p.img}" alt="${p.name}" loading="lazy" width="600" height="600" onerror="this.src='/shop/hero-phone.jpg'">
+        <div class="card-badges">
+          ${out ? '<span class="b b-out">Out of Stock</span>' : ''}
+          ${p.badge === 'new' ? '<span class="b b-new">New</span>' : ''}
+          ${p.badge === 'hot' ? '<span class="b b-hot">Hot</span>' : ''}
+          ${p.badge === 'sale' ? '<span class="b b-sale">Flash Sale</span>' : ''}
+          ${(!p.badge && p.was) ? '<span class="b b-sale">Sale</span>' : ''}
+        </div>
+        <div class="card-actions">
+          <button class="act js-wish ${isWish ? 'active' : ''}" aria-label="Wishlist"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8Z"/></svg></button>
+          <button class="act js-view" aria-label="Quick view"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/></svg></button>
+        </div>
+      </div>
+      <div class="card-body">
+        <span class="card-cat">${p.cat}</span>
+        <h3 class="card-title">${p.name}</h3>
+        <div class="card-rating"><span class="stars">${star(p.rating)}</span> ${p.rating} · ${p.reviews}</div>
+        <div class="card-foot">
+          <div class="price">${p.was ? `<s>${fmt(p.was)}</s>` : ''}${fmt(p.price)}</div>
+          <button class="add js-add" ${out ? 'disabled' : ''}>${out ? 'Unavailable' : 'Add'}</button>
+        </div>
+      </div>
+      ${opts.stock ? `<div class="stock"><small>Only ${Math.round(100 - stockPct)}% left</small><div class="stock-bar"><i style="width:${stockPct}%"></i></div></div>` : ''}
+    </article>`;
+}
+
+function renderProducts() {
+  let list = PRODUCTS.slice();
+  if (state.filter !== 'all') list = list.filter(p => p.cat === state.filter);
+  if (state.sort === 'low') list.sort((a,b) => a.price - b.price);
+  if (state.sort === 'high') list.sort((a,b) => b.price - a.price);
+  if (state.sort === 'rating') list.sort((a,b) => b.rating - a.rating);
+  $('#productGrid').innerHTML = list.map(p => card(p)).join('');
+  bindCards($('#productGrid'));
+}
+function renderFlash() {
+  const items = PRODUCTS.filter(p => p.was).slice(0, 4);
+  $('#flashGrid').innerHTML = items.map(p => card(p, { stock: Math.floor(Math.random() * 60 + 20) })).join('');
+  bindCards($('#flashGrid'));
+}
+function renderRecent() {
+  const list = state.recent.map(id => PRODUCTS.find(p => p.id === id)).filter(Boolean);
+  if (!list.length) return;
+  $('#recentSection').hidden = false;
+  $('#recentGrid').innerHTML = list.map(p => card(p)).join('');
+  bindCards($('#recentGrid'));
+}
+function bindCards(root) {
+  $$('.card', root).forEach(c => {
+    const id = c.dataset.id;
+    $('.js-add', c).addEventListener('click', () => addCart(id));
+    $('.js-wish', c).addEventListener('click', () => toggleWish(id, c));
+    $('.js-view', c).addEventListener('click', () => openModal(id));
+    $('.card-media', c).addEventListener('click', () => openModal(id));
+  });
+}
+
+// ----- FILTERS / SORT -----
+$$('.chip').forEach(c => c.addEventListener('click', () => {
+  $$('.chip').forEach(x => x.classList.remove('active'));
+  c.classList.add('active');
+  state.filter = c.dataset.cat;
+  renderProducts();
+}));
+$('#sortBy').addEventListener('change', e => { state.sort = e.target.value; renderProducts(); });
+
+// ----- CART -----
+function addCart(id) {
+  const p = getProductWithSpares(id);
+  if (p?.inStock === false) return toast('This product is out of stock', 'error');
+  const item = state.cart.find(c => c.id === id);
+  if (item) item.qty++; else state.cart.push({ id, qty: 1 });
+  save('nova_cart', state.cart); renderCart();
+  toast(`${p.name} added to cart`, 'success');
+}
+function rmCart(id) { state.cart = state.cart.filter(c => c.id !== id); save('nova_cart', state.cart); renderCart(); }
+function setQty(id, q) {
+  const it = state.cart.find(c => c.id === id); if (!it) return;
+  it.qty = Math.max(1, q); save('nova_cart', state.cart); renderCart();
+}
+
+function renderCart() {
+  const box = $('#cartItems');
+  if (!state.cart.length) { 
+    box.innerHTML = '<div class="cart-empty"><div style="font-size:3rem">🛒</div><p>Your cart is empty</p></div>'; 
+  } else {
+    box.innerHTML = state.cart.map(c => {
+      const p = getProductWithSpares(c.id);
+      if (!p) return '';
+      return `<div class="cart-item">
+        <img src="${p.img}" alt="${p.name}" onerror="this.src='/shop/hero-phone.jpg'">
+        <div><div class="ci-title">${p.name}</div><div class="ci-price">${fmt(p.price)}</div>
+          <div class="ci-qty"><button data-act="dec" data-id="${p.id}">−</button><span>${c.qty}</span><button data-act="inc" data-id="${p.id}">+</button></div>
+        </div>
+        <button class="ci-rm" data-act="rm" data-id="${p.id}" aria-label="Remove">✕</button>
+    </div>`;
+    }).join('');
+    
+    box.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', () => {
+      const id = b.dataset.id, item = state.cart.find(c => c.id === id);
+      if (b.dataset.act === 'inc') setQty(id, item.qty + 1);
+      if (b.dataset.act === 'dec') setQty(id, item.qty - 1);
+      if (b.dataset.act === 'rm') rmCart(id);
+    }));
+  }
+  
+  const subtotal = state.cart.reduce((s, c) => {
+    const p = getProductWithSpares(c.id);
+    return s + (p?.price || 0) * c.qty;
+  }, 0);
+  $('#cartCount').textContent = state.cart.reduce((s, c) => s + c.qty, 0);
+  
+  // Update cart footer with partial payment info
+  updateCartFooter(subtotal);
+}
+
+function openCart(open) {
+  const cart = $('#cartSide');
+  const overlay = $('#overlay');
+  if (!cart || !overlay) return;
+  if (open) {
+    cart.classList.add('open');
+    cart.setAttribute('aria-hidden', 'false');
+    overlay.classList.add('show');
+  } else {
+    cart.classList.remove('open');
+    cart.setAttribute('aria-hidden', 'true');
+    overlay.classList.remove('show');
+  }
+}
+$('#cartBtn').addEventListener('click', () => openCart(true));
+$('#cartClose').addEventListener('click', () => openCart(false));
+$('#overlay').addEventListener('click', () => { openCart(false); closeModal(); closeAuth(); });
+
+// ----- WISHLIST -----
+function toggleWish(id, cardEl) {
+  const idx = state.wish.indexOf(id);
+  if (idx > -1) { state.wish.splice(idx, 1); toast('Removed from wishlist', 'info'); }
+  else { state.wish.push(id); toast('Added to wishlist ❤', 'success'); }
+  save('nova_wish', state.wish);
+  $('#wishCount').textContent = state.wish.length;
+  if (cardEl) $('.js-wish', cardEl).classList.toggle('active');
+}
+$('#wishBtn').addEventListener('click', () => toast(state.wish.length ? `${state.wish.length} item(s) in wishlist` : 'Wishlist is empty', 'info'));
+
+// ----- MODAL -----
+function openModal(id) {
+  const p = getProductWithSpares(id);
+  if (!p) return;
+  if (!state.recent.includes(id)) {
+    state.recent.unshift(id); state.recent = state.recent.slice(0, 6); save('nova_recent', state.recent);
+    renderRecent();
+  }
+  const imgs = [p.img, p.img, p.img];
+  $('#modalCard').innerHTML = `
+    <button class="modal-close" aria-label="Close">✕</button>
+    <div class="modal-inner">
+      <div class="modal-media">
+        <img id="mImg" src="${p.img}" alt="${p.name}" onerror="this.src='/shop/hero-phone.jpg'">
+        <div class="modal-thumbs">${imgs.map((i, k) => `<button class="${k===0?'active':''}" data-src="${i}"><img src="${i}" alt="" onerror="this.src='/shop/hero-phone.jpg'"></button>`).join('')}</div>
+      </div>
+      <div class="modal-body">
+        <span class="eyebrow"><span class="dot"></span>${p.cat}</span>
+        <h2>${p.name}</h2>
+        <div class="card-rating"><span class="stars">${star(p.rating)}</span> ${p.rating} · ${p.reviews} reviews</div>
+        <div class="price">${p.was ? `<s>${fmt(p.was)}</s>` : ''}${fmt(p.price)}</div>
+        <p class="desc">${p.desc}</p>
+        <div class="specs">${Object.entries(p.specs || { Type: 'Spare Part', Warranty: '3 months' }).map(([k,v]) => `<div><span>${k}</span><span>${v}</span></div>`).join('')}</div>
+        <button class="btn primary block" id="mAdd" ${p.inStock === false ? 'disabled' : ''}>${p.inStock === false ? 'Out of Stock' : 'Add to Cart'}</button>
+      </div>
+    </div>`;
+  $('.modal-close').addEventListener('click', closeModal);
+  $('#mAdd').addEventListener('click', () => {
+    if (p.inStock === false) return toast('This product is out of stock', 'error');
+    addCart(id); closeModal(); openCart(true);
+  });
+  $$('.modal-thumbs button').forEach(b => b.addEventListener('click', () => {
+    $$('.modal-thumbs button').forEach(x => x.classList.remove('active'));
+    b.classList.add('active'); $('#mImg').src = b.dataset.src;
+  }));
+  $('#productModal').classList.add('open'); $('#overlay').classList.add('show');
+}
+function closeModal() { $('#productModal').classList.remove('open'); $('#overlay').classList.remove('show'); }
+$('#productModal').addEventListener('click', e => { if (e.target.id === 'productModal') closeModal(); });
+
+// ----- TESTIMONIALS -----
+const REVIEWS = [
+  { n:'Maya R.', r:'Designer · Tokyo', t:'The S.M Dynamics Phone 16 Pro is genuinely the best device I have ever owned. Display is unreal.', s:5 },
+  { n:'David K.', r:'Producer · Berlin', t:'Aura Studio Pro headphones replaced my $1000 reference cans. That is wild for the price.', s:5 },
+  { n:'Sofia L.', r:'Engineer · São Paulo', t:'Shipping was 2 days to Brazil and packaging felt like opening a luxury watch.', s:5 },
+  { n:'Anand P.', r:'Photographer · Mumbai', t:'Lumen R7 autofocus tracks birds in flight. I have never been so confident on a shoot.', s:5 },
+  { n:'Elena F.', r:'Creator · Madrid', t:'Customer support replied in 4 minutes. Four. Minutes. Unheard of in this industry.', s:5 },
+];
+$('#rvTrack').innerHTML = REVIEWS.map(r => `
+  <article class="rv-card">
+    <div class="stars">${star(r.s)}</div>
+    <q>${r.t}</q>
+    <div class="rv-who"><div class="rv-avatar">${r.n[0]}</div><div><b>${r.n}</b><br><small>${r.r}</small></div></div>
+  </article>`).join('');
+$('.rv-nav.prev').addEventListener('click', () => $('#rvTrack').scrollBy({ left: -380, behavior: 'smooth' }));
+$('.rv-nav.next').addEventListener('click', () => $('#rvTrack').scrollBy({ left: 380, behavior: 'smooth' }));
+
+// ----- NEWSLETTER -----
+$('#nlForm').addEventListener('submit', e => { e.preventDefault(); e.target.reset(); toast('Subscribed! Welcome ✨', 'success'); });
+
+// ----- AI -----
+$('#aiForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const q = $('#aiInput').value.toLowerCase();
+  const ans = $('#aiAnswer'); ans.className = 'ai-answer show'; ans.textContent = 'Thinking…';
+  setTimeout(() => {
+    let pick;
+    if (q.includes('laptop') || q.includes('edit') || q.includes('work')) pick = PRODUCTS.find(p => p.id === 'p3');
+    else if (q.includes('phone') || q.includes('camera') && q.includes('pocket')) pick = PRODUCTS.find(p => p.id === 'p1');
+    else if (q.includes('audio') || q.includes('headphone') || q.includes('music')) pick = PRODUCTS.find(p => p.id === 'p2');
+    else if (q.includes('game') || q.includes('vr')) pick = PRODUCTS.find(p => p.id === 'p5');
+    else if (q.includes('camera') || q.includes('photo')) pick = PRODUCTS.find(p => p.id === 'p7');
+    else if (q.includes('watch') || q.includes('fitness')) pick = PRODUCTS.find(p => p.id === 'p4');
+    else pick = PRODUCTS[Math.floor(Math.random() * PRODUCTS.length)];
+    ans.innerHTML = `Based on your needs, I recommend the <b>${pick.name}</b> (${fmt(pick.price)}). ${pick.desc} <a href="#" data-id="${pick.id}" style="color:var(--primary)">View product →</a>`;
+    ans.querySelector('a').addEventListener('click', ev => { ev.preventDefault(); openModal(pick.id); });
+  }, 700);
+});
+
+// ----- CHAT -----
+$('#chatFab').addEventListener('click', () => $('#chatPanel').classList.toggle('open'));
+$('#chatClose').addEventListener('click', () => $('#chatPanel').classList.remove('open'));
+$('#chatForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const v = $('#chatInput').value.trim(); if (!v) return;
+  const log = $('#chatLog');
+  log.insertAdjacentHTML('beforeend', `<div class="msg user">${v}</div>`);
+  $('#chatInput').value = ''; log.scrollTop = log.scrollHeight;
+  setTimeout(() => {
+    const replies = ['Got it! Let me check on that for you.', 'Great question — our team usually responds within 5 minutes.', 'You qualify for free express shipping today 🎉', 'I can offer you a 10% code: SMDELECT10'];
+    log.insertAdjacentHTML('beforeend', `<div class="msg bot">${replies[Math.floor(Math.random()*replies.length)]}</div>`);
+    log.scrollTop = log.scrollHeight;
+  }, 900);
+});
+
+// ----- AUTH / ROLE DASHBOARDS -----
+function esc(v) {
+  return String(v ?? '').replace(/[&<>"']/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch]));
+}
+function openAuth() {
+  $('#authModal').classList.add('open');
+  $('#overlay').classList.add('show');
+}
+function closeAuth() {
+  $('#authModal').classList.remove('open');
+  $('#overlay').classList.remove('show');
+  $('#loginForm').reset();
+  $('#registerForm').reset();
+  setAuthTab('login');
+}
+function setAuthTab(tab) {
+  $$('.auth-tabs button').forEach(b => b.classList.toggle('active', b.dataset.authTab === tab));
+  $('#loginForm').hidden = tab !== 'login';
+  $('#registerForm').hidden = tab !== 'register';
+}
+function updateAccountUi() {
+  const user = currentUser();
+  const customer = user?.role === 'customer' ? user : null;
+  $('#accountLabel').textContent = customer ? `Customer: ${customer.name.split(' ')[0]}` : 'Login';
+  $('#dashboard').hidden = !customer;
+  if (customer) renderDashboard();
+}
+async function login(email, password, successMessage = 'Login successful') {
+  try {
+    const data = await api('/api/auth/login', { method:'POST', body:JSON.stringify({ email, password }) });
+    if (data.user.role === 'admin' || data.user.role === 'staff') {
+      toast('Opening management page', 'info');
+      location.href = 'management.html';
+      return;
+    }
+    state.user = data.user;
+    closeAuth();
+    updateAccountUi();
+    await refreshOrders();
+    toast(successMessage, 'success');
+    $('#dashboard').scrollIntoView({ behavior:'smooth' });
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+function renderOrderList(orders, mode = 'user') {
+  if (!orders.length) return '<div class="dash-empty">No orders yet.</div>';
+  return orders.map(order => `
+    <article class="order-row">
+      <div>
+        <b>${esc(order.id)}</b>
+        <span>${new Date(order.createdAt).toLocaleString()}</span>
+        ${mode !== 'user' ? `<small>${esc(order.customer)} · ${esc(order.email)}</small>` : ''}
+      </div>
+      <div class="order-items">
+        ${order.items.map(i => `${esc(i.name)} x${i.qty}`).join('<br>')}
+        <div class="order-meta"><small>Location: ${esc(order.location.county)}, ${esc(order.location.constituency)} · ${esc(order.location.street)}</small></div>
+        <div class="order-meta"><small>Deposit: ${fmt(order.depositAmount)} · MPesa: ${esc(order.depositMpesa)}</small></div>
+        ${order.deliveryDate ? `<div class="order-meta"><small>Delivery: ${esc(order.deliveryDate)}</small></div>` : ''}
+      </div>
+      <div><b>${fmt(order.total)}</b><span class="status ${order.status.toLowerCase()}">${esc(order.status)}</span></div>
+    </article>`).join('');
+}
+function renderDashboard() {
+  const user = currentUser();
+  if (!user || user.role !== 'customer') return;
+  $('#dashRole').textContent = 'Customer';
+  $('#dashTitle').textContent = 'Track Your Orders';
+  const customerOrders = state.orders.filter(o => o.userId === user.id);
+  $('#dashGrid').innerHTML = `<div class="dash-panel wide"><h3>Your Orders</h3>${renderOrderList(customerOrders)}</div>`;
+}
+$('#accountBtn').addEventListener('click', () => currentUser()?.role === 'customer' ? $('#dashboard').scrollIntoView({ behavior:'smooth' }) : openAuth());
+$('#authClose').addEventListener('click', closeAuth);
+$('#authModal').addEventListener('click', e => { if (e.target.id === 'authModal') closeAuth(); });
+$$('.auth-tabs button').forEach(b => b.addEventListener('click', () => setAuthTab(b.dataset.authTab)));
+$('#loginForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  login(fd.get('email').trim(), fd.get('password'));
+});
+$('#registerForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const email = fd.get('email').trim();
+  try {
+    const data = await api('/api/auth/register', { method:'POST', body:JSON.stringify({ name:fd.get('name').trim(), email, password:fd.get('password') }) });
+    state.user = data.user;
+    closeAuth();
+    updateAccountUi();
+    toast('Registration successful. You are now logged in.', 'success');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+});
+$('#logoutBtn').addEventListener('click', () => {
+  api('/api/auth/logout', { method:'POST', body:JSON.stringify({}) }).finally(() => {
+    state.user = null;
+    state.orders = [];
+    updateAccountUi();
+    toast('Logged out', 'info');
+  });
+});
+
+// ----- TOAST -----
 function toast(msg, type='info') {
   const t = document.createElement('div');
-  const container = $('#toasts');
-  if (!container) return console.log(`Toast (${type}): ${msg}`);
-  t.className = `toast ${type}`;
-  t.textContent = msg;
-  container.appendChild(t);
+  t.className = `toast ${type}`; t.textContent = msg;
+  $('#toasts').appendChild(t);
   setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateX(50%)'; t.style.transition = 'all .4s'; }, 2800);
   setTimeout(() => t.remove(), 3300);
 }
 
-// ============================================
-// DISPATCH STORAGE EVENT FOR REPAIR PAGE SYNC
-// ============================================
-function notifySparePartsUpdated() {
-  window.dispatchEvent(new StorageEvent('storage', {
-    key: 'spare_parts_updated',
-    newValue: Date.now().toString(),
-    oldValue: null
-  }));
-  console.log('Dispatched spare_parts_updated event');
+// ----- LIVE PURCHASE -----
+const FAKE = ['Alex from NYC','Mei from Shanghai','Liam from London','Sara from Paris','Carlos from Madrid','Yuki from Tokyo','Noah from Toronto','Aisha from Dubai'];
+function liveNotif() {
+  const p = PRODUCTS[Math.floor(Math.random() * PRODUCTS.length)];
+  const who = FAKE[Math.floor(Math.random() * FAKE.length)];
+  const el = $('#liveNotif');
+  el.innerHTML = `<img src="${p.img}" alt="" onerror="this.src='/shop/hero-phone.jpg'"><div><b>${who}</b><small>just bought ${p.name}</small></div>`;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 4500);
 }
+setTimeout(liveNotif, 4000);
+setInterval(liveNotif, 16000);
 
-function notifyProductsUpdated() {
-  // Tell app.js (storefront, same tab) that products changed so it re-fetches from server
-  window.dispatchEvent(new StorageEvent('storage', {
-    key: 'management_products',
-    newValue: localStorage.getItem('management_products'),
-    oldValue: null
-  }));
-  console.log('Dispatched management_products updated event');
-}
-
-async function bustProductsCache() {
-  try {
-    const cache = await caches.open('sm-dynamics-v2');
-    await cache.delete('/api/products');
-  } catch (_) {}
-  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-    navigator.serviceWorker.controller.postMessage({ type: 'BUST_PRODUCTS_CACHE' });
-  }
-}
+// ----- BACK TO TOP -----
+$('#toTop').addEventListener('click', () => scrollTo({ top: 0, behavior: 'smooth' }));
 
 // ============================================
-// PRODUCT BADGE FUNCTIONS
+// ADMIN: Set Delivery Fee (for management page)
 // ============================================
-
-async function persistProduct(product) {
-  // Send the full product payload so the server keeps was/badge/img/rating/reviews intact.
-  await api(`/api/admin/products/${encodeURIComponent(product.id)}`, {
-    method: 'PUT',
-    body: JSON.stringify({
-      name: product.name,
-      price: product.price,
-      was: product.was ?? null,
-      badge: product.badge || '',
-      img: product.img,
-      rating: product.rating,
-      reviews: product.reviews,
-      inStock: product.inStock !== false,
-      cat: product.cat,
-      desc: product.desc
-    })
-  });
-  localStorage.setItem('management_products', JSON.stringify(products));
-  if (window.clearApiCache) await window.clearApiCache();
-  await bustProductsCache();
-  notifyProductsUpdated();
-}
-
-window.markAsFlashSale = async function(id) {
-  const productId = String(id);
-  const product = products.find(p => String(p.id) === productId);
-  if (!product) { toast('Product not found', 'error'); return; }
-
-  let wasPrice = product.was;
-  if (!wasPrice) {
-    const input = prompt('Enter original price (for flash sale discount display):', product.price * 1.5);
-    if (!input) return;
-    wasPrice = parseFloat(input);
-  }
-
-  product.badge = 'sale';
-  product.was = wasPrice;
-
+window.setDeliveryFee = async function(fee) {
+  if (!confirm('Are you sure you want to change the delivery fee?')) return;
   try {
-    await persistProduct(product);
-    renderProducts();
-    toast(`🔥 ${product.name} marked as FLASH SALE!`, 'success');
+    await api('/api/admin/delivery-fee', { 
+      method: 'POST', 
+      body: JSON.stringify({ fee: parseInt(fee) }) 
+    });
+    deliveryFee = parseInt(fee);
+    toast(`Delivery fee updated to ${fmt(deliveryFee)}`, 'success');
+    updateCartTotals();
   } catch (err) {
-    toast('Failed to save: ' + (err.message || 'server error'), 'error');
-  }
-};
-
-window.markAsHot = async function(id) {
-  const product = products.find(p => String(p.id) === String(id));
-  if (!product) { toast('Product not found', 'error'); return; }
-  product.badge = 'hot';
-  try {
-    await persistProduct(product);
-    renderProducts();
-    toast(`⚡ ${product.name} marked as HOT!`, 'success');
-  } catch (err) {
-    toast('Failed to save: ' + (err.message || 'server error'), 'error');
-  }
-};
-
-window.markAsNew = async function(id) {
-  const product = products.find(p => String(p.id) === String(id));
-  if (!product) { toast('Product not found', 'error'); return; }
-  product.badge = 'new';
-  try {
-    await persistProduct(product);
-    renderProducts();
-    toast(`✨ ${product.name} marked as NEW!`, 'success');
-  } catch (err) {
-    toast('Failed to save: ' + (err.message || 'server error'), 'error');
-  }
-};
-
-window.removeBadge = async function(id) {
-  const product = products.find(p => String(p.id) === String(id));
-  if (!product) { toast('Product not found', 'error'); return; }
-  product.badge = '';
-  try {
-    await persistProduct(product);
-    renderProducts();
-    toast(`${product.name} badge removed`, 'success');
-  } catch (err) {
-    toast('Failed to save: ' + (err.message || 'server error'), 'error');
+    toast('Failed to update delivery fee', 'error');
   }
 };
 
 // ============================================
-// RENDER PRODUCTS
+// LISTEN FOR STORAGE EVENTS FROM MANAGEMENT PAGE AND REPAIR PAGE
 // ============================================
+window.addEventListener('storage', (e) => {
+  if (e.key === 'management_products') {
+    console.log('Products updated from management page, refreshing...');
+    // Always re-fetch from server so edits made via admin API are reflected
+    refreshProducts();
+  }
+  if (e.key === 'nova_cart') {
+    console.log('Cart updated from another page, refreshing...');
+    state.cart = load('nova_cart', []);
+    renderCart();
+    $('#cartCount').textContent = state.cart.reduce((s, c) => s + c.qty, 0);
+  }
+  if (e.key === 'nova_spare_parts') {
+    console.log('Spare parts updated, refreshing cart display...');
+    renderCart();
+  }
+});
 
-function renderProducts() {
-  const el = $('#productAdmin');
-  if (!el) return;
-  if (!products || products.length === 0) {
-    el.innerHTML = '<div class="dash-empty">No products yet.</div>';
-    return;
+// ----- INIT -----
+(async function initApp() {
+  // First try to load from localStorage
+  loadProductsFromLocalStorage();
+  
+  renderProducts();
+  renderFlash();
+  renderCart();
+  renderRecent();
+  $('#wishCount').textContent = state.wish.length;
+  loadCounties();
+  
+  // Load delivery fee from server
+  try {
+    const feeData = await api('/api/delivery-fee');
+    if (feeData && feeData.fee) {
+      deliveryFee = feeData.fee;
+      updateCartTotals();
+    }
+  } catch (err) {
+    console.log('Using default delivery fee');
   }
   
-  el.innerHTML = products.map(product => {
-    const productId = product.id;
-    return `
-    <div class="product-item" data-id="${productId}" style="background:#1a1a2e; border-radius:1rem; padding:1rem; margin-bottom:1rem; border:1px solid rgba(255,255,255,0.1);">
-      <div style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap;">
-        <img src="${product.img || 'shop/hero-phone.jpg'}" style="width:60px; height:60px; object-fit:cover; border-radius:0.5rem;">
-        <div style="flex:1;">
-          <h4>${esc(product.name)}</h4>
-          <div style="display:flex; gap:1rem; flex-wrap:wrap; font-size:0.875rem;">
-            <span style="color:#00e5ff;">${esc(product.cat)}</span>
-            <span style="color:#00e5ff;">Price: ${fmt(product.price)}</span>
-            ${product.was ? `<span style="color:#888; text-decoration:line-through;">Original: ${fmt(product.was)}</span>` : ''}
-            <span style="${product.inStock !== false ? 'color:#00c853' : 'color:#ff3b30'}">${product.inStock !== false ? '✅ In Stock' : '❌ Out of Stock'}</span>
-            <span class="badge-status" style="${product.badge === 'sale' ? 'background:#ff2bd6; padding:2px 8px; border-radius:12px; color:white;' : product.badge === 'hot' ? 'background:#ff4d6d; padding:2px 8px; border-radius:12px; color:white;' : product.badge === 'new' ? 'background:#20e0a6; padding:2px 8px; border-radius:12px; color:#000;' : ''}">
-              ${product.badge === 'sale' ? '🔥 FLASH SALE' : product.badge === 'hot' ? '⚡ HOT' : product.badge === 'new' ? '✨ NEW' : 'No Badge'}
-            </span>
-          </div>
-          ${product.desc ? `<p style="font-size: 0.75rem; color: #888; margin-top: 0.25rem;">${esc(product.desc.substring(0, 100))}</p>` : ''}
-        </div>
-        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-          <button onclick="window.markAsFlashSale('${productId}')" class="btn-badge" style="background:#ff2bd6; color:white; border:none; padding:0.5rem 0.8rem; border-radius:0.5rem; cursor:pointer; font-weight:500;">🔥 Flash Sale</button>
-          <button onclick="window.markAsHot('${productId}')" class="btn-badge" style="background:#ff4d6d; color:white; border:none; padding:0.5rem 0.8rem; border-radius:0.5rem; cursor:pointer; font-weight:500;">⚡ Hot</button>
-          <button onclick="window.markAsNew('${productId}')" class="btn-badge" style="background:#20e0a6; color:#000; border:none; padding:0.5rem 0.8rem; border-radius:0.5rem; cursor:pointer; font-weight:500;">✨ New</button>
-          <button onclick="window.removeBadge('${productId}')" class="btn-badge" style="background:#888; color:white; border:none; padding:0.5rem 0.8rem; border-radius:0.5rem; cursor:pointer; font-weight:500;">Remove Badge</button>
-          <button class="edit-product" data-id="${productId}" style="background:#00e5ff; color:#000; border:none; padding:0.5rem 1rem; border-radius:0.5rem; cursor:pointer;">✏️ Edit</button>
-          <button class="delete-product" data-id="${productId}" style="background:#ff3b30; color:#fff; border:none; padding:0.5rem 1rem; border-radius:0.5rem; cursor:pointer;">🗑️ Delete</button>
-        </div>
-      </div>
-    </div>
-  `}).join('');
-  
-  $$('.edit-product').forEach(btn => btn.addEventListener('click', () => editProduct(btn.dataset.id)));
-  $$('.delete-product').forEach(btn => btn.addEventListener('click', () => deleteProduct(btn.dataset.id)));
-}
-
-async function editProduct(id) {
-  const product = products.find(p => p.id == id);
-  if (!product) { toast('Product not found', 'error'); return; }
-
-  const newName = prompt('Edit product name:', product.name);
-  if (!newName || !newName.trim()) return;
-  const newPrice = prompt('Edit price (Kshs):', product.price);
-  if (!newPrice) return;
-
   try {
-    await api(`/api/admin/products/${encodeURIComponent(id)}`, {
-      method: 'PUT',
-      body: JSON.stringify({
-        name: newName.trim(),
-        price: parseFloat(newPrice),
-        was: product.was,
-        badge: product.badge,
-        img: product.img,
-        rating: product.rating,
-        reviews: product.reviews,
-        inStock: product.inStock !== false,
-        cat: product.cat,
-        desc: product.desc
-      })
-    });
-    if (window.clearApiCache) await window.clearApiCache();
-    await loadAdminData();
-    toast('Product updated', 'success');
-  } catch (err) {
-    toast(err.message || 'Failed to update product', 'error');
-  }
-}
-
-async function deleteProduct(id) {
-  if (!confirm('Delete this product?')) return;
-  try {
-    await api(`/api/admin/products/${encodeURIComponent(id)}`, { method: 'DELETE' });
-    if (window.clearApiCache) await window.clearApiCache();
-    await loadAdminData();
-    toast('Product deleted', 'success');
-  } catch (err) {
-    toast(err.message || 'Failed to delete product', 'error');
-  }
-}
-
-// ============================================
-// SPARE PARTS CRUD - UPDATED WITH STORAGE EVENTS
-// ============================================
-
-function renderAdminSpareParts() {
-  const el = $('#sparePartAdmin');
-  if (!el) return;
-  if (!spareParts || spareParts.length === 0) {
-    el.innerHTML = '<div class="dash-empty">No spare parts yet.</div>';
-    return;
-  }
-  el.innerHTML = spareParts.map(part => `
-    <div class="spare-item" data-id="${part.id}" style="background:#1a1a2e; border-radius:1rem; padding:1rem; margin-bottom:1rem; border:1px solid rgba(255,255,255,0.1);">
-      <div style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap;">
-        <img src="${part.image || part.image_path || 'shop/hero-phone.jpg'}" style="width:60px; height:60px; object-fit:cover; border-radius:0.5rem;">
-        <div style="flex:1;">
-          <h4>${esc(part.name)}</h4>
-          <div style="display:flex; gap:1rem; flex-wrap:wrap; font-size:0.875rem;">
-            <span style="color:#00e5ff;">${esc(part.brand)}</span>
-            <span style="color:#888;">${esc(part.category || 'Uncategorized')}</span>
-            ${part.modelNumber ? `<span style="color:#888;">Model: ${esc(part.modelNumber)}</span>` : ''}
-            <span style="color:#00e5ff;">${fmt(part.price)}</span>
-            <span style="${part.stock > 0 ? 'color:#00c853' : 'color:#ff3b30'}">Stock: ${part.stock}</span>
-          </div>
-        </div>
-        <div>
-          <button class="edit-spare" data-id="${part.id}" style="background:#00e5ff; color:#000; border:none; padding:0.5rem 1rem; border-radius:0.5rem; cursor:pointer; margin-right:0.5rem;">✏️ Edit</button>
-          <button class="delete-spare" data-id="${part.id}" style="background:#ff3b30; color:#fff; border:none; padding:0.5rem 1rem; border-radius:0.5rem; cursor:pointer;">🗑️ Delete</button>
-        </div>
-      </div>
-    </div>
-  `).join('');
-  
-  $$('.edit-spare').forEach(btn => btn.addEventListener('click', () => editSparePart(btn.dataset.id)));
-  $$('.delete-spare').forEach(btn => btn.addEventListener('click', async (e) => {
-    e.preventDefault();
-    await deleteSparePart(btn.dataset.id);
-  }));
-}
-
-async function editSparePart(id) {
-  const part = spareParts.find(p => p.id == id);
-  if (!part) { toast('Spare part not found', 'error'); return; }
-
-  const newName = prompt('Edit part name:', part.name);
-  if (!newName || !newName.trim()) return;
-  const newPrice = prompt('Edit price (Kshs):', part.price);
-  if (newPrice === null) return;
-  const newStock = prompt('Edit stock quantity:', part.stock);
-  if (newStock === null) return;
-
-  const updated = {
-    name: newName.trim(),
-    brand: part.brand,
-    category: part.category,
-    price: parseFloat(newPrice),
-    stock: parseInt(newStock),
-    image_path: part.image_path || part.image || '',
-    description: part.description || ''
-  };
-
-  try {
-    await api(`/api/admin/spare-parts/${encodeURIComponent(id)}`, {
-      method: 'PUT',
-      body: JSON.stringify(updated)
-    });
-    Object.assign(part, updated);
-    localStorage.setItem('spare_parts', JSON.stringify(spareParts));
-    renderAdminSpareParts();
-    notifySparePartsUpdated();
-    toast('Spare part updated', 'success');
-  } catch (err) {
-    toast('Failed to save: ' + (err.message || 'server error'), 'error');
-  }
-}
-
-// FIXED: Delete Spare Part with storage event dispatch
-async function deleteSparePart(id) {
-    if (!confirm('Delete this spare part? This cannot be undone.')) return;
-    
-    try {
-        const response = await fetch(`/api/admin/spare-parts/${id}`, {
-            method: 'DELETE',
-            credentials: 'include'
-        });
-        
-        if (response.ok) {
-            // Remove from local array
-            spareParts = spareParts.filter(p => p.id != id);
-            // Save to localStorage
-            localStorage.setItem('spare_parts', JSON.stringify(spareParts));
-            // IMPORTANT: Notify repair page
-            notifySparePartsUpdated();
-            renderAdminSpareParts();
-            toast('Spare part deleted successfully!', 'success');
-        } else {
-            throw new Error('Server delete failed');
-        }
-    } catch (err) {
-        // Fallback to local deletion only
-        spareParts = spareParts.filter(p => p.id != id);
-        localStorage.setItem('spare_parts', JSON.stringify(spareParts));
-        notifySparePartsUpdated();
-        renderAdminSpareParts();
-        toast('Spare part deleted (local only). Server may be offline.', 'warning');
+    const session = await api('/api/auth/me');
+    if (session.user?.role === 'customer') {
+      state.user = session.user;
+      await refreshOrders();
     }
-}
-
-// ============================================
-// REPAIR SERVICES CRUD
-// ============================================
-
-function renderRepairServices() {
-  const el = $('#repairServiceAdmin');
-  if (!el) return;
-  if (!repairServices || repairServices.length === 0) {
-    el.innerHTML = '<div class="dash-empty">No repair services yet.</div>';
-    return;
-  }
-  el.innerHTML = repairServices.map(service => `
-    <div class="service-item" data-id="${service.id}" style="background:#1a1a2e; border-radius:1rem; padding:1rem; margin-bottom:1rem; border:1px solid rgba(255,255,255,0.1);">
-      <div style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap;">
-        <div style="flex:1;">
-          <h4>${esc(service.title)}</h4>
-          <div style="display:flex; gap:1rem; flex-wrap:wrap; font-size:0.875rem;">
-            <span style="color:#00e5ff;">${esc(service.brand)}</span>
-            <span style="color:#888;">${esc(service.repairType)}</span>
-            <span style="color:#00e5ff;">${fmt(service.price)}</span>
-            <span style="${service.available ? 'color:#00c853' : 'color:#ff3b30'}">${service.available ? 'Available' : 'Unavailable'}</span>
-          </div>
-        </div>
-        <div>
-          <button class="edit-service" data-id="${service.id}" style="background:#00e5ff; color:#000; border:none; padding:0.5rem 1rem; border-radius:0.5rem; cursor:pointer; margin-right:0.5rem;">✏️ Edit</button>
-          <button class="delete-service" data-id="${service.id}" style="background:#ff3b30; color:#fff; border:none; padding:0.5rem 1rem; border-radius:0.5rem; cursor:pointer;">🗑️ Delete</button>
-        </div>
-      </div>
-    </div>
-  `).join('');
-  
-  $$('.edit-service').forEach(btn => btn.addEventListener('click', () => editRepairService(btn.dataset.id)));
-  $$('.delete-service').forEach(btn => btn.addEventListener('click', () => deleteRepairService(btn.dataset.id)));
-}
-
-function editRepairService(id) {
-  const service = repairServices.find(s => s.id == id);
-  if (!service) { toast('Service not found', 'error'); return; }
-  
-  const newTitle = prompt('Edit service title:', service.title);
-  if (newTitle && newTitle.trim()) {
-    const newPrice = prompt('Edit price (Kshs):', service.price);
-    if (newPrice) {
-      service.title = newTitle.trim();
-      service.price = parseFloat(newPrice);
-      localStorage.setItem('repair_services', JSON.stringify(repairServices));
-      renderRepairServices();
-      toast('Repair service updated', 'success');
-    }
-  }
-}
-
-function deleteRepairService(id) {
-  if (!confirm('Delete this repair service?')) return;
-  repairServices = repairServices.filter(s => s.id != id);
-  localStorage.setItem('repair_services', JSON.stringify(repairServices));
-  renderRepairServices();
-  toast('Repair service deleted', 'success');
-}
-
-// ============================================
-// LOAD FUNCTIONS
-// ============================================
-
-async function loadAdminSpareParts() {
-  if (offlineManager) {
-    const stored = localStorage.getItem('spare_parts');
-    spareParts = stored ? JSON.parse(stored) : [];
-    renderAdminSpareParts();
-    return;
-  }
-  try {
-    const data = await api('/api/spare-parts');
-    spareParts = data.spares || [];
-    localStorage.setItem('spare_parts', JSON.stringify(spareParts));
-    renderAdminSpareParts();
   } catch (err) {
-    const stored = localStorage.getItem('spare_parts');
-    if (stored) {
-      spareParts = JSON.parse(stored);
-      renderAdminSpareParts();
-    }
+    // Auth check failed (not logged in or server down) — fine, continue
   }
-}
-
-async function loadRepairServices() {
-  if (offlineManager) {
-    const stored = localStorage.getItem('repair_services');
-    repairServices = stored ? JSON.parse(stored) : DUMMY_REPAIR_SERVICES;
-    renderRepairServices();
-    return;
-  }
-  try {
-    const data = await api('/api/management/repair-services');
-    repairServices = data.services || [];
-    localStorage.setItem('repair_services', JSON.stringify(repairServices));
-    renderRepairServices();
-  } catch (err) {
-    const stored = localStorage.getItem('repair_services');
-    if (stored) {
-      repairServices = JSON.parse(stored);
-      renderRepairServices();
-    }
-  }
-}
-
-async function loadAdminData() {
-  if (offlineManager) {
-    products = DUMMY_PRODUCTS;
-    staff = DUMMY_STAFF;
-    renderStaff();
-    renderProducts();
-    renderPerformance(DUMMY_ANALYTICS);
-    return;
-  }
-  if ($('#staffList')) $('#staffList').innerHTML = LOADING.staff;
-  if ($('#productAdmin')) $('#productAdmin').innerHTML = LOADING.products;
-  // Await products so editProduct/deleteProduct always find the right product
-  await Promise.allSettled([
-    api('/api/products').then(d => { products = d.products || []; renderProducts(); }).catch(e => console.error("Products load fail", e)),
-    api('/api/admin/staff').then(d => { staff = d.staff || []; renderStaff(); }).catch(e => console.error("Staff load fail", e)),
-    api('/api/admin/analytics').then(d => renderPerformance(d)).catch(e => console.error("Analytics load fail", e)),
-    loadRepairServices(), loadTechnicians(), loadRepairCategories(), loadAdminSpareParts()
-  ]);
-}
-
-// ============================================
-// EXISTING FUNCTIONS
-// ============================================
-
-function renderPlacedOrders() {
-  const el = $('#placedOrders');
-  if (!el) return;
-  el.innerHTML = (orders && orders.length) ? orders.map(order => {
-    const loc = order.location || {};
-    return `
-    <article class="order-row manager-order">
-      <div>
-        <b>${esc(order.id)}</b> <span class="status ${esc(order.paymentStatus?.toLowerCase() || 'pending')}">${esc(order.paymentStatus || 'Pending')}</span>
-        <span>${order.createdAt ? new Date(order.createdAt).toLocaleString() : 'Date Unknown'}</span>
-        <small>${esc(order.customer)} · ${esc(order.email)}</small>
-      </div>
-      <div class="order-items">
-        ${(order.items || []).map(item => `${esc(item.name)} x${item.qty}`).join('<br>')}
-        <div class="order-meta">
-           <small>Location: ${esc(loc.county || 'N/A')}, ${esc(loc.constituency || 'N/A')} · ${esc(loc.street || 'N/A')}</small>
-        </div>
-      </div>
-      <div>
-        <b>${fmt(order.total)}</b>
-        <span class="status ${esc(order.status?.toLowerCase() || 'pending')}">${esc(order.status || 'Pending')}</span>
-      </div>
-    </article>`;
-  }).join('') : '<div class="dash-empty">No placed orders yet.</div>';
-}
-
-function renderStaff() {
-  const el = $('#staffList');
-  if (!el) return;
-  el.innerHTML = (staff && staff.length) ? staff.map(user => `
-    <article class="staff-row">
-      <div><b>${esc(user.name)}</b><span>${esc(user.email)}</span></div>
-      <button class="btn ghost js-delete-staff" data-id="${user.id}" type="button">Delete</button>
-    </article>`).join('') : '<div class="dash-empty">No staff accounts yet.</div>';
-  $$('.js-delete-staff').forEach(btn => btn.addEventListener('click', async () => {
-    try {
-      await api(`/api/admin/staff/${encodeURIComponent(btn.dataset.id)}`, { method:'DELETE' });
-      await loadAdminData();
-      toast('Staff account deleted', 'success');
-    } catch (err) {
-      toast(err.message, 'error');
-    }
-  }));
-}
-
-function formatDate(value) {
-  return value ? new Date(value).toLocaleString() : '-';
-}
-
-function renderRepairBookings() {
-  const el = $('#repairBookings');
-  if (!el) return;
-  el.innerHTML = (repairBookings && repairBookings.length) ? repairBookings.map(booking => `
-    <article class="order-row manager-order">
-      <div>
-        <b>${esc(booking.id)}</b>
-        <span>${formatDate(booking.createdAt)}</span>
-        <small>${esc(booking.customer || booking.name)} · ${esc(booking.email)}</small>
-      </div>
-      <div>
-        <small>${esc(booking.brand)} ${esc(booking.model)} · ${esc(booking.repairType)}</small>
-        <small>${esc(booking.pickupDropoff)} · ${esc(booking.status)}</small>
-        <small>${esc(booking.repairServiceTitle || 'Custom repair')}</small>
-      </div>
-      <div>
-        <button class="btn ghost js-update-booking" type="button" data-id="${esc(booking.id)}">Update</button>
-      </div>
-    </article>
-  `).join('') : '<div class="dash-empty">No repair bookings found.</div>';
-}
-
-function renderTechnicians() {
-  const el = $('#technicianList');
-  if (!el) return;
-  el.innerHTML = (technicians && technicians.length) ? technicians.map(tech => `
-    <article class="staff-row">
-      <div><b>${esc(tech.name)}</b><span>${esc(tech.email)}</span></div>
-      <button class="btn ghost danger-btn js-delete-technician" type="button" data-id="${esc(tech.id)}">Delete</button>
-    </article>
-  `).join('') : '<div class="dash-empty">No technicians assigned yet.</div>';
-  $$('.js-delete-technician').forEach(btn => btn.addEventListener('click', async () => {
-    try {
-      await api(`/api/management/repair-technicians/${encodeURIComponent(btn.dataset.id)}`, { method:'DELETE' });
-      await loadTechnicians();
-      toast('Technician removed', 'success');
-    } catch (err) {
-      toast(err.message, 'error');
-    }
-  }));
-}
-
-function renderRepairCategories() {
-  const el = $('#repairCategorySelect');
-  if (!el) return;
-  const cats = (repairCategories && repairCategories.length) ? repairCategories : [];
-  el.innerHTML = '<option value="">Select category</option>' + cats.map(category => `
-    <option value="${esc(category.id)}">${esc(category.name)}</option>
-  `).join('');
-}
-
-function renderPerformance(analytics) {
-  const metrics = $('#metrics');
-  if (metrics) metrics.innerHTML = `
-    <div><b>${fmt(analytics.totalSales)}</b><span>Total Sales</span></div>
-    <div><b>${analytics.totalOrders}</b><span>Total Orders</span></div>
-    <div><b>${analytics.delivered}</b><span>Delivered</span></div>
-    <div><b>${analytics.products}</b><span>Products</span></div>`;
-  const canvas = $('#performanceChart');
-  if (!canvas) return;
-  const data = analytics.days || [];
-  if (!data.length) return;
-  const ctx = canvas.getContext('2d');
-  const w = canvas.width;
-  const h = canvas.height;
-  const pad = 42;
-  const max = Math.max(1, ...data.map(day => day.sales));
-  ctx.clearRect(0, 0, w, h);
-  ctx.strokeStyle = 'rgba(255,255,255,.16)';
-  for (let i = 0; i < 4; i++) {
-    const y = pad + i * ((h - pad * 2) / 3);
-    ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(w - pad, y); ctx.stroke();
-  }
-  ctx.font = '14px Inter, sans-serif';
-  data.forEach((day, index) => {
-    const x = pad + index * ((w - pad * 2) / Math.max(1, data.length - 1));
-    const barH = (day.sales / max) * (h - pad * 2);
-    const y = h - pad - barH;
-    const gradient = ctx.createLinearGradient(0, y, 0, h - pad);
-    gradient.addColorStop(0, '#00e5ff');
-    gradient.addColorStop(1, '#7c4dff');
-    ctx.fillStyle = gradient;
-    ctx.fillRect(x - 18, y, 36, barH || 2);
-    ctx.fillStyle = '#9aa0b4';
-    ctx.fillText(day.label, x - 14, h - 14);
-  });
-}
-
-async function loadOrders() {
-  if (offlineManager) {
-    orders = DUMMY_ORDERS;
-    renderPlacedOrders();
-    return;
-  }
-  const data = await api('/api/management/orders/placed');
-  orders = data.orders || [];
-  renderPlacedOrders();
-}
-
-async function loadRepairBookings() {
-  if (offlineManager) {
-    repairBookings = DUMMY_REPAIR_BOOKINGS;
-    renderRepairBookings();
-    return;
-  }
-  const data = await api('/api/management/repair-bookings');
-  repairBookings = data.bookings || [];
-  renderRepairBookings();
-}
-
-async function loadTechnicians() {
-  if (offlineManager) {
-    technicians = DUMMY_TECHNICIANS;
-    renderTechnicians();
-    return;
-  }
-  const data = await api('/api/repair/technicians');
-  technicians = data.technicians || [];
-  renderTechnicians();
-}
-
-async function loadRepairCategories() {
-  if (offlineManager) {
-    repairCategories = DUMMY_REPAIR_CATEGORIES;
-    renderRepairCategories();
-    return;
-  }
-  const data = await api('/api/repair/categories');
-  repairCategories = data.categories || [];
-  renderRepairCategories();
-}
-
-async function updateView() {
-  let data = null;
-  try {
-    data = await api('/api/auth/me');
-    offlineManager = false;
-  } catch (err) {
-    if (localStorage.getItem('smd_mgmt_offline') === '1') {
-      offlineManager = true;
-      manager = OFFLINE_MANAGER;
-    } else {
-      manager = null;
-    }
-  }
-  if (data?.user && ['admin', 'staff'].includes(data.user.role)) {
-    manager = data.user;
-    offlineManager = false;
-  }
-  if ($('#managerLogin')) $('#managerLogin').hidden = !!manager;
-  if ($('#managerOrders')) $('#managerOrders').hidden = !manager;
-  const revObs = new IntersectionObserver(es => es.forEach(e => {
-    if (e.isIntersecting) e.target.classList.add('in');
-  }), { threshold: .1 });
-  document.querySelectorAll('.reveal').forEach(el => revObs.observe(el));
-  if (!manager) return;
-  const isAdmin = manager.role === 'admin';
-  if ($('#managerRole')) $('#managerRole').textContent = isAdmin ? 'Admin' : 'Staff';
-  if ($('#managerTitle')) $('#managerTitle').textContent = isAdmin ? 'Admin Management' : 'Orders Placed';
-  if ($('#adminSections')) $('#adminSections').hidden = !isAdmin;
-  if ($('#placedOrders')) $('#placedOrders').innerHTML = LOADING.orders;
-  if ($('#repairBookings')) $('#repairBookings').innerHTML = LOADING.bookings;
-  return Promise.allSettled([
-    loadOrders().catch(e => console.error("Orders fail:", e)),
-    loadRepairBookings().catch(e => console.error("Bookings fail:", e)),
-    isAdmin ? loadAdminData().catch(e => console.error("Admin data fail:", e)) : Promise.resolve()
-  ]);
-}
-
-// ============================================
-// EVENT LISTENERS
-// ============================================
-
-$('#managerLoginForm')?.addEventListener('submit', async e => {
-  e.preventDefault();
-  const fd = new FormData(e.target);
-  const email = String(fd.get('email') || '').trim();
-  const password = String(fd.get('password') || '');
-  try {
-    await api('/api/auth/management-login', {
-      method:'POST',
-      body:JSON.stringify({ email, password })
-    });
-    localStorage.removeItem('smd_mgmt_offline');
-    e.target.reset();
-    await updateView();
-    toast('Login successful', 'success');
-  } catch (err) {
-    if (err.network && email && password) {
-      offlineManager = true;
-      localStorage.setItem('smd_mgmt_offline', '1');
-      await updateView();
-      toast('Login successful (offline fallback)', 'success');
-      return;
-    }
-    toast(err.message, 'error');
-  }
-});
-
-$('#sparePartForm')?.addEventListener('submit', async e => {
-  e.preventDefault();
-  const fd = new FormData(e.target);
-  try {
-    await api('/api/admin/spare-parts', { method:'POST', body:fd });
-    await loadAdminSpareParts();
-    notifySparePartsUpdated();
-    e.target.reset();
-    toast('Spare part added', 'success');
-  } catch (err) {
-    const newPart = {
-      id: Date.now(),
-      name: fd.get('name'),
-      brand: fd.get('brand'),
-      category: fd.get('category'),
-      modelNumber: fd.get('modelNumber'),
-      price: parseInt(fd.get('price')),
-      stock: parseInt(fd.get('stock')),
-      description: fd.get('description'),
-      image: 'shop/hero-phone.jpg'
-    };
-    const existing = JSON.parse(localStorage.getItem('spare_parts') || '[]');
-    existing.push(newPart);
-    localStorage.setItem('spare_parts', JSON.stringify(existing));
-    await loadAdminSpareParts();
-    notifySparePartsUpdated();
-    e.target.reset();
-    toast('Spare part added (offline)', 'success');
-  }
-});
-
-$('#staffForm')?.addEventListener('submit', async e => {
-  e.preventDefault();
-  const fd = new FormData(e.target);
-  try {
-    await api('/api/admin/staff', {
-      method:'POST',
-      body:JSON.stringify({ name:fd.get('name').trim(), email:fd.get('email').trim(), password:fd.get('password') })
-    });
-    e.target.reset();
-    await loadAdminData();
-    toast('Staff account created', 'success');
-  } catch (err) {
-    toast(err.message, 'error');
-  }
-});
-
-$('#technicianForm')?.addEventListener('submit', async e => {
-  e.preventDefault();
-  const fd = new FormData(e.target);
-  try {
-    await api('/api/management/repair-technicians', {
-      method:'POST',
-      body: JSON.stringify({ name: fd.get('name').trim(), email: fd.get('email').trim() })
-    });
-    e.target.reset();
-    await loadTechnicians();
-    toast('Technician added', 'success');
-  } catch (err) {
-    toast(err.message, 'error');
-  }
-});
-
-$('#repairServiceForm')?.addEventListener('submit', async e => {
-  e.preventDefault();
-  const fd = new FormData(e.target);
-  try {
-    await api('/api/management/repair-services', { method: 'POST', body: fd });
-    await loadRepairServices();
-    e.target.reset();
-    toast('Repair service added', 'success');
-  } catch (err) {
-    toast(err.message, 'error');
-  }
-});
-
-$('#repairBookings')?.addEventListener('click', async e => {
-  if (!e.target.matches('.js-update-booking')) return;
-  const bookingId = e.target.dataset.id;
-  if (!bookingId) return;
-  const status = prompt('Enter new status: Pending, Received, Diagnosing, Repairing, Completed, Ready for pickup');
-  if (!status) return;
-  try {
-    await api(`/api/management/repair-bookings/${encodeURIComponent(bookingId)}`, {
-      method: 'PUT',
-      body: JSON.stringify({ status })
-    });
-    await loadRepairBookings();
-    toast('Booking status updated', 'success');
-  } catch (err) {
-    toast(err.message, 'error');
-  }
-});
-
-$('#productForm')?.addEventListener('submit', async e => {
-  e.preventDefault();
-  const fd = new FormData(e.target);
-  // FormData already includes all form fields; no need to re-append badge/was
-
-  try {
-    await api('/api/admin/products', { method:'POST', body:fd });
-    e.target.reset();
-    await loadAdminData();
-    toast('Product added successfully!', 'success');
-  } catch (err) {
-    toast(err.message, 'error');
-  }
-});
-
-$('#managerLogout')?.addEventListener('click', async () => {
-  await api('/api/auth/logout', { method:'POST', body:JSON.stringify({}) });
-  manager = null;
-  orders = [];
-  products = [];
-  staff = [];
-  repairBookings = [];
-  repairServices = [];
-  technicians = [];
-  await updateView();
-});
-
-updateView().catch(() => {
-  const login = $('#managerLogin');
-  if (login) login.hidden = false;
-  const ordersPanel = $('#managerOrders');
-  if (ordersPanel) ordersPanel.hidden = true;
-});
+  // Always refresh products from server regardless of auth state
+  await refreshProducts();
+  updateAccountUi();
+})();
