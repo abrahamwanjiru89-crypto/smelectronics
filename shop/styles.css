@@ -542,6 +542,7 @@ html[data-theme="light"] .nl-form input { background: rgba(255,255,255,.6); }
   display: flex; 
   justify-content: space-between; 
   align-items: center; 
+  gap: 0.6rem;
   padding: 1rem 1.25rem; 
   border-bottom: 1px solid var(--border);
   background: linear-gradient(135deg, rgba(0,229,255,0.08), rgba(124,77,255,0.08));
@@ -553,6 +554,12 @@ html[data-theme="light"] .nl-form input { background: rgba(255,255,255,.6); }
   font-weight: 600;
   color: var(--primary);
   margin: 0;
+  margin-right: auto;
+}
+.btn.small {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.78rem;
+  border-radius: 8px;
 }
 .cart-head .icon-btn {
   background: var(--surface);
