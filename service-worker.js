@@ -9,7 +9,7 @@ const urlsToCache = [
   '/shop/repair.js',
   '/shop/pwa.js',
   '/shop/management.js',
-  '/shop/styles.css',
+  '/shop/style.css',
   '/service-worker.js',
   '/shop/brand%20logo.png'
 ];
@@ -29,6 +29,7 @@ self.addEventListener('install', event => {
       )
     )
   );
+  self.skipWaiting();
 });
 
 self.addEventListener('activate', event => {
@@ -40,7 +41,6 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  // Skip non-GET and API requests — always go to network for those
   if (event.request.method !== 'GET') return;
   if (event.request.url.includes('/api/')) return;
 
@@ -54,7 +54,7 @@ self.addEventListener('fetch', event => {
           caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
           return response;
         })
-        .catch(() => caches.match('/index.html')); // fallback for offline
+        .catch(() => caches.match('/index.html'));
     })
   );
 });
