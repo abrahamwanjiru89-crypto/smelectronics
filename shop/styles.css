@@ -914,6 +914,79 @@ html[data-theme="light"] .nl-form input { background: rgba(255,255,255,.6); }
 .toast.success { border-left: 3px solid var(--success); }
 .toast.info { border-left: 3px solid var(--primary); }
 .toast.error { border-left: 3px solid var(--danger); }
+.toast.warning { border-left: 3px solid #f5a623; }
+
+/* ============== CHECKOUT MODAL ============== */
+.checkout-modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,.55);
+  backdrop-filter: blur(4px);
+  z-index: 600;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .25s ease, visibility .25s ease;
+}
+.checkout-modal.show {
+  opacity: 1;
+  visibility: visible;
+}
+.checkout-card {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.75rem;
+  max-width: 420px;
+  width: min(92vw, 420px);
+  box-shadow: var(--shadow-soft);
+  transform: translateY(12px);
+  transition: transform .25s ease;
+}
+.checkout-modal.show .checkout-card {
+  transform: translateY(0);
+}
+.checkout-card h3 {
+  margin: 0 0 1rem;
+  font-family: var(--font-display);
+}
+.checkout-card .details p {
+  margin: .35rem 0;
+  font-size: .9rem;
+}
+.checkout-actions {
+  display: flex;
+  gap: .75rem;
+  margin-top: 1.25rem;
+}
+.checkout-actions button {
+  flex: 1;
+  padding: .7rem 1rem;
+  border-radius: 10px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: .9rem;
+}
+.btn-cancel {
+  background: rgba(255,255,255,.08);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.btn-confirm {
+  background: var(--grad-1);
+  color: #07070b;
+}
+.btn-confirm:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+}
+.checkout-card input#mpesaPhoneInput:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
 
 .update-banner { position:fixed; top:1rem; right:1rem; display:flex; align-items:center; gap:.6rem; padding:.7rem 1rem; border-radius:14px; background:rgba(15,23,42,.96); border:1px solid rgba(255,255,255,.08); z-index:500; }
 
