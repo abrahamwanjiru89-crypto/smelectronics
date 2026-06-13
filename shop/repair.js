@@ -2,7 +2,7 @@
 // S.M DYNAMICS REPAIR PAGE JS - FULLY FUNCTIONAL
 // ============================================
 (function() {
-window.repairServices = window.repairServices || [];
+window.repairServices = window.repairServices | | [];
 let repairServices = [];
 let spareParts = [];
 let currentCategory = 'all';
@@ -55,7 +55,7 @@ function addToCart(item) {
 // API CALLS TO SERVER
 // ============================================
 
-// Fetch repair services from server (GET /api/management/repair-services)
+// Fetch repair services from server (GET /api/repair/services)
 async function fetchServices() {
     const grid = document.getElementById('servicesGrid');
     if (grid) {
@@ -63,7 +63,7 @@ async function fetchServices() {
     }
     
     try {
-        const res = await fetch('/api/management/repair-services', { 
+        const res = await fetch('/api/repair/services', { 
             cache: 'no-store',
             headers: { 'Cache-Control': 'no-cache' }
         });
