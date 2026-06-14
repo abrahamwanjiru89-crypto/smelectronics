@@ -862,13 +862,14 @@ class Handler(BaseHTTPRequestHandler):
                     "products": product_count,
                     "days": days_data
                 })
-            return
-                if path == "/api/products":
+                        return
+
+        if path == "/api/products":
             with db() as conn:
                 rows = conn.execute("SELECT * FROM products ORDER BY created_at DESC").fetchall()
                 products_data = {"products": [row_product(r) for r in rows]}
                 
-                # Send with no-cache headers to prevent stale data
+                # Add no-cache headers
                 body = json.dumps(products_data).encode()
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json")
@@ -879,11 +880,12 @@ class Handler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(body)
             return
-        # if path == "/api/products":
-        #     with db() as conn:
-        #         rows = conn.execute("SELECT * FROM products ORDER BY created_at DESC").fetchall()
-        #         self.send_json({"products": [row_product(r) for r in rows]})
-        #     return
+        
+        if path == "/api/auth/me":
+            user = self.current_user()
+            self.send_json({"user": public_user(user) if user else None})
+            return
+     
         
         if path == "/api/auth/me":
             user = self.current_user()
