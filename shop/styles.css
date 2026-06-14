@@ -87,35 +87,63 @@
 }
 
 html[data-theme="light"] {
-  /* Deep slate — keeps the futuristic mood, readable in daylight */
-  --bg:        #0e1621;
-  --bg-2:      #141d2b;
-  --surface:   rgba(255,255,255,.05);
-  --surface-2: rgba(255,255,255,.09);
-  --border:    rgba(255,255,255,.1);
-  --text:      #ddeeff;
-  --muted:     #7a99bb;
-  --primary:   #38d9ff;
-  --accent:    #e040fb;
+  /* Warm wheat palette — parchment tones with futuristic neon accents */
+  --bg:        #f5e6c8;
+  --bg-2:      #fdf3df;
+  --surface:   rgba(120,80,20,.06);
+  --surface-2: rgba(120,80,20,.11);
+  --border:    rgba(120,80,20,.15);
+  --text:      #1a1005;
+  --muted:     #7a6040;
 
+  /* Warm amber/copper neon accents instead of icy cyan */
+  --primary:   #c47a00;
+  --primary-2: #7c3aed;
+  --accent:    #d4006a;
+  --gold:      #e8a000;
+  --success:   #2a9d5c;
+  --danger:    #d42020;
+
+  /* Warm gradient shadows */
+  --shadow-glow:  0 0 0 1px rgba(196,122,0,.15),
+                  0 8px 32px -8px rgba(196,122,0,.35),
+                  0 32px 64px -16px rgba(124,58,237,.2);
+  --shadow-soft:  0 20px 60px -16px rgba(60,30,0,.25);
+  --shadow-3d:    0 2px 0 rgba(196,122,0,.08),
+                  0 6px 0 rgba(80,40,0,.18),
+                  0 12px 24px rgba(60,30,0,.2),
+                  0 0 40px -10px rgba(196,122,0,.15),
+                  inset 0 1px 0 rgba(255,255,255,.55),
+                  inset 0 -1px 0 rgba(80,40,0,.15);
+  --inset-top:    inset 0 1px 0 rgba(255,255,255,.6), inset 0 -1px 0 rgba(80,40,0,.12);
+
+  /* Warm parchment radials */
   --grad-bg:
-    radial-gradient(ellipse 1200px 600px at 80%  0%,   rgba(56,217,255,.12), transparent 60%),
-    radial-gradient(ellipse 900px  500px at -10% 30%,  rgba(107,47,255,.10), transparent 60%),
-    radial-gradient(ellipse 700px  400px at 50%  110%, rgba(224,64,251,.10), transparent 60%);
+    radial-gradient(ellipse 1200px 600px at 80%  0%,   rgba(196,122,0,.12),  transparent 60%),
+    radial-gradient(ellipse 900px  500px at -10% 30%,  rgba(124,58,237,.08), transparent 60%),
+    radial-gradient(ellipse 700px  400px at 50%  110%, rgba(212,0,106,.07),  transparent 60%);
 
+  /* Warm subtle grid */
   --grid-lines:
-    linear-gradient(rgba(56,217,255,.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(56,217,255,.025) 1px, transparent 1px);
+    linear-gradient(rgba(120,80,20,.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(120,80,20,.05) 1px, transparent 1px);
 
-  --shadow-soft: 0 20px 60px -16px rgba(0,0,0,.6);
-  --shadow-3d:   0 2px 0 rgba(56,217,255,.06),
-                 0 6px 0 rgba(0,0,0,.35),
-                 0 12px 24px rgba(0,0,0,.5),
-                 0 0 40px -10px rgba(56,217,255,.15),
-                 inset 0 1px 0 rgba(255,255,255,.07),
-                 inset 0 -1px 0 rgba(0,0,0,.3);
-  --inset-top:   inset 0 1px 0 rgba(255,255,255,.08), inset 0 -1px 0 rgba(0,0,0,.25);
-  --scanlines:   none;
+  /* Warm holographic shimmer */
+  --holo: linear-gradient(
+    135deg,
+    rgba(196,122,0,.1)  0%,
+    rgba(124,58,237,.07) 25%,
+    rgba(212,0,106,.08)  50%,
+    rgba(196,122,0,.06)  75%,
+    rgba(124,58,237,.07) 100%
+  );
+
+  /* Scanlines off — too harsh on bright bg */
+  --scanlines: none;
+
+  /* Warm gradients */
+  --grad-1: linear-gradient(135deg, #c47a00 0%, #7c3aed 50%, #d4006a 100%);
+  --grad-2: linear-gradient(135deg, #7c3aed, #d4006a);
 }
 
 /* ============== RESET ============== */
@@ -993,7 +1021,7 @@ html[data-theme="light"] #themeBtn .i-moon { display: none; }
   background: rgba(0,0,0,.4); border: 1px solid var(--border); color: var(--text);
   box-shadow: var(--inset-top);
 }
-html[data-theme="light"] .nl-form input { background: rgba(255,255,255,.06); }
+html[data-theme="light"] .nl-form input { background: rgba(255,255,255,.5); border-color: rgba(120,80,20,.2); }
 
 /* ============== FOOTER ============== */
 .footer {
