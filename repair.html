@@ -754,36 +754,30 @@ function addToCart(item) {
     saveCart(cart);
 }
 
-// ============== LOAD FROM LOCALSTORAGE FIRST (Like main page) ==============
-function loadSparePartsFromLocalStorage() {
-    const stored = localStorage.getItem('spare_parts');
-    if (stored && JSON.parse(stored).length > 0) {
-        spareParts = JSON.parse(stored);
-        console.log('Loaded spare parts from localStorage:', spareParts.length);
-        renderParts();
-        return true;
-    }
-    return false;
-}
-
-// ============== FETCH FROM SERVER (Fallback) ==============
+// ============== FETCH FROM SERVER FIRST (NOT localStorage) ==============
 async function fetchServices() {
     try {
-        // Public endpoint - works for all visitors (not just logged-in staff)
-        const res = await fetch('/api/repair/services', { cache: 'no-store' });
+        const res = await fetch('/api/repair/services?_=${Date.now()}', { 
+            cache: 'no-store',
+            headers: { 'Cache-Control': 'no-cache' }
+        });
         if (res.ok) {
             const data = await res.json();
             repairServices = data.services || [];
+            console.log('✅ Loaded', repairServices.length, 'services from server');
         } else {
+            console.warn('Server returned error, using defaults');
             repairServices = getDefaultServices();
         }
     } catch (e) {
+        console.error('Error fetching services:', e);
         repairServices = getDefaultServices();
     }
     renderServices();
 }
 
 async function fetchPartsFromServer() {
+    console.log('🔄 Fetching spare parts from server...');
     try {
         const res = await fetch(`/api/spare-parts?_=${Date.now()}`, {
             cache: 'no-store',
@@ -792,27 +786,38 @@ async function fetchPartsFromServer() {
         if (res.ok) {
             const data = await res.json();
             spareParts = data.spares || [];
-            // Save to localStorage for future loads
+            // Save to localStorage as backup only
             localStorage.setItem('spare_parts', JSON.stringify(spareParts));
+            console.log('✅ Loaded', spareParts.length, 'spare parts from server');
             renderParts();
         } else {
-            // Fallback to localStorage
-            if (!loadSparePartsFromLocalStorage()) {
-                spareParts = [];
-                renderParts();
-            }
+            console.warn('Server returned error, checking localStorage fallback');
+            loadSparePartsFromLocalStorage();
         }
     } catch (e) {
         console.error('Error fetching spare parts:', e);
-        // Fallback to localStorage
+        // Fallback to localStorage if server is offline
         loadSparePartsFromLocalStorage();
     }
 }
 
+// Backup: load from localStorage only when server is offline
+function loadSparePartsFromLocalStorage() {
+    const stored = localStorage.getItem('spare_parts');
+    if (stored && JSON.parse(stored).length > 0) {
+        spareParts = JSON.parse(stored);
+        console.log('📦 Using localStorage spare parts (server offline):', spareParts.length);
+        renderParts();
+        return true;
+    }
+    console.log('⚠️ No spare parts found in localStorage');
+    return false;
+}
+
 // Force refresh spare parts
 function refreshSpareParts() {
+    showToast('Refreshing spare parts from server...', 'info');
     fetchPartsFromServer();
-    showToast('Refreshing spare parts...', 'success');
 }
 
 function getDefaultServices() {
@@ -855,7 +860,6 @@ function renderServices() {
         </div>
     `).join('');
 
-    // Attach click handlers via JS (avoids breaking on quotes/apostrophes in titles)
     grid.querySelectorAll('.service-card').forEach(card => {
         card.addEventListener('click', () => {
             openBooking(card.dataset.serviceId, card.dataset.title, Number(card.dataset.price));
@@ -908,7 +912,6 @@ function renderParts() {
         `;
     }).join('');
 
-    // Attach add-to-cart handlers via JS (avoids breaking on quotes/apostrophes in names)
     grid.querySelectorAll('.add-to-cart-btn[data-part-id]').forEach(btn => {
         btn.addEventListener('click', e => {
             e.stopPropagation();
@@ -1012,7 +1015,6 @@ function escapeHtml(str) {
     return String(str).replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
 }
 
-// Escapes a value for safe use inside an HTML attribute (handles quotes too)
 function escapeAttr(str) {
     return String(str ?? '').replace(/[&<>"']/g, m => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -1049,35 +1051,44 @@ function searchParts() {
     renderParts();
 }
 
-// ============== LISTEN FOR STORAGE EVENTS (Like main page) ==============
+// ============== LISTEN FOR STORAGE EVENTS (CRITICAL FIX!) ==============
 window.addEventListener('storage', (e) => {
-    if (e.key === 'spare_parts_updated' || e.key === 'spare_parts') {
-        console.log('Spare parts updated from management page, refreshing...');
-        loadSparePartsFromLocalStorage();
-        // Also fetch from server to be sure
+    console.log('📡 Storage event detected:', e.key);
+    if (e.key === 'spare_parts_updated' || e.key === 'spare_parts' || e.key === 'management_products') {
+        console.log('🔄 Spare parts updated from management page, refreshing from server...');
+        // Fetch from server to get latest data
         fetchPartsFromServer();
     }
 });
 
-// Refresh data when the page becomes visible again, so management updates
-// show up without a manual reload (cross-device / cross-tab)
+// Listen for custom event from management page (same tab)
+window.addEventListener('products-updated', () => {
+    console.log('🎯 Products-updated event received, refreshing spare parts...');
+    fetchPartsFromServer();
+});
+
+// Refresh data when the page becomes visible again
 document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
+        console.log('👁️ Page became visible, refreshing data...');
         fetchServices();
         fetchPartsFromServer();
     }
 });
+
 window.addEventListener('focus', () => {
+    console.log('🎯 Window focused, refreshing data...');
     fetchServices();
     fetchPartsFromServer();
 });
 
 // ============== INIT ==============
 document.addEventListener('DOMContentLoaded', () => {
-    // First try localStorage
-    loadSparePartsFromLocalStorage();
+    console.log('🚀 Repair page initializing...');
+    
+    // Fetch from server FIRST (not localStorage)
     fetchServices();
-    fetchPartsFromServer(); // This will also update localStorage
+    fetchPartsFromServer();
     updateCartCount();
 
     // Tab listeners
@@ -1125,6 +1136,8 @@ document.addEventListener('DOMContentLoaded', () => {
         toggle.classList.toggle('open');
         mobile?.classList.toggle('open');
     });
+    
+    console.log('✅ Repair page initialized');
 });
 
 // Global functions
