@@ -862,7 +862,7 @@ class Handler(BaseHTTPRequestHandler):
                     "products": product_count,
                     "days": days_data
                 })
-                        return
+            return
 
         if path == "/api/products":
             with db() as conn:
@@ -880,12 +880,6 @@ class Handler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(body)
             return
-        
-        if path == "/api/auth/me":
-            user = self.current_user()
-            self.send_json({"user": public_user(user) if user else None})
-            return
-     
         
         if path == "/api/auth/me":
             user = self.current_user()
