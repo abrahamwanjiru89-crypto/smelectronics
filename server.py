@@ -416,13 +416,22 @@ def init_db():
                     ("u-staff", "Order Staff", "staff@smdynamics.com", hash_password("staff123"), "staff", now),
                 ],
             )
-        if conn.execute("SELECT COUNT(*) FROM products").fetchone()[0] == 0:
+        
+        product_count = conn.execute("SELECT COUNT(*) FROM products").fetchone()[0]
+        print(f"📊 Current product count in database: {product_count}")
+        
+        if product_count == 0:
+            print("🌱 Seeding default products...")
             conn.executemany(
                 """INSERT INTO products
                 (id,name,cat,price,was,rating,reviews,badge,img,desc,in_stock,created_at)
                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
                 [(*p, now) for p in DEFAULT_PRODUCTS],
             )
+            print(f"✅ Seeded {len(DEFAULT_PRODUCTS)} default products")
+        else:
+            print(f"✅ Keeping existing {product_count} products (not reseeding)")
+            
         if conn.execute("SELECT COUNT(*) FROM repair_categories").fetchone()[0] == 0:
             conn.executemany(
                 "INSERT INTO repair_categories (id,name,slug,created_at) VALUES (?,?,?,?)",
@@ -867,18 +876,7 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/products":
             with db() as conn:
                 rows = conn.execute("SELECT * FROM products ORDER BY created_at DESC").fetchall()
-                products_data = {"products": [row_product(r) for r in rows]}
-                
-                # Add no-cache headers
-                body = json.dumps(products_data).encode()
-                self.send_response(200)
-                self.send_header("Content-Type", "application/json")
-                self.send_header("Content-Length", str(len(body)))
-                self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
-                self.send_header("Pragma", "no-cache")
-                self.send_header("Expires", "0")
-                self.end_headers()
-                self.wfile.write(body)
+                self.send_json({"products": [row_product(r) for r in rows]})
             return
         
         if path == "/api/auth/me":
@@ -1353,13 +1351,14 @@ class Handler(BaseHTTPRequestHandler):
                 )
             self.send_json({"ok": True})
             return
+        
         if path.startswith("/api/admin/products/"):
             if not self.require({"admin"}):
                 return
             product_id = path.split("/")[-1]
             data = self.read_json()
             
-            print(f"📝 Updating product {product_id} with data:", data)  # Debug log
+            print(f"📝 Updating product {product_id} with data:", data)
             
             with db() as conn:
                 # First check if product exists
@@ -1385,7 +1384,7 @@ class Handler(BaseHTTPRequestHandler):
                 """, (
                     data.get("name", existing["name"]),
                     float(data.get("price", existing["price"])),
-                    data.get("was"),  # Can be None
+                    data.get("was"),
                     data.get("badge", existing.get("badge", "")),
                     data.get("img", existing["img"]),
                     float(data.get("rating", existing.get("rating", 4.6))),
@@ -1401,22 +1400,8 @@ class Handler(BaseHTTPRequestHandler):
                 
             self.send_json({"ok": True, "product": {"id": product_id, "badge": data.get("badge", "")}})
             return
-                    
-        # if path.startswith("/api/admin/products/"):
-        #     if not self.require({"admin"}):
-        #         return
-        #     product_id = path.split("/")[-1]
-        #     data = self.read_json()
-            
-        #     with db() as conn:
-        #         conn.execute(
-        #             "UPDATE products SET name = ?, price = ?, in_stock = ?, cat = ?, desc = ? WHERE id = ?",
-        #             (data.get("name"), data.get("price"), 1 if data.get("inStock") else 0, data.get("cat"), data.get("desc"), product_id),
-        #         )
-        #     self.send_json({"ok": True})
-        #     return
         
-        # self.send_json({"error": "Not found"}, 404)
+        self.send_json({"error": "Not found"}, 404)
 
     # ============================================
     # DELETE HANDLERS
