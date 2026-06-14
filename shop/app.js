@@ -98,15 +98,7 @@ function loadProductsFromLocalStorage() {
   console.log('📦 No localStorage products found');
   return false;
 }
-// function loadProductsFromLocalStorage() {
-//   const stored = localStorage.getItem('management_products');
-//   if (stored && JSON.parse(stored).length > 0) {
-//     PRODUCTS = JSON.parse(stored);
-//     console.log('Loaded products from management page:', PRODUCTS.length);
-//     return true;
-//   }
-//   return false;
-// }
+
 
 // ============================================
 // UPDATED: CHECKOUT MODAL - Partial Payment (Only Delivery Fee)
@@ -1204,7 +1196,6 @@ window.addEventListener('storage', (e) => {
 });
 
 // ----- INIT -----
-// ✅ CORRECT - has 'async' before the function
 (async function initApp() {
   console.log('🚀 Initializing app...');
   
@@ -1215,6 +1206,7 @@ window.addEventListener('storage', (e) => {
   $('#wishCount').textContent = state.wish.length;
   loadCounties();
   
+  // Load delivery fee from server
   try {
     const feeData = await api('/api/delivery-fee');
     if (feeData && feeData.fee) {
@@ -1225,6 +1217,7 @@ window.addEventListener('storage', (e) => {
     console.log('Using default delivery fee');
   }
   
+  // Check authentication
   try {
     const session = await api('/api/auth/me');
     if (session.user?.role === 'customer') {
@@ -1232,9 +1225,11 @@ window.addEventListener('storage', (e) => {
       await refreshOrders();
     }
   } catch (err) {
-    // Auth check failed - fine, continue
+    // Auth check failed (not logged in or server down) — fine, continue
+    console.log('Auth check failed, continuing as guest');
   }
   
+  // Always refresh products from server regardless of auth state
   await refreshProducts();
   updateAccountUi();
   console.log('✅ App initialized');
