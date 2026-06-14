@@ -1204,13 +1204,10 @@ window.addEventListener('storage', (e) => {
 });
 
 // ----- INIT -----
+// ✅ CORRECT - has 'async' before the function
 (async function initApp() {
   console.log('🚀 Initializing app...');
   
-  // DON'T load from localStorage first - wait for server
-  // loadProductsFromLocalStorage();  // ← COMMENT THIS OUT OR REMOVE
-  
-  // Initial render with empty products (shows loading state)
   renderProducts();
   renderFlash();
   renderCart();
@@ -1218,7 +1215,6 @@ window.addEventListener('storage', (e) => {
   $('#wishCount').textContent = state.wish.length;
   loadCounties();
   
-  // Load delivery fee from server
   try {
     const feeData = await api('/api/delivery-fee');
     if (feeData && feeData.fee) {
@@ -1229,7 +1225,6 @@ window.addEventListener('storage', (e) => {
     console.log('Using default delivery fee');
   }
   
-  // Check auth session
   try {
     const session = await api('/api/auth/me');
     if (session.user?.role === 'customer') {
@@ -1240,22 +1235,10 @@ window.addEventListener('storage', (e) => {
     // Auth check failed - fine, continue
   }
   
-  // ALWAYS refresh products from server (this will fetch fresh data)
   await refreshProducts();
-  
   updateAccountUi();
   console.log('✅ App initialized');
 })();
-// (async function initApp() {
-//   // First try to load from localStorage
-//   loadProductsFromLocalStorage();
-  
-//   renderProducts();
-//   renderFlash();
-//   renderCart();
-//   renderRecent();
-//   $('#wishCount').textContent = state.wish.length;
-//   loadCounties();
   
   // Load delivery fee from server
   try {
