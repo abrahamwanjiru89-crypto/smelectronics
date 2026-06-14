@@ -70,7 +70,7 @@ const $$ = (s, p=document) => [...p.querySelectorAll(s)];
 const fmt = n => 'KES ' + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 0 });
 const currentUser = () => state.user;
 
-let deliveryFee = 600;
+let deliveryFee = 200;
 let countySubLocations = [];
 
 function normalizeAreaName(value) {
@@ -86,16 +86,27 @@ function getSelectedSubLocation() {
 // ============================================
 // LOAD PRODUCTS FROM LOCALSTORAGE (SYNC WITH MANAGEMENT PAGE)
 // ============================================
-
 function loadProductsFromLocalStorage() {
+  // DEPRECATED: This function now only serves as offline fallback
+  // Products should always be fetched from server first
   const stored = localStorage.getItem('management_products');
   if (stored && JSON.parse(stored).length > 0) {
+    console.log('⚠️ Using localStorage fallback products (offline mode)');
     PRODUCTS = JSON.parse(stored);
-    console.log('Loaded products from management page:', PRODUCTS.length);
     return true;
   }
+  console.log('📦 No localStorage products found');
   return false;
 }
+// function loadProductsFromLocalStorage() {
+//   const stored = localStorage.getItem('management_products');
+//   if (stored && JSON.parse(stored).length > 0) {
+//     PRODUCTS = JSON.parse(stored);
+//     console.log('Loaded products from management page:', PRODUCTS.length);
+//     return true;
+//   }
+//   return false;
+// }
 
 // ============================================
 // UPDATED: CHECKOUT MODAL - Partial Payment (Only Delivery Fee)
@@ -539,22 +550,64 @@ async function api(path, options = {}) {
 // localStorage is only used as fallback when server is unreachable.
 // ============================================
 async function refreshProducts() {
+  console.log('🔄 Refreshing products from server...');
+  
   try {
+    // ALWAYS fetch from server first
     const data = await api('/api/products');
+    
     if (data && data.products && data.products.length > 0) {
       PRODUCTS = data.products;
-      // Keep localStorage in sync for offline use
+      console.log('✅ Loaded', PRODUCTS.length, 'products from server');
+      
+      // Store in localStorage ONLY as offline backup (not primary source)
       localStorage.setItem('management_products', JSON.stringify(PRODUCTS));
+    } else {
+      // Server returned empty - try localStorage as fallback
+      console.warn('⚠️ Server returned empty products, checking localStorage...');
+      const stored = localStorage.getItem('management_products');
+      if (stored && JSON.parse(stored).length > 0) {
+        PRODUCTS = JSON.parse(stored);
+        console.log('📦 Loaded', PRODUCTS.length, 'products from localStorage fallback');
+      }
     }
   } catch (err) {
-    console.error('Failed to refresh products from server, using localStorage fallback:', err);
-    loadProductsFromLocalStorage();
+    console.error('❌ Failed to refresh products from server:', err);
+    
+    // Only use localStorage when server is completely offline
+    const stored = localStorage.getItem('management_products');
+    if (stored && JSON.parse(stored).length > 0) {
+      PRODUCTS = JSON.parse(stored);
+      console.log('📦 Using localStorage products (server offline)');
+    } else {
+      console.warn('⚠️ No products available - using defaults');
+      PRODUCTS = DEFAULT_PRODUCTS.slice();
+    }
   }
+  
+  // Always re-render after updating products
   renderProducts();
   renderFlash();
   renderCart();
   renderRecent();
 }
+// async function refreshProducts() {
+//   try {
+//     const data = await api('/api/products');
+//     if (data && data.products && data.products.length > 0) {
+//       PRODUCTS = data.products;
+//       // Keep localStorage in sync for offline use
+//       localStorage.setItem('management_products', JSON.stringify(PRODUCTS));
+//     }
+//   } catch (err) {
+//     console.error('Failed to refresh products from server, using localStorage fallback:', err);
+//     loadProductsFromLocalStorage();
+//   }
+//   renderProducts();
+//   renderFlash();
+//   renderCart();
+//   renderRecent();
+// }
 
 async function refreshOrders() {
   if (!state.user) return;
@@ -1125,6 +1178,11 @@ window.addEventListener('storage', (e) => {
     // Always re-fetch from server so edits made via admin API are reflected
     refreshProducts();
   }
+   // Listen for custom product update events from management page (same tab)
+window.addEventListener('products-updated', () => {
+  console.log('🎯 Products-updated event received, refreshing...');
+  refreshProducts();
+}
   if (e.key === 'nova_cart') {
     console.log('Cart updated from another page, refreshing...');
     state.cart = load('nova_cart', []);
@@ -1139,15 +1197,57 @@ window.addEventListener('storage', (e) => {
 
 // ----- INIT -----
 (async function initApp() {
-  // First try to load from localStorage
-  loadProductsFromLocalStorage();
+  console.log('🚀 Initializing app...');
   
+  // DON'T load from localStorage first - wait for server
+  // loadProductsFromLocalStorage();  // ← COMMENT THIS OUT OR REMOVE
+  
+  // Initial render with empty products (shows loading state)
   renderProducts();
   renderFlash();
   renderCart();
   renderRecent();
   $('#wishCount').textContent = state.wish.length;
   loadCounties();
+  
+  // Load delivery fee from server
+  try {
+    const feeData = await api('/api/delivery-fee');
+    if (feeData && feeData.fee) {
+      deliveryFee = feeData.fee;
+      updateCartTotals();
+    }
+  } catch (err) {
+    console.log('Using default delivery fee');
+  }
+  
+  // Check auth session
+  try {
+    const session = await api('/api/auth/me');
+    if (session.user?.role === 'customer') {
+      state.user = session.user;
+      await refreshOrders();
+    }
+  } catch (err) {
+    // Auth check failed - fine, continue
+  }
+  
+  // ALWAYS refresh products from server (this will fetch fresh data)
+  await refreshProducts();
+  
+  updateAccountUi();
+  console.log('✅ App initialized');
+})();
+// (async function initApp() {
+//   // First try to load from localStorage
+//   loadProductsFromLocalStorage();
+  
+//   renderProducts();
+//   renderFlash();
+//   renderCart();
+//   renderRecent();
+//   $('#wishCount').textContent = state.wish.length;
+//   loadCounties();
   
   // Load delivery fee from server
   try {
