@@ -47,31 +47,38 @@ const DUMMY_ANALYTICS = { totalSales:0, totalOrders:0, delivered:0, products:1, 
   { label:'Sun', sales:0, orders:0 }
 ]};
 
-
-
+// Add cache-busting to API calls
 async function api(path, options = {}) {
   let res;
   const headers = options.headers ? { ...options.headers } : {};
   if (!(options.body instanceof FormData)) {
     headers['Content-Type'] = 'application/json';
   }
-  // Retry up to 3 times for 502/503 (Render cold-start wake-up)
+  // Add cache-busting parameter
+  const separator = path.includes('?') ? '&' : '?';
+  const cacheBustPath = path + separator + '_=' + Date.now();
+  
   const maxRetries = (options.method || 'GET') === 'GET' ? 3 : 1;
   let lastErr;
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     if (attempt > 0) await new Promise(r => setTimeout(r, 2000 * attempt));
     try {
-      res = await fetch(path, {
+      res = await fetch(cacheBustPath, {
         credentials: 'include',
         method: options.method || 'GET',
         body: options.body,
-        headers: Object.keys(headers).length > 0 ? headers : undefined
+        headers: {
+          ...headers,
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
       });
       if (res.status === 502 || res.status === 503) {
         lastErr = new Error('Server starting up, retrying...');
-        continue; // retry
+        continue;
       }
-      break; // success or non-retryable status
+      break;
     } catch (err) {
       lastErr = err;
       if (attempt < maxRetries - 1) continue;
@@ -110,7 +117,6 @@ function notifySparePartsUpdated() {
 }
 
 function notifyProductsUpdated() {
-  // Tell app.js (storefront, same tab) that products changed so it re-fetches from server
   window.dispatchEvent(new StorageEvent('storage', {
     key: 'management_products',
     newValue: localStorage.getItem('management_products'),
@@ -131,17 +137,11 @@ async function bustProductsCache() {
 
 async function broadcastProductUpdate() {
   console.log('📢 Broadcasting product update to storefront...');
-  
-  // Force a fresh reload of admin data
   await loadAdminData();
-  
-  // Dispatch custom event for same-tab listeners (if any)
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('products-updated'));
     console.log('✅ Dispatched products-updated custom event');
   }
-  
-  // Trigger storage event for cross-tab synchronization
   const productsData = localStorage.getItem('management_products');
   window.dispatchEvent(new StorageEvent('storage', {
     key: 'management_products',
@@ -180,7 +180,6 @@ window.markAsFlashSale = async function(id) {
   product.was = wasPrice;
   
   try {
-    // Save to server first
     await api(`/api/admin/products/${encodeURIComponent(productId)}`, {
       method: 'PUT',
       body: JSON.stringify({
@@ -197,14 +196,10 @@ window.markAsFlashSale = async function(id) {
       })
     });
     
-    // Update localStorage
     localStorage.setItem('management_products', JSON.stringify(products));
-    
-    // Clear caches and notify
     await bustProductsCache();
     notifyProductsUpdated();
     await broadcastProductUpdate();
-    
     renderProducts();
     toast(`🔥 ${product.name} marked as FLASH SALE!`, 'success');
   } catch (err) {
@@ -228,7 +223,6 @@ window.markAsHot = async function(id) {
   product.badge = 'hot';
   
   try {
-    // Save to server first
     await api(`/api/admin/products/${encodeURIComponent(productId)}`, {
       method: 'PUT',
       body: JSON.stringify({
@@ -245,14 +239,10 @@ window.markAsHot = async function(id) {
       })
     });
     
-    // Update localStorage
     localStorage.setItem('management_products', JSON.stringify(products));
-    
-    // Clear caches and notify
     await bustProductsCache();
     notifyProductsUpdated();
     await broadcastProductUpdate();
-    
     renderProducts();
     toast(`⚡ ${product.name} marked as HOT!`, 'success');
   } catch (err) {
@@ -276,7 +266,6 @@ window.markAsNew = async function(id) {
   product.badge = 'new';
   
   try {
-    // Save to server first
     await api(`/api/admin/products/${encodeURIComponent(productId)}`, {
       method: 'PUT',
       body: JSON.stringify({
@@ -293,14 +282,10 @@ window.markAsNew = async function(id) {
       })
     });
     
-    // Update localStorage
     localStorage.setItem('management_products', JSON.stringify(products));
-    
-    // Clear caches and notify
     await bustProductsCache();
     notifyProductsUpdated();
     await broadcastProductUpdate();
-    
     renderProducts();
     toast(`✨ ${product.name} marked as NEW!`, 'success');
   } catch (err) {
@@ -324,7 +309,6 @@ window.removeBadge = async function(id) {
   product.badge = '';
   
   try {
-    // Save to server first
     await api(`/api/admin/products/${encodeURIComponent(productId)}`, {
       method: 'PUT',
       body: JSON.stringify({
@@ -341,14 +325,10 @@ window.removeBadge = async function(id) {
       })
     });
     
-    // Update localStorage
     localStorage.setItem('management_products', JSON.stringify(products));
-    
-    // Clear caches and notify
     await bustProductsCache();
     notifyProductsUpdated();
     await broadcastProductUpdate();
-    
     renderProducts();
     toast(`${product.name} badge removed`, 'success');
   } catch (err) {
@@ -415,11 +395,9 @@ async function editProduct(id) {
   if (!newPrice) return;
 
   try {
-    // Update local product object
     product.name = newName.trim();
     product.price = parseFloat(newPrice);
     
-    // Save to server - send ALL 10 fields
     await api(`/api/admin/products/${encodeURIComponent(id)}`, {
       method: 'PUT',
       body: JSON.stringify({
@@ -436,16 +414,11 @@ async function editProduct(id) {
       })
     });
     
-    // Update localStorage
     localStorage.setItem('management_products', JSON.stringify(products));
-    
-    // Clear caches and notify
     if (window.clearApiCache) await window.clearApiCache();
     await bustProductsCache();
     notifyProductsUpdated();
     await broadcastProductUpdate();
-    
-    // Reload admin data to ensure consistency
     await loadAdminData();
     
     toast('Product updated successfully!', 'success');
@@ -460,25 +433,15 @@ async function deleteProduct(id) {
   if (!confirm('⚠️ Delete this product? This action cannot be undone.')) return;
   
   try {
-    // Delete from server
     await api(`/api/admin/products/${encodeURIComponent(id)}`, { method: 'DELETE' });
     console.log('✅ Product deleted from server');
     
-    // Remove from local array
     products = products.filter(p => p.id != id);
-    
-    // Update localStorage
     localStorage.setItem('management_products', JSON.stringify(products));
-    
-    // Clear caches
     if (window.clearApiCache) await window.clearApiCache();
     await bustProductsCache();
-    
-    // Broadcast update to storefront
     notifyProductsUpdated();
     await broadcastProductUpdate();
-    
-    // Reload admin data
     await loadAdminData();
     
     toast('Product deleted successfully!', 'success');
@@ -489,7 +452,7 @@ async function deleteProduct(id) {
 }
 
 // ============================================
-// SPARE PARTS CRUD - UPDATED WITH STORAGE EVENTS
+// SPARE PARTS CRUD
 // ============================================
 
 function renderAdminSpareParts() {
@@ -528,7 +491,7 @@ function renderAdminSpareParts() {
   }));
 }
 
-function editSparePart(id) {
+async function editSparePart(id) {
   const part = spareParts.find(p => p.id == id);
   if (!part) { toast('Spare part not found', 'error'); return; }
   
@@ -541,9 +504,27 @@ function editSparePart(id) {
         part.name = newName.trim();
         part.price = parseFloat(newPrice);
         part.stock = parseInt(newStock);
+        
+        // Save to server
+        try {
+          await api(`/api/admin/spare-parts/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+              name: part.name,
+              brand: part.brand,
+              category: part.category,
+              price: part.price,
+              stock: part.stock,
+              description: part.description,
+              image_path: part.image_path
+            })
+          });
+        } catch (err) {
+          console.warn('Server update failed, saving locally only');
+        }
+        
         localStorage.setItem('spare_parts', JSON.stringify(spareParts));
         renderAdminSpareParts();
-        // Notify repair page
         notifySparePartsUpdated();
         toast('Spare part updated', 'success');
       }
@@ -551,36 +532,23 @@ function editSparePart(id) {
   }
 }
 
-// FIXED: Delete Spare Part with storage event dispatch
 async function deleteSparePart(id) {
-    if (!confirm('Delete this spare part? This cannot be undone.')) return;
-    
-    try {
-        const response = await fetch(`/api/admin/spare-parts/${id}`, {
-            method: 'DELETE',
-            credentials: 'include'
-        });
-        
-        if (response.ok) {
-            // Remove from local array
-            spareParts = spareParts.filter(p => p.id != id);
-            // Save to localStorage
-            localStorage.setItem('spare_parts', JSON.stringify(spareParts));
-            // IMPORTANT: Notify repair page
-            notifySparePartsUpdated();
-            renderAdminSpareParts();
-            toast('Spare part deleted successfully!', 'success');
-        } else {
-            throw new Error('Server delete failed');
-        }
-    } catch (err) {
-        // Fallback to local deletion only
-        spareParts = spareParts.filter(p => p.id != id);
-        localStorage.setItem('spare_parts', JSON.stringify(spareParts));
-        notifySparePartsUpdated();
-        renderAdminSpareParts();
-        toast('Spare part deleted (local only). Server may be offline.', 'warning');
-    }
+  if (!confirm('Delete this spare part? This cannot be undone.')) return;
+  
+  try {
+    await api(`/api/admin/spare-parts/${id}`, { method: 'DELETE' });
+    spareParts = spareParts.filter(p => p.id != id);
+    localStorage.setItem('spare_parts', JSON.stringify(spareParts));
+    notifySparePartsUpdated();
+    renderAdminSpareParts();
+    toast('Spare part deleted successfully!', 'success');
+  } catch (err) {
+    spareParts = spareParts.filter(p => p.id != id);
+    localStorage.setItem('spare_parts', JSON.stringify(spareParts));
+    notifySparePartsUpdated();
+    renderAdminSpareParts();
+    toast('Spare part deleted (local only). Server may be offline.', 'warning');
+  }
 }
 
 // ============================================
@@ -706,15 +674,12 @@ async function loadAdminData() {
   if ($('#productAdmin')) $('#productAdmin').innerHTML = LOADING.products;
   
   try {
-    // Fetch products from server first
     const productsData = await api('/api/products');
     if (productsData.products && productsData.products.length > 0) {
       products = productsData.products;
-      // Update localStorage with fresh server data
       localStorage.setItem('management_products', JSON.stringify(products));
       console.log('✅ Loaded', products.length, 'products from server');
     } else {
-      // Fallback to localStorage
       const stored = localStorage.getItem('management_products');
       if (stored) {
         products = JSON.parse(stored);
@@ -723,7 +688,6 @@ async function loadAdminData() {
     }
   } catch (err) {
     console.error('Products load fail:', err);
-    // Fallback to localStorage
     const stored = localStorage.getItem('management_products');
     if (stored) {
       products = JSON.parse(stored);
@@ -731,7 +695,6 @@ async function loadAdminData() {
     }
   }
   
-  // Load other data in parallel
   await Promise.allSettled([
     api('/api/admin/staff').then(d => { staff = d.staff || []; renderStaff(); }).catch(e => console.error("Staff load fail", e)),
     api('/api/admin/analytics').then(d => renderPerformance(d)).catch(e => console.error("Analytics load fail", e)),
@@ -741,7 +704,6 @@ async function loadAdminData() {
     loadAdminSpareParts().catch(e => console.error("Spare parts load fail", e))
   ]);
   
-  // Render products after they're loaded
   renderProducts();
   console.log('✅ Admin data loaded, products count:', products.length);
 }
@@ -1102,7 +1064,6 @@ $('#repairBookings')?.addEventListener('click', async e => {
 $('#productForm')?.addEventListener('submit', async e => {
   e.preventDefault();
   const fd = new FormData(e.target);
-  // FormData already includes all form fields; no need to re-append badge/was
 
   try {
     await api('/api/admin/products', { method:'POST', body:fd });
@@ -1132,3 +1093,17 @@ updateView().catch(() => {
   const ordersPanel = $('#managerOrders');
   if (ordersPanel) ordersPanel.hidden = true;
 });
+
+// Force refresh function for debugging
+window.forceRefresh = async function() {
+  console.log('🔄 Force refreshing all data...');
+  localStorage.removeItem('management_products');
+  localStorage.removeItem('spare_parts');
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.controller.postMessage({ type: 'CLEAR_CACHE' });
+  }
+  await loadAdminData();
+  toast('Data refreshed from server!', 'success');
+};
+
+console.log('✅ Management.js loaded');
