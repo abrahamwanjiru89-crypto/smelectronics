@@ -128,7 +128,7 @@ async function bustProductsCache() {
     navigator.serviceWorker.controller.postMessage({ type: 'BUST_PRODUCTS_CACHE' });
   }
 }
-// Add this AFTER the bustProductsCache function
+
 async function broadcastProductUpdate() {
   console.log('📢 Broadcasting product update to storefront...');
   
@@ -151,9 +151,6 @@ async function broadcastProductUpdate() {
   console.log('✅ Dispatched storage event for management_products');
 }
 
-// ============================================
-// PRODUCT BADGE FUNCTIONS
-// ============================================
 // ============================================
 // PRODUCT BADGE FUNCTIONS - UPDATED with server sync
 // ============================================
@@ -359,95 +356,6 @@ window.removeBadge = async function(id) {
     toast('Failed to save: ' + (err.message || 'server error'), 'error');
   }
 };
-// window.markAsFlashSale = async function(id) {
-//   console.log('Flash Sale clicked for ID:', id, typeof id);
-  
-//   const productId = String(id);
-//   const product = products.find(p => String(p.id) === productId);
-  
-//   if (!product) {
-//     console.error('Product not found. Available products:', products.map(p => ({ id: p.id, name: p.name })));
-//     toast('Product not found. ID: ' + id, 'error');
-//     return;
-//   }
-  
-//   console.log('Found product:', product.name);
-  
-//   let wasPrice = product.was;
-//   if (!wasPrice) {
-//     const input = prompt('Enter original price (for flash sale discount display):', product.price * 1.5);
-//     if (!input) return;
-//     wasPrice = parseFloat(input);
-//   }
-  
-//   product.badge = 'sale';
-//   product.was = wasPrice;
-  
-//   localStorage.setItem('management_products', JSON.stringify(products));
-//   notifyProductsUpdated();
-//   renderProducts();
-//   toast(`🔥 ${product.name} marked as FLASH SALE!`, 'success');
-// };
-
-// window.markAsHot = async function(id) {
-//   console.log('Hot clicked for ID:', id, typeof id);
-  
-//   const productId = String(id);
-//   const product = products.find(p => String(p.id) === productId);
-  
-//   if (!product) {
-//     console.error('Product not found. ID:', id);
-//     toast('Product not found', 'error');
-//     return;
-//   }
-  
-//   product.badge = 'hot';
-  
-//   localStorage.setItem('management_products', JSON.stringify(products));
-//   notifyProductsUpdated();
-//   renderProducts();
-//   toast(`⚡ ${product.name} marked as HOT!`, 'success');
-// };
-
-// window.markAsNew = async function(id) {
-//   console.log('New clicked for ID:', id, typeof id);
-  
-//   const productId = String(id);
-//   const product = products.find(p => String(p.id) === productId);
-  
-//   if (!product) {
-//     console.error('Product not found. ID:', id);
-//     toast('Product not found', 'error');
-//     return;
-//   }
-  
-//   product.badge = 'new';
-  
-//   localStorage.setItem('management_products', JSON.stringify(products));
-//   notifyProductsUpdated();
-//   renderProducts();
-//   toast(`✨ ${product.name} marked as NEW!`, 'success');
-// };
-
-// window.removeBadge = async function(id) {
-//   console.log('Remove Badge clicked for ID:', id, typeof id);
-  
-//   const productId = String(id);
-//   const product = products.find(p => String(p.id) === productId);
-  
-//   if (!product) {
-//     console.error('Product not found. ID:', id);
-//     toast('Product not found', 'error');
-//     return;
-//   }
-  
-//   product.badge = '';
-  
-//   localStorage.setItem('management_products', JSON.stringify(products));
-//   notifyProductsUpdated();
-//   renderProducts();
-//   toast(`${product.name} badge removed`, 'success');
-// };
 
 // ============================================
 // RENDER PRODUCTS
@@ -497,6 +405,7 @@ function renderProducts() {
 }
 
 async function editProduct(id) {
+  console.log('✏️ Editing product:', id);
   const product = products.find(p => p.id == id);
   if (!product) { toast('Product not found', 'error'); return; }
 
@@ -506,28 +415,46 @@ async function editProduct(id) {
   if (!newPrice) return;
 
   try {
+    // Update local product object
+    product.name = newName.trim();
+    product.price = parseFloat(newPrice);
+    
+    // Save to server - send ALL 10 fields
     await api(`/api/admin/products/${encodeURIComponent(id)}`, {
       method: 'PUT',
       body: JSON.stringify({
-        name: newName.trim(),
-        price: parseFloat(newPrice),
+        name: product.name,
+        price: product.price,
         was: product.was,
-        badge: product.badge,
+        badge: product.badge || '',
         img: product.img,
-        rating: product.rating,
-        reviews: product.reviews,
+        rating: product.rating || 4.6,
+        reviews: product.reviews || 0,
         inStock: product.inStock !== false,
         cat: product.cat,
-        desc: product.desc
+        desc: product.desc || ''
       })
     });
+    
+    // Update localStorage
+    localStorage.setItem('management_products', JSON.stringify(products));
+    
+    // Clear caches and notify
     if (window.clearApiCache) await window.clearApiCache();
+    await bustProductsCache();
+    notifyProductsUpdated();
+    await broadcastProductUpdate();
+    
+    // Reload admin data to ensure consistency
     await loadAdminData();
-    toast('Product updated', 'success');
+    
+    toast('Product updated successfully!', 'success');
   } catch (err) {
+    console.error('Edit product error:', err);
     toast(err.message || 'Failed to update product', 'error');
   }
 }
+
 async function deleteProduct(id) {
   console.log('🗑️ Deleting product:', id);
   if (!confirm('⚠️ Delete this product? This action cannot be undone.')) return;
@@ -560,17 +487,6 @@ async function deleteProduct(id) {
     toast(err.message || 'Failed to delete product', 'error');
   }
 }
-// async function deleteProduct(id) {
-//   if (!confirm('Delete this product?')) return;
-//   try {
-//     await api(`/api/admin/products/${encodeURIComponent(id)}`, { method: 'DELETE' });
-//     if (window.clearApiCache) await window.clearApiCache();
-//     await loadAdminData();
-//     toast('Product deleted', 'success');
-//   } catch (err) {
-//     toast(err.message || 'Failed to delete product', 'error');
-//   }
-// }
 
 // ============================================
 // SPARE PARTS CRUD - UPDATED WITH STORAGE EVENTS
@@ -772,6 +688,7 @@ async function loadRepairServices() {
     }
   }
 }
+
 async function loadAdminData() {
   console.log('🔄 Loading admin data...');
   
@@ -828,25 +745,6 @@ async function loadAdminData() {
   renderProducts();
   console.log('✅ Admin data loaded, products count:', products.length);
 }
-// async function loadAdminData() {
-//   if (offlineManager) {
-//     products = DUMMY_PRODUCTS;
-//     staff = DUMMY_STAFF;
-//     renderStaff();
-//     renderProducts();
-//     renderPerformance(DUMMY_ANALYTICS);
-//     return;
-//   }
-//   if ($('#staffList')) $('#staffList').innerHTML = LOADING.staff;
-//   if ($('#productAdmin')) $('#productAdmin').innerHTML = LOADING.products;
-//   // Await products so editProduct/deleteProduct always find the right product
-//   await Promise.allSettled([
-//     api('/api/products').then(d => { products = d.products || []; renderProducts(); }).catch(e => console.error("Products load fail", e)),
-//     api('/api/admin/staff').then(d => { staff = d.staff || []; renderStaff(); }).catch(e => console.error("Staff load fail", e)),
-//     api('/api/admin/analytics').then(d => renderPerformance(d)).catch(e => console.error("Analytics load fail", e)),
-//     loadRepairServices(), loadTechnicians(), loadRepairCategories(), loadAdminSpareParts()
-//   ]);
-// }
 
 // ============================================
 // EXISTING FUNCTIONS
@@ -1039,6 +937,7 @@ $('#manualSyncBtn')?.addEventListener('click', async () => {
   await broadcastProductUpdate();
   toast('Sync complete! Storefront should now show latest products.', 'success');
 });
+
 async function updateView() {
   let data = null;
   try {
