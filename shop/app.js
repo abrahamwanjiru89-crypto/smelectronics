@@ -583,23 +583,6 @@ async function refreshProducts() {
   renderCart();
   renderRecent();
 }
-// async function refreshProducts() {
-//   try {
-//     const data = await api('/api/products');
-//     if (data && data.products && data.products.length > 0) {
-//       PRODUCTS = data.products;
-//       // Keep localStorage in sync for offline use
-//       localStorage.setItem('management_products', JSON.stringify(PRODUCTS));
-//     }
-//   } catch (err) {
-//     console.error('Failed to refresh products from server, using localStorage fallback:', err);
-//     loadProductsFromLocalStorage();
-//   }
-//   renderProducts();
-//   renderFlash();
-//   renderCart();
-//   renderRecent();
-// }
 
 async function refreshOrders() {
   if (!state.user) return;
@@ -1164,18 +1147,6 @@ window.setDeliveryFee = async function(fee) {
 // ============================================
 // LISTEN FOR STORAGE EVENTS FROM MANAGEMENT PAGE AND REPAIR PAGE
 // ============================================
-window.addEventListener('storage', (e) => {
-  if (e.key === 'management_products') {
-    console.log('Products updated from management page, refreshing...');
-    // Always re-fetch from server so edits made via admin API are reflected
-    refreshProducts();
-  }
-
-// Listen for custom product update events from management page (same tab)
-window.addEventListener('products-updated', () => {
-  console.log('🎯 Products-updated event received, refreshing...');
-  refreshProducts();
-});
 
 // Listen for storage events from other tabs (cross-tab communication)
 window.addEventListener('storage', (e) => {
@@ -1193,6 +1164,12 @@ window.addEventListener('storage', (e) => {
     console.log('Spare parts updated, refreshing cart display...');
     renderCart();
   }
+});
+
+// Listen for custom product update events from management page (same tab)
+window.addEventListener('products-updated', () => {
+  console.log('🎯 Products-updated event received, refreshing...');
+  refreshProducts();
 });
 
 // ----- INIT -----
@@ -1233,29 +1210,4 @@ window.addEventListener('storage', (e) => {
   await refreshProducts();
   updateAccountUi();
   console.log('✅ App initialized');
-})();
-  
-  // Load delivery fee from server
-  try {
-    const feeData = await api('/api/delivery-fee');
-    if (feeData && feeData.fee) {
-      deliveryFee = feeData.fee;
-      updateCartTotals();
-    }
-  } catch (err) {
-    console.log('Using default delivery fee');
-  }
-  
-  try {
-    const session = await api('/api/auth/me');
-    if (session.user?.role === 'customer') {
-      state.user = session.user;
-      await refreshOrders();
-    }
-  } catch (err) {
-    // Auth check failed (not logged in or server down) — fine, continue
-  }
-  // Always refresh products from server regardless of auth state
-  await refreshProducts();
-  updateAccountUi();
 })();
