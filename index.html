@@ -427,6 +427,37 @@
   // Hide the loader automatically if app scripts fail or take too long.
   setTimeout(() => document.getElementById('loader')?.classList.add('hide'), 5000);
 </script>
+  <script>
+// Force service worker update and clear cache
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.ready.then(registration => {
+    registration.update();
+  });
+  
+  // Listen for reload messages from service worker
+  navigator.serviceWorker.addEventListener('message', event => {
+    if (event.data?.type === 'FORCE_RELOAD') {
+      console.log('🔄 Service worker forcing reload...');
+      window.location.reload();
+    }
+  });
+}
+
+// Clear all caches on page load (temporary - remove after fix)
+async function clearAllCaches() {
+  if ('caches' in window) {
+    const keys = await caches.keys();
+    for (const key of keys) {
+      await caches.delete(key);
+      console.log('🗑️ Deleted cache:', key);
+    }
+    console.log('✅ All caches cleared');
+  }
+}
+
+// Run this once to clear old cache
+clearAllCaches();
+</script>
 <script src="shop/app.js" defer></script>
 <script src="shop/pwa.js" defer></script>
 </body>
