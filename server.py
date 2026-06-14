@@ -1358,7 +1358,8 @@ class Handler(BaseHTTPRequestHandler):
             product_id = path.split("/")[-1]
             data = self.read_json()
             
-            print(f"📝 Updating product {product_id} with data:", data)
+            print(f"📝 Updating product {product_id}")
+            print(f"   Badge value: {data.get('badge')}")
             
             with db() as conn:
                 # First check if product exists
@@ -1367,38 +1368,51 @@ class Handler(BaseHTTPRequestHandler):
                     self.send_json({"error": "Product not found"}, 404)
                     return
                 
-                # Update ALL fields including badge, was, rating, reviews, img
-                conn.execute("""
-                    UPDATE products 
-                    SET name = ?, 
-                        price = ?, 
-                        was = ?, 
-                        badge = ?, 
-                        img = ?, 
-                        rating = ?, 
-                        reviews = ?, 
-                        in_stock = ?, 
-                        cat = ?, 
-                        desc = ? 
-                    WHERE id = ?
-                """, (
-                    data.get("name", existing["name"]),
-                    float(data.get("price", existing["price"])),
-                    data.get("was"),
-                    data.get("badge", existing.get("badge", "")),
-                    data.get("img", existing["img"]),
-                    float(data.get("rating", existing.get("rating", 4.6))),
-                    int(data.get("reviews", existing.get("reviews", 0))),
-                    1 if data.get("inStock", existing.get("in_stock", 1)) else 0,
-                    data.get("cat", existing["cat"]),
-                    data.get("desc", existing.get("desc", ""))
-                ))
+                # Get existing values safely (sqlite3.Row objects use indexing, not .get())
+                existing_badge = existing["badge"] if "badge" in existing.keys() else ""
+                existing_rating = existing["rating"] if "rating" in existing.keys() else 4.6
+                existing_reviews = existing["reviews"] if "reviews" in existing.keys() else 0
+                existing_in_stock = existing["in_stock"] if "in_stock" in existing.keys() else 1
+                existing_desc = existing["desc"] if "desc" in existing.keys() else ""
                 
-                # Verify the update worked
-                updated = conn.execute("SELECT * FROM products WHERE id = ?", (product_id,)).fetchone()
-                print(f"✅ Product updated: {updated['name']} - badge: {updated['badge']}")
+                # Update ALL fields
+                try:
+                    conn.execute("""
+                        UPDATE products 
+                        SET name = ?, 
+                            price = ?, 
+                            was = ?, 
+                            badge = ?, 
+                            img = ?, 
+                            rating = ?, 
+                            reviews = ?, 
+                            in_stock = ?, 
+                            cat = ?, 
+                            desc = ? 
+                        WHERE id = ?
+                    """, (
+                        data.get("name", existing["name"]),
+                        float(data.get("price", existing["price"])),
+                        data.get("was") if data.get("was") else None,
+                        data.get("badge", existing_badge),
+                        data.get("img", existing["img"]),
+                        float(data.get("rating", existing_rating)),
+                        int(data.get("reviews", existing_reviews)),
+                        1 if data.get("inStock", existing_in_stock) else 0,
+                        data.get("cat", existing["cat"]),
+                        data.get("desc", existing_desc)
+                    ))
+                    
+                    # Verify the update worked
+                    updated = conn.execute("SELECT badge FROM products WHERE id = ?", (product_id,)).fetchone()
+                    print(f"✅ Product updated - new badge: {updated['badge']}")
+                    
+                except Exception as e:
+                    print(f"❌ Database error: {e}")
+                    self.send_json({"error": str(e)}, 500)
+                    return
                 
-            self.send_json({"ok": True, "product": {"id": product_id, "badge": data.get("badge", "")}})
+            self.send_json({"ok": True, "badge": data.get("badge", "")})
             return
         
         self.send_json({"error": "Not found"}, 404)
