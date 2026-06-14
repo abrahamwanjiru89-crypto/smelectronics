@@ -1178,14 +1178,14 @@ window.addEventListener('storage', (e) => {
     // Always re-fetch from server so edits made via admin API are reflected
     refreshProducts();
   }
-   // Listen for custom product update events from management page (same tab)
+
 // Listen for custom product update events from management page (same tab)
 window.addEventListener('products-updated', () => {
   console.log('🎯 Products-updated event received, refreshing...');
   refreshProducts();
 });
 
-// Listen for storage events from other tabs
+// Listen for storage events from other tabs (cross-tab communication)
 window.addEventListener('storage', (e) => {
   if (e.key === 'management_products') {
     console.log('Products updated from management page, refreshing...');
