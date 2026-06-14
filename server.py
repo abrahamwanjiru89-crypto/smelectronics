@@ -1353,7 +1353,7 @@ class Handler(BaseHTTPRequestHandler):
                 )
             self.send_json({"ok": True})
             return
-                if path.startswith("/api/admin/products/"):
+        if path.startswith("/api/admin/products/"):
             if not self.require({"admin"}):
                 return
             product_id = path.split("/")[-1]
