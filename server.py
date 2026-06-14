@@ -1405,54 +1405,7 @@ class Handler(BaseHTTPRequestHandler):
                 
             self.send_json({"ok": True, "product": {"id": product_id, "badge": data.get("badge", "")}})
             return
-                    if path.startswith("/api/admin/products/"):
-            if not self.require({"admin"}):
-                return
-            product_id = path.split("/")[-1]
-            data = self.read_json()
-            
-            print(f"📝 Updating product {product_id} with data:", data)
-            
-            with db() as conn:
-                # Check if product exists
-                existing = conn.execute("SELECT * FROM products WHERE id = ?", (product_id,)).fetchone()
-                if not existing:
-                    self.send_json({"error": "Product not found"}, 404)
-                    return
-                
-                # Update ALL fields
-                conn.execute("""
-                    UPDATE products 
-                    SET name = ?, 
-                        price = ?, 
-                        was = ?, 
-                        badge = ?, 
-                        img = ?, 
-                        rating = ?, 
-                        reviews = ?, 
-                        in_stock = ?, 
-                        cat = ?, 
-                        desc = ? 
-                    WHERE id = ?
-                """, (
-                    data.get("name", existing["name"]),
-                    float(data.get("price", existing["price"])),
-                    data.get("was"),
-                    data.get("badge", existing.get("badge", "")),
-                    data.get("img", existing["img"]),
-                    float(data.get("rating", existing.get("rating", 4.6))),
-                    int(data.get("reviews", existing.get("reviews", 0))),
-                    1 if data.get("inStock", existing.get("in_stock", 1)) else 0,
-                    data.get("cat", existing["cat"]),
-                    data.get("desc", existing.get("desc", ""))
-                ))
-                
-                # Verify update worked
-                updated = conn.execute("SELECT * FROM products WHERE id = ?", (product_id,)).fetchone()
-                print(f"✅ Product updated: {updated['name']} - badge: {updated['badge']}")
-                
-            self.send_json({"ok": True, "product": {"id": product_id, "badge": data.get("badge", "")}})
-            return
+                    
         # if path.startswith("/api/admin/products/"):
         #     if not self.require({"admin"}):
         #         return
