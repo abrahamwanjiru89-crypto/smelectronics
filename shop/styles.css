@@ -87,17 +87,35 @@
 }
 
 html[data-theme="light"] {
-  --bg:#e8f2fc; --bg-2:#f0f6ff; --surface:rgba(0,100,180,.05); --surface-2:rgba(0,100,180,.09);
-  --border:rgba(0,100,180,.14); --text:#060f1a; --muted:#4a6080;
-  --grad-bg: 
-    radial-gradient(ellipse 1400px 700px at 85% -5%,  rgba(107,47,255,.14), transparent 60%),
-    radial-gradient(ellipse 1000px 600px at -15% 25%, rgba(0,150,220,.10), transparent 60%);
-  --shadow-soft: 0 24px 80px -20px rgba(10,30,60,.22);
-  --surface: rgba(0,100,200,.04);
-  --surface-2: rgba(0,100,200,.08);
+  /* Deep slate — keeps the futuristic mood, readable in daylight */
+  --bg:        #0e1621;
+  --bg-2:      #141d2b;
+  --surface:   rgba(255,255,255,.05);
+  --surface-2: rgba(255,255,255,.09);
+  --border:    rgba(255,255,255,.1);
+  --text:      #ddeeff;
+  --muted:     #7a99bb;
+  --primary:   #38d9ff;
+  --accent:    #e040fb;
+
+  --grad-bg:
+    radial-gradient(ellipse 1200px 600px at 80%  0%,   rgba(56,217,255,.12), transparent 60%),
+    radial-gradient(ellipse 900px  500px at -10% 30%,  rgba(107,47,255,.10), transparent 60%),
+    radial-gradient(ellipse 700px  400px at 50%  110%, rgba(224,64,251,.10), transparent 60%);
+
   --grid-lines:
-    linear-gradient(rgba(0,100,200,.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0,100,200,.04) 1px, transparent 1px);
+    linear-gradient(rgba(56,217,255,.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(56,217,255,.025) 1px, transparent 1px);
+
+  --shadow-soft: 0 20px 60px -16px rgba(0,0,0,.6);
+  --shadow-3d:   0 2px 0 rgba(56,217,255,.06),
+                 0 6px 0 rgba(0,0,0,.35),
+                 0 12px 24px rgba(0,0,0,.5),
+                 0 0 40px -10px rgba(56,217,255,.15),
+                 inset 0 1px 0 rgba(255,255,255,.07),
+                 inset 0 -1px 0 rgba(0,0,0,.3);
+  --inset-top:   inset 0 1px 0 rgba(255,255,255,.08), inset 0 -1px 0 rgba(0,0,0,.25);
+  --scanlines:   none;
 }
 
 /* ============== RESET ============== */
@@ -432,11 +450,8 @@ html[data-theme="light"] #themeBtn .i-moon { display: none; }
   z-index: 0;
   pointer-events: none;
 }
-html[data-theme="light"] .hero { background: linear-gradient(180deg, rgba(232,242,252,.98), rgba(232,242,252,.88)); }
-html[data-theme="light"] .hero::before {
-  background: linear-gradient(90deg, rgba(232,242,252,.95), rgba(232,242,252,.6) 45%, rgba(232,242,252,.3)),
-              linear-gradient(to top, rgba(232,242,252,.9), transparent 50%);
-}
+/* light hero uses same dark bg via tokens */
+/* light hero::before handled by dark token */
 
 #particles { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; opacity: .3; z-index: 1; }
 
@@ -978,7 +993,7 @@ html[data-theme="light"] .hero::before {
   background: rgba(0,0,0,.4); border: 1px solid var(--border); color: var(--text);
   box-shadow: var(--inset-top);
 }
-html[data-theme="light"] .nl-form input { background: rgba(255,255,255,.6); }
+html[data-theme="light"] .nl-form input { background: rgba(255,255,255,.06); }
 
 /* ============== FOOTER ============== */
 .footer {
