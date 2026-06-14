@@ -1182,7 +1182,7 @@ window.addEventListener('storage', (e) => {
 window.addEventListener('products-updated', () => {
   console.log('🎯 Products-updated event received, refreshing...');
   refreshProducts();
-}
+});
   if (e.key === 'nova_cart') {
     console.log('Cart updated from another page, refreshing...');
     state.cart = load('nova_cart', []);
