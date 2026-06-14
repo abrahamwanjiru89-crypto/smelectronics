@@ -602,6 +602,7 @@ class Handler(BaseHTTPRequestHandler):
         return json.loads(self.rfile.read(length).decode())
 
     def read_multipart(self):
+        """Parse multipart form data - FIXED VERSION"""
         content_type = self.headers.get('Content-Type', '')
         
         if 'multipart/form-data' not in content_type:
@@ -723,7 +724,6 @@ class Handler(BaseHTTPRequestHandler):
             path = "/index.html"
         query = parse_qs(parsed.query)
         
-        # API endpoints
         if path == "/api/spare-parts":
             brand = query.get("brand", [""])[0]
             category = query.get("category", [""])[0]
@@ -864,7 +864,6 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"technicians": [row_repair_technician(r) for r in rows]})
             return
         
-        # Serve static files
         file_path = unquote(path).lstrip("/")
         if ".." in file_path:
             self.send_error(403)
@@ -1016,23 +1015,50 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"ok": True})
             return
         
+        # ============================================
+        # ADD PRODUCT ENDPOINT - FIXED
+        # ============================================
         if path == "/api/admin/products":
             if not self.require({"admin"}):
                 return
+            
+            print("=" * 50)
             print("📦 Received product submission")
+            print(f"Content-Type: {self.headers.get('Content-Type')}")
+            
+            content_length = int(self.headers.get('Content-Length', 0))
+            print(f"Content-Length: {content_length}")
+            
             form, files = self.read_multipart()
+            
             print(f"📝 Form fields: {list(form.keys())}")
-            print(f"📎 Files: {list(files.keys())}")
-            image = files.get("img")
+            print(f"📎 Files found: {list(files.keys())}")
+            
+            # Try both 'img' and 'image' field names
+            image = files.get("img") or files.get("image")
             if not image:
-                self.send_json({"error": "Product image is required"}, 400)
+                print("❌ No image found in files!")
+                print(f"Available files: {list(files.keys())}")
+                self.send_json({"error": "Product image is required. Please select an image file. Field name should be 'img'."}, 400)
                 return
-            ext = Path(image["filename"]).suffix.lower() or ".jpg"
-            filename = secrets.token_hex(12) + ext
-            target = UPLOAD_DIR / filename
-            with target.open("wb") as f:
-                f.write(image["content"])
+            
+            print(f"Image filename: {image['filename']}")
+            print(f"Image content length: {len(image['content'])} bytes")
+            
+            try:
+                ext = Path(image["filename"]).suffix.lower() or ".jpg"
+                filename = secrets.token_hex(12) + ext
+                target = UPLOAD_DIR / filename
+                with target.open("wb") as f:
+                    f.write(image["content"])
+                print(f"✅ Image saved: {filename}")
+            except Exception as e:
+                print(f"❌ Failed to save image: {e}")
+                self.send_json({"error": f"Failed to save image: {str(e)}"}, 500)
+                return
+            
             product_id = "p-" + secrets.token_hex(8)
+            
             name = form.get("name", "").strip()
             category = form.get("cat", "phones")
             price = float(form.get("price", "0"))
@@ -1045,14 +1071,30 @@ class Handler(BaseHTTPRequestHandler):
                     was_price = None
             badge_value = form.get("badge", "")
             desc = form.get("desc", "").strip()
+            
             if not name or price <= 0:
                 self.send_json({"error": "Product name and valid price are required"}, 400)
                 return
+            
             with db() as conn:
                 conn.execute(
                     "INSERT INTO products (id,name,cat,price,was,rating,reviews,badge,img,desc,in_stock,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
-                    (product_id, name, category, price, was_price, 4.6, 0, badge_value, f"/uploads/{filename}", desc, 1, datetime.now(timezone.utc).isoformat()),
+                    (
+                        product_id,
+                        name,
+                        category,
+                        price,
+                        was_price,
+                        4.6,
+                        0,
+                        badge_value,
+                        f"/uploads/{filename}",
+                        desc,
+                        1,
+                        datetime.now(timezone.utc).isoformat(),
+                    ),
                 )
+            
             print(f"✅ Product added: {product_id} - {name}")
             self.send_json({"ok": True, "id": product_id})
             return
@@ -1110,9 +1152,6 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json({"ok": True})
             return
         
-        # ============================================
-        # REPAIR BOOKING ENDPOINT - FIXED
-        # ============================================
         if path == "/api/repair/bookings":
             data = self.read_json()
             booking_id = "bk-" + secrets.token_hex(8)
@@ -1141,9 +1180,6 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json({"ok": True, "id": booking_id})
             return
         
-        # ============================================
-        # GET USER ORDERS - FIXED
-        # ============================================
         if path == "/api/orders/my":
             user = self.require({"customer"})
             if not user:
@@ -1196,11 +1232,26 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"order": row_order(conn, order)})
             return
         
+        if path == "/api/test-multipart":
+            if not self.require({"admin"}):
+                return
+            form, files = self.read_multipart()
+            self.send_json({
+                "form_fields": list(form.keys()),
+                "file_fields": list(files.keys()),
+                "success": True
+            })
+            return
+        
         if path == "/api/test-upload":
             if not self.require({"admin"}):
                 return
             form, files = self.read_multipart()
-            self.send_json({"form_fields": list(form.keys()), "file_fields": list(files.keys()), "received": True})
+            self.send_json({
+                "form_fields": list(form.keys()),
+                "file_fields": list(files.keys()),
+                "received": True
+            })
             return
         
         self.send_json({"error": "Not found"}, 404)
@@ -1208,33 +1259,50 @@ class Handler(BaseHTTPRequestHandler):
     def do_PUT(self):
         path = urlparse(self.path).path.rstrip("/")
         
+        # ============================================
+        # SPARE PART UPDATE - FIXED
+        # ============================================
         if path.startswith("/api/admin/spare-parts/"):
             if not self.require({"admin"}):
                 return
             spare_id = path.split("/")[-1]
+            
+            print(f"📝 Updating spare part: {spare_id}")
+            
             content_type = self.headers.get("Content-Type", "")
+            
             if content_type.startswith("multipart/form-data"):
                 data, files = self.read_multipart()
+                print(f"   Multipart data: {list(data.keys())}")
+                print(f"   Files: {list(files.keys())}")
             else:
                 data = self.read_json()
                 files = {}
+                print(f"   JSON data: {data}")
+            
             name = (data.get("name") or "").strip()
             brand = (data.get("brand") or "").strip()
             category = (data.get("category") or "").strip()
             price = float(data.get("price") or 0)
             stock = int(data.get("stock") or 1)
             description = (data.get("description") or "").strip()
+            
+            print(f"   Name: {name}, Brand: {brand}, Price: {price}, Stock: {stock}")
+            
             if not name or not brand or not category or price <= 0:
-                self.send_json({"error": "Invalid spare part details"}, 400)
+                self.send_json({"error": f"Invalid spare part details"}, 400)
                 return
+            
             with db() as conn:
                 part = conn.execute("SELECT * FROM spare_parts WHERE id = ?", (spare_id,)).fetchone()
                 if not part:
                     self.send_json({"error": "Spare part not found"}, 404)
                     return
+                
                 image_path = part["image_path"]
-                image = files.get("image")
+                image = files.get("image") if files else None
                 if image:
+                    print(f"   Updating image: {image['filename']}")
                     if image_path and not image_path.startswith('/shop/'):
                         old_file = UPLOAD_DIR / Path(image_path).name
                         if old_file.exists():
@@ -1244,10 +1312,13 @@ class Handler(BaseHTTPRequestHandler):
                     image_path = f"/uploads/{filename}"
                     with (UPLOAD_DIR / filename).open("wb") as f:
                         f.write(image["content"])
+                
                 conn.execute(
                     "UPDATE spare_parts SET name = ?, brand = ?, category = ?, price = ?, stock = ?, image_path = ?, description = ? WHERE id = ?",
                     (name, brand, category, price, stock, image_path, description, spare_id),
                 )
+            
+            print(f"✅ Spare part updated: {spare_id}")
             self.send_json({"ok": True})
             return
         
@@ -1265,7 +1336,7 @@ class Handler(BaseHTTPRequestHandler):
             return
         
         # ============================================
-        # PRODUCT UPDATE - CRITICAL FIX
+        # PRODUCT UPDATE - FIXED
         # ============================================
         if path.startswith("/api/admin/products/"):
             if not self.require({"admin"}):
