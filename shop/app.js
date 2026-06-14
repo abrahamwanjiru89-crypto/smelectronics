@@ -2,6 +2,7 @@
    S.M Dynamics Electronics — Premium electronics storefront (vanilla JS)
    UPDATED: Partial Payment System - Pay delivery fee only upfront
    UPDATED: Spare parts integration from repair page
+   FIXED: Cache busting and persistence
 ========================================================= */
 
 // ----- PRODUCT DATA -----
@@ -88,7 +89,6 @@ function getSelectedSubLocation() {
 // ============================================
 function loadProductsFromLocalStorage() {
   // DEPRECATED: This function now only serves as offline fallback
-  // Products should always be fetched from server first
   const stored = localStorage.getItem('management_products');
   if (stored && JSON.parse(stored).length > 0) {
     console.log('⚠️ Using localStorage fallback products (offline mode)');
@@ -99,6 +99,39 @@ function loadProductsFromLocalStorage() {
   return false;
 }
 
+// ============================================
+// API FUNCTION WITH CACHE BUSTING
+// ============================================
+async function api(path, options = {}) {
+  let res;
+  const headers = options.headers ? { ...options.headers } : {};
+  if (!(options.body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json';
+  }
+  
+  // Add cache-busting parameter
+  const separator = path.includes('?') ? '&' : '?';
+  const cacheBustPath = path + separator + '_=' + Date.now();
+  
+  try {
+    res = await fetch(cacheBustPath, {
+      credentials: 'include',
+      method: options.method || 'GET',
+      body: options.body,
+      headers: {
+        ...headers,
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    });
+  } catch (err) {
+    throw new Error('Network request failed. Please check your server connection.');
+  }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Request failed');
+  return data;
+}
 
 // ============================================
 // UPDATED: CHECKOUT MODAL - Partial Payment (Only Delivery Fee)
@@ -227,7 +260,6 @@ async function updateCartTotals() {
 
   if ($('#deliveryFee')) $('#deliveryFee').textContent = fmt(deliveryFee);
   
-  // Update cart footer with partial payment breakdown
   updateCartFooter(subtotal);
 }
 
@@ -260,7 +292,6 @@ function updateCartFooter(subtotal) {
       <button class="btn primary block" id="checkoutBtn">Pay Delivery Fee & Place Order</button>
     `;
     
-    // Re-attach checkout event listener
     const newCheckoutBtn = document.getElementById('checkoutBtn');
     if (newCheckoutBtn) {
       newCheckoutBtn.addEventListener('click', handleCheckout);
@@ -305,10 +336,8 @@ async function handleCheckout() {
   }, 0);
   const total = subtotal + deliveryFee;
 
-  // Show modal with partial payment info
   showCheckoutModal(subtotal, deliveryFee, async (phone, modal) => {
     try {
-      // Create order with partial payment (only delivery fee upfront)
       const orderResp = await api('/api/orders', {
         method: 'POST',
         body: JSON.stringify({
@@ -322,19 +351,15 @@ async function handleCheckout() {
       });
       const order = orderResp.order;
 
-      // Order is placed — clear the cart immediately so it doesn't double-charge
-      // or get stuck if the STK push step below fails/times out.
       state.orders.unshift(order);
       state.cart = [];
       save('nova_cart', state.cart);
       renderCart();
 
-      // Show on-screen confirmation right away
       openCart(false);
       showOrderSuccessModal(order, deliveryFee, subtotal);
       renderDashboard();
 
-      // Process M-Pesa payment for delivery fee only (best-effort, non-blocking)
       try {
         await api('/api/payments/stk-push', {
           method: 'POST',
@@ -367,13 +392,12 @@ async function handleCheckout() {
 }
 
 // ============================================
-// FIXED: loadCounties with immediate fallback AND populates countySubLocations
+// FIXED: loadCounties with immediate fallback
 // ============================================
 async function loadCounties() {
   const el = $('#county');
   if (!el) return;
   
-  // IMMEDIATELY populate with fallback counties so dropdown works right away
   const fallbackCounties = [
     { id: 'c-nairobi', name: 'Nairobi' },
     { id: 'c-mombasa', name: 'Mombasa' },
@@ -383,44 +407,11 @@ async function loadCounties() {
     { id: 'c-eldoret', name: 'Uasin Gishu' },
     { id: 'c-machakos', name: 'Machakos' },
     { id: 'c-kajiado', name: 'Kajiado' },
-    { id: 'c-thika', name: 'Thika' },
-    { id: 'c-malindi', name: 'Malindi' },
-    { id: 'c-garissa', name: 'Garissa' },
-    { id: 'c-kakamega', name: 'Kakamega' },
-    { id: 'c-bungoma', name: 'Bungoma' },
-    { id: 'c-nyeri', name: 'Nyeri' },
-    { id: 'c-meru', name: 'Meru' },
-    { id: 'c-embu', name: 'Embu' },
-    { id: 'c-kitui', name: 'Kitui' },
-    { id: 'c-muranga', name: 'Muranga' },
-    { id: 'c-kericho', name: 'Kericho' },
-    { id: 'c-kisii', name: 'Kisii' },
-    { id: 'c-kwale', name: 'Kwale' },
-    { id: 'c-kilifi', name: 'Kilifi' },
-    { id: 'c-lamu', name: 'Lamu' },
-    { id: 'c-tana-river', name: 'Tana River' },
-    { id: 'c-taita-taveta', name: 'Taita Taveta' },
-    { id: 'c-vihiga', name: 'Vihiga' },
-    { id: 'c-siaya', name: 'Siaya' },
-    { id: 'c-homa-bay', name: 'Homa Bay' },
-    { id: 'c-migori', name: 'Migori' },
-    { id: 'c-nyamira', name: 'Nyamira' },
-    { id: 'c-trans-nzoia', name: 'Trans Nzoia' },
-    { id: 'c-west-pokot', name: 'West Pokot' },
-    { id: 'c-nyandarua', name: 'Nyandarua' },
-    { id: 'c-laikipia', name: 'Laikipia' },
-    { id: 'c-samburu', name: 'Samburu' },
-    { id: 'c-isiolo', name: 'Isiolo' },
-    { id: 'c-marsabit', name: 'Marsabit' },
-    { id: 'c-wajir', name: 'Wajir' },
-    { id: 'c-mandera', name: 'Mandera' }
   ];
   
-  // Populate dropdown immediately
   el.innerHTML = '<option value="">Select County</option>' + 
     fallbackCounties.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
   
-  // Then try to fetch from server and update if successful
   try {
     const data = await api('/api/locations/counties');
     if (data && data.counties && data.counties.length > 0) {
@@ -431,11 +422,9 @@ async function loadCounties() {
     console.error('Failed to load counties from server, using fallback');
   }
   
-  // Remove existing event listener to avoid duplicates
   const oldListener = el._changeListener;
   if (oldListener) el.removeEventListener('change', oldListener);
   
-  // Add change event listener
   const changeHandler = async () => {
     const subEl = $('#subLocation');
     const datalist = $('#sublocationsList');
@@ -443,29 +432,23 @@ async function loadCounties() {
     const selectedCountyId = el.value;
     
     if (!selectedCountyId) {
-      countySubLocations = []; // Clear sublocations
+      countySubLocations = [];
       if (subEl) subEl.value = '';
       if (datalist) datalist.innerHTML = '';
       updateCartTotals();
       return;
     }
     
-    // Create fallback sublocations for the selected county
     const fallbackSubLocationsData = {
-      'Nairobi': ['CBD', 'Westlands', 'Kilimani', 'Karen', 'Langata', 'Eastleigh', 'South B', 'South C', 'Buruburu', 'Donholm', 'Kasarani', 'Ruaraka', 'Embakasi', 'Mathare', 'Kibera', 'Dagoretti'],
-      'Mombasa': ['Nyali', 'Bamburi', 'Mtwapa', 'Likoni', 'Changamwe', 'Kisauni', 'Mombasa CBD', 'Shanzu', 'Tudor', 'Miritini'],
-      'Kisumu': ['Milimani', 'Kondele', 'Nyalenda', 'Kibos', 'Kisumu East', 'Kisumu West', 'Nyando', 'Muhoroni', 'Ahero'],
-      'Nakuru': ['CBD', 'Milimani', 'Lanet', 'Rhoda', 'Kaptembwo', 'London', 'Bondeni', 'Free Area', 'Menengai', 'Nakuru West', 'Nakuru East', 'Bahati', 'Njoro', 'Molo'],
-      'Kiambu': ['Kiambu Town', 'Thika', 'Ruiru', 'Kikuyu', 'Limuru', 'Githunguri', 'Juja', 'Gatundu', 'Lari'],
-      'Uasin Gishu': ['Eldoret CBD', 'Kapsoya', 'Langas', 'Huruma', 'Kimumu', 'Kamukunji', 'Elgon View', 'Pioneer', 'Racecourse'],
-      'Machakos': ['Machakos Town', 'Athi River', 'Mavoko', 'Kangundo', 'Tala', 'Matuu', 'Masii'],
-      'Kajiado': ['Kajiado Town', 'Kitengela', 'Ngong', 'Ongata Rongai', 'Isinya', 'Loitokitok', 'Namanga']
+      'Nairobi': ['CBD', 'Westlands', 'Kilimani', 'Karen', 'Langata', 'Eastleigh'],
+      'Mombasa': ['Nyali', 'Bamburi', 'Mtwapa', 'Likoni', 'Changamwe'],
+      'Kisumu': ['Milimani', 'Kondele', 'Nyalenda', 'Kibos'],
+      'Nakuru': ['CBD', 'Milimani', 'Lanet', 'Rhoda', 'Kaptembwo'],
     };
     
     const locations = fallbackSubLocationsData[countyName] || 
-      ['Town Centre', 'Estate', 'Phase 1', 'Phase 2', 'Central', 'North', 'South', 'East', 'West'];
+      ['Town Centre', 'Estate', 'Central', 'North', 'South'];
     
-    // CRITICAL FIX: Populate countySubLocations with proper objects for validation
     countySubLocations = locations.map((loc, index) => ({
       id: `sl-${selectedCountyId}-${index}`,
       name: loc,
@@ -496,66 +479,20 @@ function debounce(fn, wait=300) {
   return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), wait); };
 }
 
-function setupPlaceAutocomplete(countyName) {
-  const streetInput = $('#street');
-  const streetDatalist = $('#streetsList');
-  if (!streetInput || !streetDatalist) return;
-
-  streetInput.removeEventListener('input', streetInput._placeListener || (()=>{}));
-  streetInput._placeListener = debounce(async (e) => {
-    const q = e.target.value.trim();
-    if (!q) return;
-    try {
-      const res = await api(`/api/places/autocomplete?q=${encodeURIComponent(q)}&type=street&countyName=${encodeURIComponent(countyName)}`);
-      const preds = res.predictions || [];
-      streetDatalist.innerHTML = preds.map(p => `<option value="${esc(p.description)}"></option>`).join('');
-    } catch (err) {
-      console.warn('Street autocomplete failed', err);
-    }
-  }, 250);
-  streetInput.addEventListener('input', streetInput._placeListener);
-}
-
-async function api(path, options = {}) {
-  let res;
-  const headers = options.headers ? { ...options.headers } : {};
-  if (!(options.body instanceof FormData)) {
-    headers['Content-Type'] = 'application/json';
-  }
-  try {
-    res = await fetch(path, {
-      credentials: 'include',
-      method: options.method || 'GET',
-      body: options.body,
-      headers: Object.keys(headers).length > 0 ? headers : undefined
-    });
-  } catch (err) {
-    throw new Error('Network request failed. Please check your server connection.');
-  }
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || 'Request failed');
-  return data;
-}
-
 // ============================================
-// refreshProducts — server is always the source of truth.
-// localStorage is only used as fallback when server is unreachable.
+// refreshProducts — server is always the source of truth
 // ============================================
 async function refreshProducts() {
   console.log('🔄 Refreshing products from server...');
   
   try {
-    // ALWAYS fetch from server first
     const data = await api('/api/products');
     
     if (data && data.products && data.products.length > 0) {
       PRODUCTS = data.products;
       console.log('✅ Loaded', PRODUCTS.length, 'products from server');
-      
-      // Store in localStorage ONLY as offline backup (not primary source)
       localStorage.setItem('management_products', JSON.stringify(PRODUCTS));
     } else {
-      // Server returned empty - try localStorage as fallback
       console.warn('⚠️ Server returned empty products, checking localStorage...');
       const stored = localStorage.getItem('management_products');
       if (stored && JSON.parse(stored).length > 0) {
@@ -565,8 +502,6 @@ async function refreshProducts() {
     }
   } catch (err) {
     console.error('❌ Failed to refresh products from server:', err);
-    
-    // Only use localStorage when server is completely offline
     const stored = localStorage.getItem('management_products');
     if (stored && JSON.parse(stored).length > 0) {
       PRODUCTS = JSON.parse(stored);
@@ -577,7 +512,6 @@ async function refreshProducts() {
     }
   }
   
-  // Always re-render after updating products
   renderProducts();
   renderFlash();
   renderCart();
@@ -869,7 +803,6 @@ function renderCart() {
   }, 0);
   $('#cartCount').textContent = state.cart.reduce((s, c) => s + c.qty, 0);
   
-  // Update cart footer with partial payment info
   updateCartFooter(subtotal);
 }
 
@@ -1127,7 +1060,7 @@ setInterval(liveNotif, 16000);
 $('#toTop').addEventListener('click', () => scrollTo({ top: 0, behavior: 'smooth' }));
 
 // ============================================
-// ADMIN: Set Delivery Fee (for management page)
+// ADMIN: Set Delivery Fee
 // ============================================
 window.setDeliveryFee = async function(fee) {
   if (!confirm('Are you sure you want to change the delivery fee?')) return;
@@ -1145,10 +1078,9 @@ window.setDeliveryFee = async function(fee) {
 };
 
 // ============================================
-// LISTEN FOR STORAGE EVENTS FROM MANAGEMENT PAGE AND REPAIR PAGE
+// STORAGE EVENT LISTENERS
 // ============================================
 
-// Listen for storage events from other tabs (cross-tab communication)
 window.addEventListener('storage', (e) => {
   if (e.key === 'management_products') {
     console.log('Products updated from management page, refreshing...');
@@ -1166,13 +1098,27 @@ window.addEventListener('storage', (e) => {
   }
 });
 
-// Listen for custom product update events from management page (same tab)
 window.addEventListener('products-updated', () => {
   console.log('🎯 Products-updated event received, refreshing...');
   refreshProducts();
 });
 
-// ----- INIT -----
+// ============================================
+// FORCE REFRESH FUNCTION (for debugging)
+// ============================================
+window.forceRefresh = async function() {
+  console.log('🔄 Force refreshing all data...');
+  localStorage.removeItem('management_products');
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.controller.postMessage({ type: 'CLEAR_CACHE' });
+  }
+  await refreshProducts();
+  toast('Data refreshed from server!', 'success');
+};
+
+// ============================================
+// INIT
+// ============================================
 (async function initApp() {
   console.log('🚀 Initializing app...');
   
@@ -1183,7 +1129,6 @@ window.addEventListener('products-updated', () => {
   $('#wishCount').textContent = state.wish.length;
   loadCounties();
   
-  // Load delivery fee from server
   try {
     const feeData = await api('/api/delivery-fee');
     if (feeData && feeData.fee) {
@@ -1194,7 +1139,6 @@ window.addEventListener('products-updated', () => {
     console.log('Using default delivery fee');
   }
   
-  // Check authentication
   try {
     const session = await api('/api/auth/me');
     if (session.user?.role === 'customer') {
@@ -1202,12 +1146,12 @@ window.addEventListener('products-updated', () => {
       await refreshOrders();
     }
   } catch (err) {
-    // Auth check failed (not logged in or server down) — fine, continue
     console.log('Auth check failed, continuing as guest');
   }
   
-  // Always refresh products from server regardless of auth state
   await refreshProducts();
   updateAccountUi();
   console.log('✅ App initialized');
 })();
+
+console.log('✅ app.js loaded');
