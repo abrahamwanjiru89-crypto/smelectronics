@@ -22,12 +22,10 @@ DATA_DIR.mkdir(parents=True, exist_ok=True)
 DB_PATH = DATA_DIR / "shop.db"
 UPLOAD_DIR = DATA_DIR / "uploads"
 UPLOAD_DIR.mkdir(exist_ok=True)
-# Session tokens are persisted in the `sessions` table (see init_db) so
-# logins survive server restarts/redeploys.
 
 # Cache for static files to improve loading speed
 STATIC_CACHE = {}
-CACHE_TTL = 3600  # 1 hour cache for images
+CACHE_TTL = 3600
 
 DEFAULT_PRODUCTS = [
     ("p1", "Nova Phone 16 Pro", "phones", 1299, 1499, 4.9, 1283, "hot", "/shop/hero-phone.jpg", "A flagship redefined. Titanium frame, 6.7\" OLED 120Hz display and the new A18X bionic chip.", 1),
@@ -205,7 +203,6 @@ def db():
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     conn.execute("PRAGMA journal_mode = WAL")
-    # Enable autocommit mode for better transaction handling
     conn.isolation_level = None
     return conn
 
@@ -463,7 +460,6 @@ def init_db():
             conn.execute("INSERT INTO settings (key, value) VALUES ('delivery_fee', '600')")
         seed_county_locations(conn, now)
 
-        # Migrate: add missing columns to existing DBs
         migrations = [
             ("orders", "delivery_fee",     "REAL DEFAULT 0"),
             ("orders", "deposit_amount",   "REAL DEFAULT 0"),
@@ -593,6 +589,9 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+        self.send_header("Pragma", "no-cache")
+        self.send_header("Expires", "0")
         self.end_headers()
         self.wfile.write(body)
 
@@ -603,13 +602,11 @@ class Handler(BaseHTTPRequestHandler):
         return json.loads(self.rfile.read(length).decode())
 
     def read_multipart(self):
-        """Parse multipart form data - FIXED VERSION"""
         content_type = self.headers.get('Content-Type', '')
         
         if 'multipart/form-data' not in content_type:
             return {}, {}
         
-        # Extract boundary
         boundary = None
         for part in content_type.split(';'):
             part = part.strip()
@@ -620,14 +617,11 @@ class Handler(BaseHTTPRequestHandler):
         if not boundary:
             return {}, {}
         
-        # Read the request body
         content_length = int(self.headers.get('Content-Length', 0))
         if content_length == 0:
             return {}, {}
         
         body = self.rfile.read(content_length)
-        
-        # Split by boundary
         boundary_bytes = f'--{boundary}'.encode()
         parts = body.split(boundary_bytes)
         
@@ -635,47 +629,35 @@ class Handler(BaseHTTPRequestHandler):
         files = {}
         
         for part in parts:
-            # Skip empty parts and the final boundary
             if not part or part == b'--\r\n' or part == b'--':
                 continue
             
-            # Find the end of headers (double CRLF)
             header_end = part.find(b'\r\n\r\n')
             if header_end == -1:
                 continue
             
             headers = part[:header_end].decode('utf-8', errors='replace')
-            content = part[header_end + 4:]  # Skip the \r\n\r\n
+            content = part[header_end + 4:]
             
-            # Remove trailing \r\n if present
             if content.endswith(b'\r\n'):
                 content = content[:-2]
             
-            # Parse Content-Disposition header
             name = None
             filename = None
             
             for line in headers.split('\r\n'):
                 if line.startswith('Content-Disposition:'):
-                    # Parse name
                     name_match = re.search(r'name="([^"]+)"', line)
                     if name_match:
                         name = name_match.group(1)
-                    
-                    # Parse filename
                     filename_match = re.search(r'filename="([^"]+)"', line)
                     if filename_match:
                         filename = filename_match.group(1)
             
             if name:
                 if filename:
-                    # This is a file
-                    files[name] = {
-                        'filename': filename,
-                        'content': content
-                    }
+                    files[name] = {'filename': filename, 'content': content}
                 else:
-                    # This is a regular field
                     try:
                         fields[name] = content.decode('utf-8', errors='replace').strip()
                     except:
@@ -701,7 +683,6 @@ class Handler(BaseHTTPRequestHandler):
                 "INSERT INTO sessions (sid, user_id, created_at) VALUES (?,?,?)",
                 (sid, user_id, datetime.now(timezone.utc).isoformat())
             )
-            # Prune sessions older than 30 days
             cutoff = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
             conn.execute("DELETE FROM sessions WHERE created_at < ?", (cutoff,))
         self.send_header("Set-Cookie", f"sid={sid}; HttpOnly; SameSite=Lax; Path=/")
@@ -721,37 +702,25 @@ class Handler(BaseHTTPRequestHandler):
             return None
         return user
 
-    # ============================================
-    # HANDLE HEAD REQUESTS (for Render.com health checks)
-    # ============================================
     def do_HEAD(self):
         parsed = urlparse(self.path)
         path = parsed.path.rstrip("/") if parsed.path != "/" else "/"
-        
         if path == "/":
             path = "/index.html"
-        
         target = (ROOT / unquote(path).lstrip("/")).resolve()
         if not str(target).startswith(str(ROOT)) or not target.exists() or target.is_dir():
             self.send_error(404)
             return
-        
         self.send_response(200)
         self.send_header("Content-Type", mimetypes.guess_type(str(target))[0] or "application/octet-stream")
         self.send_header("Content-Length", str(target.stat().st_size))
         self.end_headers()
 
-    # ============================================
-    # GET HANDLERS
-    # ============================================
     def do_GET(self):
         parsed = urlparse(self.path)
         path = parsed.path.rstrip("/") if parsed.path != "/" else "/"
-        
-        # Handle root path - serve index.html
         if path == "/":
             path = "/index.html"
-        
         query = parse_qs(parsed.query)
         
         # API endpoints
@@ -818,7 +787,6 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"categories": [{"id": r["id"], "name": r["name"], "slug": r["slug"]} for r in rows]})
             return
 
-        # Public endpoint: repair services (no auth required — storefront & repair page)
         if path == "/api/repair/services":
             with db() as conn:
                 rows = conn.execute(
@@ -829,7 +797,6 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"services": [row_repair_service(r) for r in rows]})
             return
 
-        # Public endpoint: delivery fee (no auth required — storefront app.js)
         if path == "/api/delivery-fee":
             with db() as conn:
                 setting = conn.execute("SELECT value FROM settings WHERE key = 'delivery_fee'").fetchone()
@@ -837,7 +804,6 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"fee": fee})
             return
 
-        # Public endpoint: counties list (no auth required — checkout dropdown)
         if path == "/api/locations/counties":
             with db() as conn:
                 rows = conn.execute("SELECT id, name FROM counties ORDER BY name").fetchall()
@@ -898,18 +864,13 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"technicians": [row_repair_technician(r) for r in rows]})
             return
         
-        # Serve static files (HTML, CSS, JS, images)
-        # Build the file path
+        # Serve static files
         file_path = unquote(path).lstrip("/")
-        
-        # Security: prevent directory traversal
         if ".." in file_path:
             self.send_error(403)
             return
         
         target = (ROOT / file_path).resolve()
-        
-        # Security: ensure file is within ROOT directory
         if not str(target).startswith(str(ROOT)):
             self.send_error(403)
             return
@@ -920,39 +881,27 @@ class Handler(BaseHTTPRequestHandler):
         
         body = target.read_bytes()
         self.send_response(200)
-        
-        # Add caching headers for images
         if path.endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp', '.ico')):
-            self.send_header("Cache-Control", "public, max-age=86400")  # Cache for 24 hours
+            self.send_header("Cache-Control", "public, max-age=86400")
         else:
             self.send_header("Cache-Control", "no-cache")
-        
         self.send_header("Content-Type", mimetypes.guess_type(str(target))[0] or "application/octet-stream")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
 
-    # ============================================
-    # POST HANDLERS
-    # ============================================
     def do_POST(self):
         path = urlparse(self.path).path.rstrip("/")
         
-        # ============================================
-        # MANAGEMENT LOGIN ENDPOINT
-        # ============================================
         if path == "/api/auth/management-login":
             data = self.read_json()
             email = data.get("email", "").strip().lower()
             password = data.get("password", "")
-            
             with db() as conn:
                 user = conn.execute("SELECT * FROM users WHERE email = ? AND role IN ('admin', 'staff')", (email,)).fetchone()
-            
             if not user or not verify_password(password, user["password_hash"]):
                 self.send_json({"error": "Invalid login details"}, 401)
                 return
-            
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.set_session(user["id"])
@@ -960,21 +909,15 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps({"user": public_user(user)}).encode())
             return
         
-        # ============================================
-        # CUSTOMER LOGIN ENDPOINT
-        # ============================================
         if path == "/api/auth/login":
             data = self.read_json()
             email = data.get("email", "").strip().lower()
             password = data.get("password", "")
-            
             with db() as conn:
                 user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
-            
             if not user or not verify_password(password, user["password_hash"]):
                 self.send_json({"error": "Invalid login details"}, 401)
                 return
-            
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.set_session(user["id"])
@@ -982,9 +925,6 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps({"user": public_user(user)}).encode())
             return
         
-        # ============================================
-        # REGISTER ENDPOINT
-        # ============================================
         if path == "/api/auth/register":
             data = self.read_json()
             name, email, password = data.get("name", "").strip(), data.get("email", "").strip().lower(), data.get("password", "")
@@ -1005,9 +945,6 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps({"user": public_user(user)}).encode())
             return
         
-        # ============================================
-        # LOGOUT ENDPOINT
-        # ============================================
         if path == "/api/auth/logout":
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
@@ -1016,9 +953,6 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(b'{"ok": true}')
             return
         
-        # ============================================
-        # UPDATE DELIVERY FEE (ADMIN)
-        # ============================================
         if path == "/api/admin/delivery-fee":
             if not self.require({"admin"}):
                 return
@@ -1029,9 +963,6 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json({"ok": True})
             return
         
-        # ============================================
-        # ADD SPARE PART ENDPOINT
-        # ============================================
         if path == "/api/admin/spare-parts":
             if not self.require({"admin"}):
                 return
@@ -1041,18 +972,15 @@ class Handler(BaseHTTPRequestHandler):
             else:
                 data = self.read_json()
                 files = {}
-            
             name = (data.get("name") or "").strip()
             brand = (data.get("brand") or "").strip()
             category = (data.get("category") or "").strip()
             price = float(data.get("price") or 0)
             stock = int(data.get("stock") or 1)
             description = (data.get("description") or "").strip()
-            
             if not name or not brand or not category or price <= 0:
                 self.send_json({"error": "Invalid spare part details"}, 400)
                 return
-            
             image_path = None
             image = files.get("image")
             if image:
@@ -1061,7 +989,6 @@ class Handler(BaseHTTPRequestHandler):
                 image_path = f"/uploads/{filename}"
                 with (UPLOAD_DIR / filename).open("wb") as f:
                     f.write(image["content"])
-            
             spare_id = "sp-" + secrets.token_hex(8)
             now = datetime.now(timezone.utc).isoformat()
             with db() as conn:
@@ -1072,9 +999,6 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json({"ok": True, "id": spare_id})
             return
         
-        # ============================================
-        # ADD STAFF ENDPOINT
-        # ============================================
         if path == "/api/admin/staff":
             if not self.require({"admin"}):
                 return
@@ -1092,35 +1016,23 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"ok": True})
             return
         
-        # ============================================
-        # ADD PRODUCT ENDPOINT - FIXED VERSION
-        # ============================================
         if path == "/api/admin/products":
             if not self.require({"admin"}):
                 return
-            
-            print("📦 Received product submission")  # Debug
-            
+            print("📦 Received product submission")
             form, files = self.read_multipart()
-            
-            print(f"📝 Form fields: {list(form.keys())}")  # Debug
-            print(f"📎 Files: {list(files.keys())}")  # Debug
-            
+            print(f"📝 Form fields: {list(form.keys())}")
+            print(f"📎 Files: {list(files.keys())}")
             image = files.get("img")
             if not image:
                 self.send_json({"error": "Product image is required"}, 400)
                 return
-            
-            # Save image
             ext = Path(image["filename"]).suffix.lower() or ".jpg"
             filename = secrets.token_hex(12) + ext
             target = UPLOAD_DIR / filename
             with target.open("wb") as f:
                 f.write(image["content"])
-            
             product_id = "p-" + secrets.token_hex(8)
-            
-            # Get form values with proper defaults
             name = form.get("name", "").strip()
             category = form.get("cat", "phones")
             price = float(form.get("price", "0"))
@@ -1133,37 +1045,18 @@ class Handler(BaseHTTPRequestHandler):
                     was_price = None
             badge_value = form.get("badge", "")
             desc = form.get("desc", "").strip()
-            
             if not name or price <= 0:
                 self.send_json({"error": "Product name and valid price are required"}, 400)
                 return
-            
             with db() as conn:
                 conn.execute(
                     "INSERT INTO products (id,name,cat,price,was,rating,reviews,badge,img,desc,in_stock,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
-                    (
-                        product_id,
-                        name,
-                        category,
-                        price,
-                        was_price,
-                        4.6,
-                        0,
-                        badge_value,
-                        f"/uploads/{filename}",
-                        desc,
-                        1,
-                        datetime.now(timezone.utc).isoformat(),
-                    ),
+                    (product_id, name, category, price, was_price, 4.6, 0, badge_value, f"/uploads/{filename}", desc, 1, datetime.now(timezone.utc).isoformat()),
                 )
-            
-            print(f"✅ Product added: {product_id} - {name}")  # Debug
+            print(f"✅ Product added: {product_id} - {name}")
             self.send_json({"ok": True, "id": product_id})
             return
         
-        # ============================================
-        # ADD TECHNICIAN ENDPOINT
-        # ============================================
         if path == "/api/management/repair-technicians":
             if not self.require({"admin"}):
                 return
@@ -1182,9 +1075,6 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json({"ok": True})
             return
         
-        # ============================================
-        # ADD REPAIR SERVICE ENDPOINT
-        # ============================================
         if path == "/api/management/repair-services":
             if not self.require({"admin"}):
                 return
@@ -1221,8 +1111,49 @@ class Handler(BaseHTTPRequestHandler):
             return
         
         # ============================================
-        # CREATE ORDER ENDPOINT
+        # REPAIR BOOKING ENDPOINT - FIXED
         # ============================================
+        if path == "/api/repair/bookings":
+            data = self.read_json()
+            booking_id = "bk-" + secrets.token_hex(8)
+            now = datetime.now(timezone.utc).isoformat()
+            print(f"📝 New repair booking: {data.get('name')} - {data.get('repairType')}")
+            with db() as conn:
+                conn.execute("""
+                    INSERT INTO repair_bookings 
+                    (id, name, email, phone, brand, model, repair_service_id, repair_type, description, pickup_dropoff, preferred_at, status, created_at)
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+                """, (
+                    booking_id,
+                    data.get("name"),
+                    data.get("email"),
+                    data.get("phone"),
+                    data.get("brand"),
+                    data.get("model"),
+                    data.get("repairServiceId"),
+                    data.get("repairType"),
+                    data.get("description"),
+                    data.get("pickupDropoff") or "Dropoff",
+                    data.get("preferredAt") or datetime.now(timezone.utc).isoformat(),
+                    "Pending",
+                    now
+                ))
+            self.send_json({"ok": True, "id": booking_id})
+            return
+        
+        # ============================================
+        # GET USER ORDERS - FIXED
+        # ============================================
+        if path == "/api/orders/my":
+            user = self.require({"customer"})
+            if not user:
+                return
+            with db() as conn:
+                rows = conn.execute("SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC", (user["id"],)).fetchall()
+                result = [row_order(conn, r) for r in rows]
+            self.send_json({"orders": result})
+            return
+        
         if path == "/api/orders":
             user = self.require({"customer"})
             if not user:
@@ -1235,7 +1166,6 @@ class Handler(BaseHTTPRequestHandler):
             with db() as conn:
                 delivery_fee_setting = conn.execute("SELECT value FROM settings WHERE key = 'delivery_fee'").fetchone()
                 delivery_fee = int(delivery_fee_setting['value']) if delivery_fee_setting else 600
-                
                 order_id = "ORD-" + secrets.token_hex(4).upper()
                 total = 0
                 rows = []
@@ -1250,10 +1180,8 @@ class Handler(BaseHTTPRequestHandler):
                         return
                     total += product["price"] * qty
                     rows.append((order_id, product["id"], product["name"], product["price"], qty, product["img"]))
-                
                 deposit_amount = delivery_fee
                 remaining_amount = total
-                
                 conn.execute(
                     """INSERT INTO orders 
                     (id, user_id, total, delivery_fee, deposit_amount, remaining_amount, payment_status, 
@@ -1268,24 +1196,15 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"order": row_order(conn, order)})
             return
         
-        # TEST ENDPOINT for debugging
         if path == "/api/test-upload":
             if not self.require({"admin"}):
                 return
             form, files = self.read_multipart()
-            self.send_json({
-                "form_fields": list(form.keys()),
-                "file_fields": list(files.keys()),
-                "received": True
-            })
+            self.send_json({"form_fields": list(form.keys()), "file_fields": list(files.keys()), "received": True})
             return
         
-        # If no endpoint matches
         self.send_json({"error": "Not found"}, 404)
 
-    # ============================================
-    # PUT HANDLERS
-    # ============================================
     def do_PUT(self):
         path = urlparse(self.path).path.rstrip("/")
         
@@ -1294,30 +1213,25 @@ class Handler(BaseHTTPRequestHandler):
                 return
             spare_id = path.split("/")[-1]
             content_type = self.headers.get("Content-Type", "")
-            
             if content_type.startswith("multipart/form-data"):
                 data, files = self.read_multipart()
             else:
                 data = self.read_json()
                 files = {}
-            
             name = (data.get("name") or "").strip()
             brand = (data.get("brand") or "").strip()
             category = (data.get("category") or "").strip()
             price = float(data.get("price") or 0)
             stock = int(data.get("stock") or 1)
             description = (data.get("description") or "").strip()
-            
             if not name or not brand or not category or price <= 0:
                 self.send_json({"error": "Invalid spare part details"}, 400)
                 return
-            
             with db() as conn:
                 part = conn.execute("SELECT * FROM spare_parts WHERE id = ?", (spare_id,)).fetchone()
                 if not part:
                     self.send_json({"error": "Spare part not found"}, 404)
                     return
-                
                 image_path = part["image_path"]
                 image = files.get("image")
                 if image:
@@ -1330,7 +1244,6 @@ class Handler(BaseHTTPRequestHandler):
                     image_path = f"/uploads/{filename}"
                     with (UPLOAD_DIR / filename).open("wb") as f:
                         f.write(image["content"])
-                
                 conn.execute(
                     "UPDATE spare_parts SET name = ?, brand = ?, category = ?, price = ?, stock = ?, image_path = ?, description = ? WHERE id = ?",
                     (name, brand, category, price, stock, image_path, description, spare_id),
@@ -1343,7 +1256,6 @@ class Handler(BaseHTTPRequestHandler):
                 return
             service_id = path.split("/")[-1]
             data = self.read_json()
-            
             with db() as conn:
                 conn.execute(
                     "UPDATE repair_services SET title = ?, brand = ?, repair_type = ?, price = ?, duration = ?, warranty = ?, description = ?, available = ? WHERE id = ?",
@@ -1352,6 +1264,9 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json({"ok": True})
             return
         
+        # ============================================
+        # PRODUCT UPDATE - CRITICAL FIX
+        # ============================================
         if path.startswith("/api/admin/products/"):
             if not self.require({"admin"}):
                 return
@@ -1362,20 +1277,17 @@ class Handler(BaseHTTPRequestHandler):
             print(f"   Badge value: {data.get('badge')}")
             
             with db() as conn:
-                # First check if product exists
                 existing = conn.execute("SELECT * FROM products WHERE id = ?", (product_id,)).fetchone()
                 if not existing:
                     self.send_json({"error": "Product not found"}, 404)
                     return
                 
-                # Get existing values safely (sqlite3.Row objects use indexing, not .get())
                 existing_badge = existing["badge"] if "badge" in existing.keys() else ""
                 existing_rating = existing["rating"] if "rating" in existing.keys() else 4.6
                 existing_reviews = existing["reviews"] if "reviews" in existing.keys() else 0
                 existing_in_stock = existing["in_stock"] if "in_stock" in existing.keys() else 1
                 existing_desc = existing["desc"] if "desc" in existing.keys() else ""
                 
-                # Update ALL fields
                 try:
                     conn.execute("""
                         UPDATE products 
@@ -1404,7 +1316,6 @@ class Handler(BaseHTTPRequestHandler):
                         product_id
                     ))
                     
-                    # Verify the update worked
                     updated = conn.execute("SELECT badge FROM products WHERE id = ?", (product_id,)).fetchone()
                     print(f"✅ Product updated - new badge: {updated['badge']}")
                     
@@ -1418,9 +1329,6 @@ class Handler(BaseHTTPRequestHandler):
         
         self.send_json({"error": "Not found"}, 404)
 
-    # ============================================
-    # DELETE HANDLERS
-    # ============================================
     def do_DELETE(self):
         path = urlparse(self.path).path.rstrip("/")
         
@@ -1511,6 +1419,5 @@ if __name__ == "__main__":
     init_db()
     host = os.environ.get("HOST", "0.0.0.0")
     port = int(os.environ.get("PORT", "8000"))
-    bind = (host, port)
     print(f"S.M Dynamics server running at http://{host}:{port}")
-    ThreadingHTTPServer(bind, Handler).serve_forever()
+    ThreadingHTTPServer((host, port), Handler).serve_forever()
