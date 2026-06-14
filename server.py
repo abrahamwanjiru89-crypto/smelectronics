@@ -23,7 +23,6 @@ DB_PATH = DATA_DIR / "shop.db"
 UPLOAD_DIR = DATA_DIR / "uploads"
 UPLOAD_DIR.mkdir(exist_ok=True)
 
-# Cache for static files to improve loading speed
 STATIC_CACHE = {}
 CACHE_TTL = 3600
 
@@ -451,11 +450,20 @@ def init_db():
                 for m in models:
                     rows.append(("m-" + secrets.token_hex(8), brand, m, now))
             conn.executemany("INSERT INTO device_models (id,brand,model,created_at) VALUES (?,?,?,?)", rows)
-        if conn.execute("SELECT COUNT(*) FROM spare_parts").fetchone()[0] == 0:
+        
+        spare_count = conn.execute("SELECT COUNT(*) FROM spare_parts").fetchone()[0]
+        print(f"📊 Current spare parts count in database: {spare_count}")
+        
+        if spare_count == 0:
+            print("🌱 Seeding default spare parts...")
             conn.executemany(
                 "INSERT INTO spare_parts (id,name,brand,category,price,stock,image_path,description,created_at) VALUES (?,?,?,?,?,?,?,?,?)",
                 [(*p, now) for p in DEFAULT_SPARE_PARTS],
             )
+            print(f"✅ Seeded {len(DEFAULT_SPARE_PARTS)} default spare parts")
+        else:
+            print(f"✅ Keeping existing {spare_count} spare parts (not reseeding)")
+            
         if conn.execute("SELECT COUNT(*) FROM settings").fetchone()[0] == 0:
             conn.execute("INSERT INTO settings (key, value) VALUES ('delivery_fee', '600')")
         seed_county_locations(conn, now)
@@ -602,7 +610,7 @@ class Handler(BaseHTTPRequestHandler):
         return json.loads(self.rfile.read(length).decode())
 
     def read_multipart(self):
-        """Parse multipart form data - FIXED VERSION"""
+        """Parse multipart form data"""
         content_type = self.headers.get('Content-Type', '')
         
         if 'multipart/form-data' not in content_type:
@@ -743,7 +751,23 @@ class Handler(BaseHTTPRequestHandler):
                     params.extend([term, term])
                 q += " ORDER BY brand, category, name"
                 rows = conn.execute(q, params).fetchall()
-                self.send_json({"spares": [{"id": r["id"], "name": r["name"], "brand": r["brand"], "category": r["category"], "price": r["price"], "stock": r["stock"], "image": r["image_path"], "description": r["description"]} for r in rows]})
+                
+                result = []
+                for r in rows:
+                    result.append({
+                        "id": r["id"],
+                        "name": r["name"],
+                        "brand": r["brand"],
+                        "category": r["category"],
+                        "price": r["price"],
+                        "stock": r["stock"],
+                        "image": r["image_path"],
+                        "image_path": r["image_path"],
+                        "description": r["description"]
+                    })
+                
+                print(f"📦 Returning {len(result)} spare parts from database")
+                self.send_json({"spares": result})
             return
         
         if path == "/api/management/orders/placed":
@@ -962,39 +986,79 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json({"ok": True})
             return
         
+        # ============================================
+        # ADD SPARE PART ENDPOINT - FIXED
+        # ============================================
         if path == "/api/admin/spare-parts":
             if not self.require({"admin"}):
                 return
+            
+            print("=" * 50)
+            print("📦 Adding new spare part")
+            
             content_type = self.headers.get("Content-Type", "")
-            if content_type.startswith("multipart/form-data"):
-                data, files = self.read_multipart()
-            else:
+            print(f"Content-Type: {content_type}")
+            
+            form, files = self.read_multipart()
+            
+            print(f"Form fields: {list(form.keys())}")
+            print(f"Files: {list(files.keys())}")
+            
+            # Get form data
+            name = (form.get("name") or "").strip()
+            brand = (form.get("brand") or "").strip()
+            category = (form.get("category") or "").strip()
+            price_str = form.get("price") or "0"
+            stock_str = form.get("stock") or "1"
+            description = (form.get("description") or "").strip()
+            
+            # Also check if data came as JSON
+            if not name and content_type == "application/json":
                 data = self.read_json()
-                files = {}
-            name = (data.get("name") or "").strip()
-            brand = (data.get("brand") or "").strip()
-            category = (data.get("category") or "").strip()
-            price = float(data.get("price") or 0)
-            stock = int(data.get("stock") or 1)
-            description = (data.get("description") or "").strip()
+                name = (data.get("name") or "").strip()
+                brand = (data.get("brand") or "").strip()
+                category = (data.get("category") or "").strip()
+                price_str = data.get("price") or "0"
+                stock_str = data.get("stock") or "1"
+                description = (data.get("description") or "").strip()
+            
+            try:
+                price = float(price_str)
+                stock = int(stock_str)
+            except:
+                price = 0
+                stock = 1
+            
+            print(f"Name: {name}, Brand: {brand}, Category: {category}, Price: {price}, Stock: {stock}")
+            
             if not name or not brand or not category or price <= 0:
-                self.send_json({"error": "Invalid spare part details"}, 400)
+                self.send_json({"error": f"Invalid spare part details. Name={name}, Brand={brand}, Category={category}, Price={price}"}, 400)
                 return
+            
+            # Handle image upload
             image_path = None
             image = files.get("image")
             if image:
-                ext = Path(image["filename"]).suffix.lower() or ".jpg"
-                filename = f"spare_{secrets.token_hex(8)}{ext}"
-                image_path = f"/uploads/{filename}"
-                with (UPLOAD_DIR / filename).open("wb") as f:
-                    f.write(image["content"])
+                try:
+                    ext = Path(image["filename"]).suffix.lower() or ".jpg"
+                    filename = f"spare_{secrets.token_hex(8)}{ext}"
+                    image_path = f"/uploads/{filename}"
+                    with (UPLOAD_DIR / filename).open("wb") as f:
+                        f.write(image["content"])
+                    print(f"✅ Image saved: {filename}")
+                except Exception as e:
+                    print(f"❌ Failed to save image: {e}")
+            
             spare_id = "sp-" + secrets.token_hex(8)
             now = datetime.now(timezone.utc).isoformat()
+            
             with db() as conn:
                 conn.execute(
                     "INSERT INTO spare_parts (id,name,brand,category,price,stock,image_path,description,created_at) VALUES (?,?,?,?,?,?,?,?,?)",
                     (spare_id, name, brand, category, price, stock, image_path, description, now),
                 )
+            
+            print(f"✅ Spare part added to database: {spare_id} - {name}")
             self.send_json({"ok": True, "id": spare_id})
             return
         
@@ -1015,35 +1079,25 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"ok": True})
             return
         
-        # ============================================
-        # ADD PRODUCT ENDPOINT - FIXED
-        # ============================================
         if path == "/api/admin/products":
             if not self.require({"admin"}):
                 return
             
             print("=" * 50)
             print("📦 Received product submission")
-            print(f"Content-Type: {self.headers.get('Content-Type')}")
-            
-            content_length = int(self.headers.get('Content-Length', 0))
-            print(f"Content-Length: {content_length}")
             
             form, files = self.read_multipart()
             
             print(f"📝 Form fields: {list(form.keys())}")
             print(f"📎 Files found: {list(files.keys())}")
             
-            # Try both 'img' and 'image' field names
             image = files.get("img") or files.get("image")
             if not image:
-                print("❌ No image found in files!")
-                print(f"Available files: {list(files.keys())}")
-                self.send_json({"error": "Product image is required. Please select an image file. Field name should be 'img'."}, 400)
+                print("❌ No image found!")
+                self.send_json({"error": "Product image is required. Field name should be 'img'."}, 400)
                 return
             
             print(f"Image filename: {image['filename']}")
-            print(f"Image content length: {len(image['content'])} bytes")
             
             try:
                 ext = Path(image["filename"]).suffix.lower() or ".jpg"
@@ -1335,9 +1389,6 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json({"ok": True})
             return
         
-        # ============================================
-        # PRODUCT UPDATE - FIXED
-        # ============================================
         if path.startswith("/api/admin/products/"):
             if not self.require({"admin"}):
                 return
