@@ -1179,10 +1179,18 @@ window.addEventListener('storage', (e) => {
     refreshProducts();
   }
    // Listen for custom product update events from management page (same tab)
+// Listen for custom product update events from management page (same tab)
 window.addEventListener('products-updated', () => {
   console.log('🎯 Products-updated event received, refreshing...');
   refreshProducts();
 });
+
+// Listen for storage events from other tabs
+window.addEventListener('storage', (e) => {
+  if (e.key === 'management_products') {
+    console.log('Products updated from management page, refreshing...');
+    refreshProducts();
+  }
   if (e.key === 'nova_cart') {
     console.log('Cart updated from another page, refreshing...');
     state.cart = load('nova_cart', []);
