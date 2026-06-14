@@ -1401,6 +1401,7 @@ class Handler(BaseHTTPRequestHandler):
                         1 if data.get("inStock", existing_in_stock) else 0,
                         data.get("cat", existing["cat"]),
                         data.get("desc", existing_desc)
+                        product_id
                     ))
                     
                     # Verify the update worked
