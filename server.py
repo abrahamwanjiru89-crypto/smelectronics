@@ -52,21 +52,11 @@ else:
 STATIC_CACHE = {}
 CACHE_TTL = 3600
 
-DEFAULT_PRODUCTS = [
-    ("p1", "Nova Phone 16 Pro", "phones", 1299, 1499, 4.9, 1283, "hot", "/shop/hero-phone.jpg", "A flagship redefined. Titanium frame, 6.7\" OLED 120Hz display and the new A18X bionic chip.", 1),
-    ("p2", "Aura Studio Pro", "audio", 449, 549, 4.8, 842, "sale", "/shop/headphones.jpg", "Reference-grade over-ear with adaptive noise cancellation and 60h battery.", 1),
-    ("p3", "Nova Book X1", "laptops", 2199, None, 4.9, 512, "new", "/shop/laptop.jpg", "Carbon-fiber chassis, 14\" mini-LED, 32GB RAM and 18-hour battery.", 1),
-    ("p4", "Orbit Watch Ultra", "wearables", 599, 699, 4.7, 301, "sale", "/shop/watch.jpg", "Sapphire crystal, dual-frequency GPS and 7-day battery in titanium.", 1),
-    ("p5", "Vision Lens VR", "gaming", 899, None, 4.6, 178, "new", "/shop/vr.jpg", "4K-per-eye micro-OLED with 120Hz tracking. The future of immersion.", 1),
-    ("p6", "Echo Buds 3", "audio", 179, 229, 4.7, 921, "sale", "/shop/earbuds.jpg", "Hi-Res certified earbuds with hybrid ANC and 32h total battery.", 1),
-    ("p7", "Lumen R7 Camera", "wearables", 1499, None, 4.8, 215, "", "/shop/camera.jpg", "45MP full-frame mirrorless with 8K video and AI subject tracking.", 1),
-    ("p8", "Apex Pad Ultra", "gaming", 79, None, 4.6, 1502, "hot", "/shop/console.jpg", "Pro-grade wireless controller with haptic triggers and RGB.", 1),
-    ("p9", "Glide Tab 12", "laptops", 899, None, 4.5, 402, "", "/shop/tablet.jpg", "12.4\" 2K tablet with pressure-sensitive stylus, perfect for creators.", 1),
-    ("p10", "Pulse Sound 360", "home", 249, 299, 4.7, 687, "sale", "/shop/speaker.jpg", "360 degree smart speaker with built-in voice assistant and room calibration.", 1),
-    ("p11", "Falcon Drone 4K", "gaming", 1199, None, 4.8, 243, "new", "/shop/drone.jpg", "4K stabilized drone with 40-minute flight time and obstacle avoidance.", 1),
-    ("p12", "Nest Hub Mini", "home", 129, None, 4.5, 1109, "", "/shop/hub.jpg", "Smart home command center with ambient display and voice control.", 1),
-    ("p13", "Forge Keyboard RGB", "gaming", 189, 229, 4.7, 534, "sale", "/shop/keyboard.jpg", "Mechanical RGB keyboard with hot-swap switches and aluminum frame.", 1),
-]
+# ============================================
+# NO DEFAULT PRODUCTS - Empty list
+# Products will only come from management panel
+# ============================================
+DEFAULT_PRODUCTS = []  # Empty - no default products
 
 DEFAULT_REPAIR_CATEGORIES = [
     ("cat-screen", "Screen replacement", "screen-replacement"),
@@ -654,20 +644,16 @@ def init_db():
                 cursor.execute("INSERT INTO users (id,name,email,password_hash,role,created_at) VALUES (?,?,?,?,?,?)", ("u-staff", "Order Staff", "staff@smdynamics.com", hash_password("staff123"), "staff", now))
             conn.commit()
         
-        # Check products
+        # Check products - NO DEFAULT PRODUCTS SEEDING
         cursor.execute("SELECT COUNT(*) as count FROM products")
         result = cursor.fetchone()
         product_count = result["count"] if USE_POSTGRES else result[0]
         
         if product_count == 0:
-            logger.info("Seeding default products...")
-            if USE_POSTGRES:
-                for p in DEFAULT_PRODUCTS:
-                    cursor.execute("INSERT INTO products (id,name,cat,price,was,rating,reviews,badge,img,\"desc\",in_stock,created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", (*p, now))
-            else:
-                cursor.executemany("INSERT INTO products (id,name,cat,price,was,rating,reviews,badge,img,desc,in_stock,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", [(*p, now) for p in DEFAULT_PRODUCTS])
-            conn.commit()
-            logger.info(f"Seeded {len(DEFAULT_PRODUCTS)} default products")
+            logger.info("No products found. Products must be added via management panel.")
+            # DO NOT seed default products - DEFAULT_PRODUCTS is empty
+        else:
+            logger.info(f"Products table has {product_count} existing products")
         
         # Check repair categories
         cursor.execute("SELECT COUNT(*) as count FROM repair_categories")
