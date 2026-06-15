@@ -127,7 +127,7 @@ function notifyProductsUpdated() {
 
 async function bustProductsCache() {
   try {
-    const cache = await caches.open('sm-dynamics-v6');
+    const cache = await caches.open('sm-dynamics-v2');
     await cache.delete('/api/products');
   } catch (_) {}
   if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
@@ -520,8 +520,7 @@ async function editSparePart(id) {
             })
           });
         } catch (err) {
-          console.error('Spare part server update failed:', err);
-          toast('Saved locally only (server error: ' + (err.message || 'unknown') + ')', 'warning');
+          console.warn('Server update failed, saving locally only');
         }
         
         localStorage.setItem('spare_parts', JSON.stringify(spareParts));
@@ -587,57 +586,29 @@ function renderRepairServices() {
   $$('.delete-service').forEach(btn => btn.addEventListener('click', () => deleteRepairService(btn.dataset.id)));
 }
 
-async function editRepairService(id) {
+function editRepairService(id) {
   const service = repairServices.find(s => s.id == id);
   if (!service) { toast('Service not found', 'error'); return; }
-
+  
   const newTitle = prompt('Edit service title:', service.title);
-  if (!newTitle || !newTitle.trim()) return;
-  const newPrice = prompt('Edit price (Kshs):', service.price);
-  if (!newPrice) return;
-  const newAvailable = confirm('Is this service currently available?');
-
-  service.title = newTitle.trim();
-  service.price = parseFloat(newPrice);
-  service.available = newAvailable;
-
-  try {
-    await api(`/api/management/repair-services/${encodeURIComponent(id)}`, {
-      method: 'PUT',
-      body: JSON.stringify({
-        title: service.title,
-        brand: service.brand,
-        repairType: service.repairType,
-        price: service.price,
-        available: service.available
-      })
-    });
-    await loadRepairServices();
-    toast('Repair service updated on server', 'success');
-  } catch (err) {
-    console.error('Repair service update failed:', err);
-    // Still update locally so UI reflects the change
-    localStorage.setItem('repair_services', JSON.stringify(repairServices));
-    renderRepairServices();
-    toast('Updated locally (server unreachable: ' + (err.message || 'unknown error') + ')', 'warning');
+  if (newTitle && newTitle.trim()) {
+    const newPrice = prompt('Edit price (Kshs):', service.price);
+    if (newPrice) {
+      service.title = newTitle.trim();
+      service.price = parseFloat(newPrice);
+      localStorage.setItem('repair_services', JSON.stringify(repairServices));
+      renderRepairServices();
+      toast('Repair service updated', 'success');
+    }
   }
 }
 
-async function deleteRepairService(id) {
-  if (!confirm('Delete this repair service? This cannot be undone.')) return;
-  try {
-    await api(`/api/management/repair-services/${encodeURIComponent(id)}`, { method: 'DELETE' });
-    repairServices = repairServices.filter(s => s.id != id);
-    localStorage.setItem('repair_services', JSON.stringify(repairServices));
-    renderRepairServices();
-    toast('Repair service deleted from server', 'success');
-  } catch (err) {
-    console.error('Repair service delete failed:', err);
-    repairServices = repairServices.filter(s => s.id != id);
-    localStorage.setItem('repair_services', JSON.stringify(repairServices));
-    renderRepairServices();
-    toast('Deleted locally (server unreachable: ' + (err.message || 'unknown error') + ')', 'warning');
-  }
+function deleteRepairService(id) {
+  if (!confirm('Delete this repair service?')) return;
+  repairServices = repairServices.filter(s => s.id != id);
+  localStorage.setItem('repair_services', JSON.stringify(repairServices));
+  renderRepairServices();
+  toast('Repair service deleted', 'success');
 }
 
 // ============================================
@@ -703,7 +674,7 @@ async function loadAdminData() {
   if ($('#productAdmin')) $('#productAdmin').innerHTML = LOADING.products;
   
   try {
-    const productsData = await api('/api/products?fresh=1');
+    const productsData = await api('/api/products');
     if (productsData.products && productsData.products.length > 0) {
       products = productsData.products;
       localStorage.setItem('management_products', JSON.stringify(products));
@@ -746,25 +717,73 @@ function renderPlacedOrders() {
   if (!el) return;
   el.innerHTML = (orders && orders.length) ? orders.map(order => {
     const loc = order.location || {};
+    const locationStr = [loc.county, loc.constituency, loc.street].filter(Boolean).join(', ') || 'N/A';
+    
+    const dfBadge = order.deliveryFeeSet
+      ? `<span style="background:#1b5e20; color:#69f0ae; padding:2px 8px; border-radius:10px; font-size:0.75rem;">✅ Delivery: ${fmt(order.deliveryFee)}</span>`
+      : `<span style="background:#4a2000; color:#ffb300; padding:2px 8px; border-radius:10px; font-size:0.75rem;">⏳ Delivery fee not set</span>`;
+    
+    const setFeeBtn = !order.deliveryFeeSet
+      ? `<button class="btn-set-delivery-fee" data-id="${esc(order.id)}" data-location="${esc(locationStr)}"
+           style="background:#00e5ff; color:#000; border:none; padding:0.45rem 0.9rem; border-radius:0.5rem; cursor:pointer; font-weight:600; font-size:0.8rem; white-space:nowrap;">
+           🚚 Set Delivery Fee
+         </button>`
+      : `<button class="btn-update-delivery-fee" data-id="${esc(order.id)}" data-location="${esc(locationStr)}" data-current="${order.deliveryFee}"
+           style="background:#333; color:#aaa; border:none; padding:0.45rem 0.9rem; border-radius:0.5rem; cursor:pointer; font-size:0.8rem; white-space:nowrap;">
+           ✏️ Update Fee
+         </button>`;
+
     return `
-    <article class="order-row manager-order">
+    <article class="order-row manager-order" style="border-left:3px solid ${order.deliveryFeeSet ? '#00c853' : '#ffb300'};">
       <div>
-        <b>${esc(order.id)}</b> <span class="status ${esc(order.paymentStatus?.toLowerCase() || 'pending')}">${esc(order.paymentStatus || 'Pending')}</span>
+        <b>${esc(order.id)}</b>
+        <span class="status ${esc(order.paymentStatus?.toLowerCase().replace(/ /g,'-') || 'pending')}">${esc(order.paymentStatus || 'Pending')}</span>
         <span>${order.createdAt ? new Date(order.createdAt).toLocaleString() : 'Date Unknown'}</span>
         <small>${esc(order.customer)} · ${esc(order.email)}</small>
       </div>
       <div class="order-items">
         ${(order.items || []).map(item => `${esc(item.name)} x${item.qty}`).join('<br>')}
-        <div class="order-meta">
-           <small>Location: ${esc(loc.county || 'N/A')}, ${esc(loc.constituency || 'N/A')} · ${esc(loc.street || 'N/A')}</small>
+        <div class="order-meta" style="margin-top:0.4rem;">
+          <small>📍 <b>${esc(locationStr)}</b></small>
         </div>
+        <div style="margin-top:0.4rem;">${dfBadge}</div>
       </div>
-      <div>
+      <div style="display:flex; flex-direction:column; gap:0.5rem; align-items:flex-end;">
         <b>${fmt(order.total)}</b>
         <span class="status ${esc(order.status?.toLowerCase() || 'pending')}">${esc(order.status || 'Pending')}</span>
+        ${setFeeBtn}
       </div>
     </article>`;
   }).join('') : '<div class="dash-empty">No placed orders yet.</div>';
+
+  // Bind Set Delivery Fee buttons
+  el.querySelectorAll('.btn-set-delivery-fee, .btn-update-delivery-fee').forEach(btn => {
+    btn.addEventListener('click', () => setOrderDeliveryFee(btn.dataset.id, btn.dataset.location, btn.dataset.current));
+  });
+}
+
+async function setOrderDeliveryFee(orderId, locationStr, currentFee) {
+  const suggestion = currentFee ? parseInt(currentFee) : '';
+  const input = prompt(
+    `Set delivery fee for order ${orderId}\n📍 Location: ${locationStr}\n\nEnter delivery fee (KES):`,
+    suggestion
+  );
+  if (input === null || input === '') return;
+  const fee = parseFloat(input);
+  if (isNaN(fee) || fee < 0) {
+    toast('Invalid delivery fee amount', 'error');
+    return;
+  }
+  try {
+    const res = await api(`/api/admin/orders/${encodeURIComponent(orderId)}/delivery-fee`, {
+      method: 'PUT',
+      body: JSON.stringify({ deliveryFee: fee })
+    });
+    await loadOrders();
+    toast(`✅ Delivery fee set to ${fmt(fee)} for ${orderId}. Customer notified.`, 'success');
+  } catch (err) {
+    toast('Failed to set delivery fee: ' + err.message, 'error');
+  }
 }
 
 function renderStaff() {
@@ -1068,7 +1087,7 @@ $('#repairServiceForm')?.addEventListener('submit', async e => {
     e.target.reset();
     toast('Repair service added', 'success');
   } catch (err) {
-    toast('Failed to add repair service: ' + (err.message || 'server error'), 'error');
+    toast(err.message, 'error');
   }
 });
 
@@ -1130,10 +1149,9 @@ window.forceRefresh = async function() {
   localStorage.removeItem('spare_parts');
   if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
     navigator.serviceWorker.controller.postMessage({ type: 'CLEAR_CACHE' });
-    console.log('[Management] Sent CLEAR_CACHE to service worker v6');
   }
   await loadAdminData();
   toast('Data refreshed from server!', 'success');
 };
 
-console.log('✅ Management.js loaded — SW cache: sm-dynamics-v6, server-first edits enabled');
+console.log('✅ Management.js loaded');
