@@ -3,6 +3,7 @@
    UPDATED: Partial Payment System - Pay delivery fee only upfront
    UPDATED: Spare parts integration from repair page
    FIXED: Cache busting and persistence
+   FIXED: Orders persist after login/logout
 ========================================================= */
 
 // ----- PRODUCT DATA -----
@@ -88,7 +89,6 @@ function getSelectedSubLocation() {
 // LOAD PRODUCTS FROM LOCALSTORAGE (SYNC WITH MANAGEMENT PAGE)
 // ============================================
 function loadProductsFromLocalStorage() {
-  // DEPRECATED: This function now only serves as offline fallback
   const stored = localStorage.getItem('management_products');
   if (stored && JSON.parse(stored).length > 0) {
     console.log('⚠️ Using localStorage fallback products (offline mode)');
@@ -109,7 +109,6 @@ async function api(path, options = {}) {
     headers['Content-Type'] = 'application/json';
   }
   
-  // Add cache-busting parameter
   const separator = path.includes('?') ? '&' : '?';
   const cacheBustPath = path + separator + '_=' + Date.now();
   
@@ -134,7 +133,7 @@ async function api(path, options = {}) {
 }
 
 // ============================================
-// CHECKOUT MODAL - Confirmation only (phone collected in cart)
+// CHECKOUT MODAL
 // ============================================
 function showCheckoutModal(productTotal, phone, onConfirm) {
   const existingModal = document.querySelector('.checkout-modal');
@@ -256,13 +255,14 @@ function updateCartFooter(subtotal) {
     
     const newCheckoutBtn = document.getElementById('checkoutBtn');
     if (newCheckoutBtn) {
+      newCheckoutBtn.removeEventListener('click', handleCheckout);
       newCheckoutBtn.addEventListener('click', handleCheckout);
     }
   }
 }
 
 // ============================================
-// CHECKOUT HANDLER — customer pays product total only
+// CHECKOUT HANDLER
 // ============================================
 async function handleCheckout() {
   if (!state.cart.length) {
@@ -319,6 +319,7 @@ async function handleCheckout() {
       const order = orderResp.order;
 
       state.orders.unshift(order);
+      save('nova_orders', state.orders);
       state.cart = [];
       save('nova_cart', state.cart);
       renderCart();
@@ -358,7 +359,7 @@ async function handleCheckout() {
 }
 
 // ============================================
-// FIXED: loadCounties with immediate fallback
+// LOAD COUNTIES
 // ============================================
 async function loadCounties() {
   const el = $('#county');
@@ -446,7 +447,7 @@ function debounce(fn, wait=300) {
 }
 
 // ============================================
-// refreshProducts — server is always the source of truth
+// REFRESH PRODUCTS & ORDERS
 // ============================================
 async function refreshProducts() {
   console.log('🔄 Refreshing products from server...');
@@ -484,14 +485,38 @@ async function refreshProducts() {
   renderRecent();
 }
 
+// ============================================
+// FIXED: Refresh orders with persistence
+// ============================================
 async function refreshOrders() {
   if (!state.user) return;
   try {
     const data = await api('/api/orders/my');
-    state.orders = data.orders;
+    state.orders = data.orders || [];
+    // Save to localStorage as backup
+    save('nova_orders', state.orders);
     renderDashboard();
   } catch (err) {
-    console.error('Failed to refresh orders:', err);
+    console.error('Failed to refresh orders from server:', err);
+    // Try to load from localStorage as fallback
+    const stored = load('nova_orders', []);
+    state.orders = stored;
+    renderDashboard();
+  }
+}
+
+// ============================================
+// LOAD USER ORDERS (for after login)
+// ============================================
+async function loadUserOrders() {
+  if (!state.user || state.user.role !== 'customer') return;
+  try {
+    const data = await api('/api/orders/my');
+    state.orders = data.orders || [];
+    save('nova_orders', state.orders);
+    renderDashboard();
+  } catch (err) {
+    console.error('Failed to load orders:', err);
   }
 }
 
@@ -916,13 +941,24 @@ function setAuthTab(tab) {
   $('#loginForm').hidden = tab !== 'login';
   $('#registerForm').hidden = tab !== 'register';
 }
+
+// ============================================
+// FIXED: Update Account UI with orders refresh
+// ============================================
 function updateAccountUi() {
   const user = currentUser();
   const customer = user?.role === 'customer' ? user : null;
   $('#accountLabel').textContent = customer ? `Customer: ${customer.name.split(' ')[0]}` : 'Login';
   $('#dashboard').hidden = !customer;
-  if (customer) renderDashboard();
+  if (customer) {
+    // Always refresh orders when showing dashboard
+    refreshOrders();
+  }
 }
+
+// ============================================
+// FIXED: Login function with order refresh
+// ============================================
 async function login(email, password, successMessage = 'Login successful') {
   try {
     const data = await api('/api/auth/login', { method:'POST', body:JSON.stringify({ email, password }) });
@@ -934,6 +970,7 @@ async function login(email, password, successMessage = 'Login successful') {
     state.user = data.user;
     closeAuth();
     updateAccountUi();
+    // Refresh orders immediately after login
     await refreshOrders();
     toast(successMessage, 'success');
     $('#dashboard').scrollIntoView({ behavior:'smooth' });
@@ -941,6 +978,7 @@ async function login(email, password, successMessage = 'Login successful') {
     toast(err.message, 'error');
   }
 }
+
 function renderOrderList(orders, mode = 'user') {
   if (!orders.length) return '<div class="dash-empty">No orders yet.</div>';
   return orders.map(order => {
@@ -999,11 +1037,16 @@ $('#registerForm').addEventListener('submit', async e => {
     toast(err.message, 'error');
   }
 });
-$('#logoutBtn').addEventListener('click', () => {
+
+// ============================================
+// FIXED: Logout with order cleanup
+// ============================================
+$('#logoutBtn')?.addEventListener('click', () => {
   api('/api/auth/logout', { method:'POST', body:JSON.stringify({}) }).finally(() => {
     state.user = null;
     state.orders = [];
     updateAccountUi();
+    renderDashboard();
     toast('Logged out', 'info');
   });
 });
@@ -1070,6 +1113,12 @@ window.addEventListener('storage', (e) => {
     console.log('Spare parts updated, refreshing cart display...');
     renderCart();
   }
+  if (e.key === 'nova_orders') {
+    console.log('Orders updated from another page, refreshing...');
+    const stored = load('nova_orders', []);
+    state.orders = stored;
+    renderDashboard();
+  }
 });
 
 window.addEventListener('products-updated', () => {
@@ -1087,6 +1136,7 @@ window.forceRefresh = async function() {
     navigator.serviceWorker.controller.postMessage({ type: 'CLEAR_CACHE' });
   }
   await refreshProducts();
+  if (state.user) await refreshOrders();
   toast('Data refreshed from server!', 'success');
 };
 
