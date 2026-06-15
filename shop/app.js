@@ -849,3 +849,50 @@ function toast(msg, type='info') {
   setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateX(50%)'; t.style.transition = 'all .4s'; }, 2800);
   setTimeout(() => t.remove(), 3300);
 }
+// ============================================
+// FORCE HOMEPAGE CONTENT VISIBILITY FIX
+// ============================================
+(function ensureContentVisible() {
+    // Wait for page to fully load
+    window.addEventListener('load', function() {
+        setTimeout(function() {
+            // Force all major containers to be visible
+            const containers = [
+                'hero', 'flash-sale', 'products-section', 
+                'testimonials', 'featured-products', 'recent-section',
+                'productGrid', 'flashGrid', 'recentGrid'
+            ];
+            
+            containers.forEach(function(id) {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.style.display = 'block';
+                    el.style.visibility = 'visible';
+                    el.style.opacity = '1';
+                }
+            });
+            
+            // Force all product grids to show
+            const grids = document.querySelectorAll('#productGrid, #flashGrid, #recentGrid');
+            grids.forEach(function(grid) {
+                if (grid) {
+                    grid.style.display = 'grid';
+                    grid.style.visibility = 'visible';
+                }
+            });
+            
+            // Remove any hidden class from main sections
+            const sections = document.querySelectorAll('main > section, .container > section');
+            sections.forEach(function(section) {
+                if (section.classList.contains('hidden')) {
+                    section.classList.remove('hidden');
+                }
+                if (section.hasAttribute('hidden')) {
+                    section.removeAttribute('hidden');
+                }
+            });
+            
+            console.log('✅ Homepage content visibility enforced');
+        }, 500);
+    });
+})();
