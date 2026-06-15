@@ -1089,30 +1089,65 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"counties": [{"id": r["id"], "name": r["name"]} for r in rows]})
             return
 
+        # ============================================
+        # FIXED: ANALYTICS ENDPOINT - PostgreSQL compatible
+        # ============================================
         if path == "/api/admin/analytics":
             if not self.require({"admin"}):
                 return
             with db() as conn:
                 cursor = conn.cursor()
-                cursor.execute("SELECT COALESCE(SUM(total), 0) FROM orders")
-                total_sales = cursor.fetchone()[0]
-                cursor.execute("SELECT COUNT(*) FROM orders")
-                total_orders = cursor.fetchone()[0]
-                cursor.execute("SELECT COUNT(*) FROM orders WHERE status = 'Delivered'")
-                delivered = cursor.fetchone()[0]
-                cursor.execute("SELECT COUNT(*) FROM products")
-                product_count = cursor.fetchone()[0]
+                
+                # Get total sales
+                cursor.execute("SELECT COALESCE(SUM(total), 0) as total FROM orders")
+                result = cursor.fetchone()
+                total_sales = result["total"] if USE_POSTGRES else result[0]
+                
+                # Get total orders
+                cursor.execute("SELECT COUNT(*) as count FROM orders")
+                result = cursor.fetchone()
+                total_orders = result["count"] if USE_POSTGRES else result[0]
+                
+                # Get delivered count
+                cursor.execute("SELECT COUNT(*) as count FROM orders WHERE status = 'Delivered'")
+                result = cursor.fetchone()
+                delivered = result["count"] if USE_POSTGRES else result[0]
+                
+                # Get product count
+                cursor.execute("SELECT COUNT(*) as count FROM products")
+                result = cursor.fetchone()
+                product_count = result["count"] if USE_POSTGRES else result[0]
+                
                 days_data = []
                 for i in range(6, -1, -1):
                     day_label = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][(datetime.now(timezone.utc).weekday() - i) % 7]
                     offset = timedelta(days=i)
                     day_start = (datetime.now(timezone.utc) - offset).strftime("%Y-%m-%d")
-                    cursor.execute("SELECT COALESCE(SUM(total), 0) FROM orders WHERE DATE(created_at) = %s" if USE_POSTGRES else "SELECT COALESCE(SUM(total), 0) FROM orders WHERE DATE(created_at) = ?", (day_start,))
-                    day_sales = cursor.fetchone()[0]
-                    cursor.execute("SELECT COUNT(*) FROM orders WHERE DATE(created_at) = %s" if USE_POSTGRES else "SELECT COUNT(*) FROM orders WHERE DATE(created_at) = ?", (day_start,))
-                    day_orders = cursor.fetchone()[0]
+                    
+                    if USE_POSTGRES:
+                        cursor.execute("SELECT COALESCE(SUM(total), 0) as total FROM orders WHERE DATE(created_at) = %s", (day_start,))
+                        result = cursor.fetchone()
+                        day_sales = result["total"]
+                        
+                        cursor.execute("SELECT COUNT(*) as count FROM orders WHERE DATE(created_at) = %s", (day_start,))
+                        result = cursor.fetchone()
+                        day_orders = result["count"]
+                    else:
+                        cursor.execute("SELECT COALESCE(SUM(total), 0) FROM orders WHERE DATE(created_at) = ?", (day_start,))
+                        day_sales = cursor.fetchone()[0]
+                        
+                        cursor.execute("SELECT COUNT(*) FROM orders WHERE DATE(created_at) = ?", (day_start,))
+                        day_orders = cursor.fetchone()[0]
+                    
                     days_data.append({"label": day_label, "sales": day_sales, "orders": day_orders})
-                self.send_json({"totalSales": total_sales, "totalOrders": total_orders, "delivered": delivered, "products": product_count, "days": days_data})
+                
+                self.send_json({
+                    "totalSales": total_sales,
+                    "totalOrders": total_orders,
+                    "delivered": delivered,
+                    "products": product_count,
+                    "days": days_data
+                })
             return
 
         if path == "/api/products":
@@ -1147,7 +1182,7 @@ class Handler(BaseHTTPRequestHandler):
             return
         
         # ============================================
-        # ORDERS MY ENDPOINT - FIXED
+        # ORDERS MY ENDPOINT
         # ============================================
         if path == "/api/orders/my":
             user = self.require({"customer"})
