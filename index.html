@@ -313,6 +313,9 @@
     <div class="cart-items" id="cartItems"></div>
     <div class="cart-meta">
       <h4>Delivery details</h4>
+      <label>Phone Number (M-Pesa)
+        <input id="customerPhone" type="tel" placeholder="e.g. 0712345678" autocomplete="tel" required>
+      </label>
       <label>County
         <select id="county" autocomplete="address-level1" required>
           <option value="">Choose county</option>
@@ -323,18 +326,8 @@
         <datalist id="sublocationsList"></datalist>
       </label>
       <label>Street / center
-        <input id="street" type="text" list="streetsList" placeholder="e.g. 3rd Avenue, Kiamunyeki" autocomplete="street-address" required>
-        <datalist id="streetsList"></datalist>
+        <input id="street" type="text" placeholder="e.g. 3rd Avenue, Kiamunyeki" autocomplete="street-address" required>
       </label>
-      <label>Deposit (Kshs)
-        <input id="depositAmount" type="number" min="100" value="500" required>
-      </label>
-      <label>MPesa Till / Agent No.
-        <input id="depositMpesa" type="text" value="coming soon" placeholder="e.g. 123456" required readonly>
-      </label>
-      <div class="cart-fees">
-        <span>Delivery fee</span><b id="deliveryFee">Kshs 0</b>
-      </div>
     </div>
   </div>
   <footer class="cart-foot">
