@@ -134,9 +134,9 @@ async function api(path, options = {}) {
 }
 
 // ============================================
-// CHECKOUT MODAL - Customer pays product total only via M-Pesa STK
+// CHECKOUT MODAL - Confirmation only (phone collected in cart)
 // ============================================
-function showCheckoutModal(productTotal, onConfirm) {
+function showCheckoutModal(productTotal, phone, onConfirm) {
   const existingModal = document.querySelector('.checkout-modal');
   if (existingModal) existingModal.remove();
   
@@ -144,7 +144,7 @@ function showCheckoutModal(productTotal, onConfirm) {
   modal.className = 'checkout-modal';
   modal.innerHTML = `
     <div class="checkout-card">
-      <h3>💰 Order Summary</h3>
+      <h3>💰 Confirm Order</h3>
       <div class="details" style="text-align: left;">
         <div style="background:rgba(0,229,255,0.08); border:1px solid rgba(0,229,255,0.25); border-radius:0.75rem; padding:1rem; margin-bottom:1rem;">
           <div style="display:flex; justify-content:space-between; margin-bottom:0.4rem;">
@@ -156,22 +156,19 @@ function showCheckoutModal(productTotal, onConfirm) {
             <span>Set by admin after order</span>
           </div>
         </div>
-        <p style="font-size:0.85rem; color:#aaa;">✅ Pay only the product total now via M-Pesa.</p>
-        <p style="font-size:0.85rem; color:#aaa;">🚚 Delivery fee will be communicated to you after your order is confirmed.</p>
-        <div style="margin-top:1rem;">
-          <label for="mpesaPhoneInput" style="display:block; font-size:0.85rem; margin-bottom:0.35rem;">M-Pesa Phone Number</label>
-          <input type="tel" id="mpesaPhoneInput" placeholder="e.g. 0712345678" class="input" style="width:100%; padding:0.6rem 0.75rem; border-radius:0.5rem; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.05); color:inherit;">
-          <p class="checkout-error" style="color:#ff4d6d; font-size:0.8rem; margin-top:0.35rem; display:none;"></p>
+        <div style="background:rgba(255,255,255,0.04); border-radius:0.6rem; padding:0.75rem; margin-bottom:0.75rem; font-size:0.88rem;">
+          📲 M-Pesa STK push will be sent to <b style="color:#00e5ff;">${esc(phone)}</b>
         </div>
+        <p style="font-size:0.82rem; color:#aaa;">🚚 Delivery fee will be communicated to you after your order is confirmed.</p>
+        <p class="checkout-error" style="color:#ff4d6d; font-size:0.8rem; margin-top:0.5rem; display:none;"></p>
       </div>
       <div class="checkout-actions">
         <button class="btn-cancel">Cancel</button>
-        <button class="btn-confirm">Pay ${fmt(productTotal)} via M-Pesa</button>
+        <button class="btn-confirm">Confirm &amp; Pay ${fmt(productTotal)}</button>
       </div>
     </div>
   `;
   document.body.appendChild(modal);
-  
   setTimeout(() => modal.classList.add('show'), 10);
   
   modal.querySelector('.btn-cancel').addEventListener('click', () => {
@@ -180,21 +177,10 @@ function showCheckoutModal(productTotal, onConfirm) {
   });
   
   const confirmBtn = modal.querySelector('.btn-confirm');
-  const phoneInput = modal.querySelector('#mpesaPhoneInput');
-  const errorEl = modal.querySelector('.checkout-error');
-
   confirmBtn.addEventListener('click', async () => {
-    const phone = phoneInput.value.trim();
-    if (!phone || phone.length < 10) {
-      errorEl.textContent = 'Please enter a valid M-Pesa phone number';
-      errorEl.style.display = 'block';
-      phoneInput.focus();
-      return;
-    }
-    errorEl.style.display = 'none';
     confirmBtn.disabled = true;
     confirmBtn.textContent = 'Processing...';
-    if (onConfirm) await onConfirm(phone, modal);
+    if (onConfirm) await onConfirm(modal);
   });
   
   modal.addEventListener('click', (e) => {
@@ -292,11 +278,17 @@ async function handleCheckout() {
     return;
   }
   
+  const phone = $('#customerPhone')?.value.trim();
   const countyId = $('#county').value;
   const subLocationText = $('#subLocation').value.trim();
   const subLocation = getSelectedSubLocation();
   const street = $('#street').value.trim();
   
+  if (!phone || phone.length < 10) {
+    toast('Please enter your M-Pesa phone number', 'error');
+    $('#customerPhone')?.focus();
+    return;
+  }
   if (!countyId || !subLocationText || !street) {
     toast('Please fill in your delivery location', 'error');
     return;
@@ -311,7 +303,7 @@ async function handleCheckout() {
     return s + (p?.price || 0) * c.qty;
   }, 0);
 
-  showCheckoutModal(productTotal, async (phone, modal) => {
+  showCheckoutModal(productTotal, phone, async (modal) => {
     try {
       const orderResp = await api('/api/orders', {
         method: 'POST',
@@ -344,7 +336,7 @@ async function handleCheckout() {
             paymentType: 'product_total'
           })
         });
-        toast(`✅ M-Pesa prompt sent for ${fmt(productTotal)}`, 'success');
+        toast(`✅ M-Pesa prompt sent to ${phone} for ${fmt(productTotal)}`, 'success');
       } catch (stkErr) {
         toast('Order placed, but the M-Pesa prompt could not be sent. Please contact us to complete payment.', 'warning');
       }
@@ -359,7 +351,7 @@ async function handleCheckout() {
       }
       if (confirmBtn) {
         confirmBtn.disabled = false;
-        confirmBtn.textContent = `Pay ${fmt(productTotal)} via M-Pesa`;
+        confirmBtn.textContent = `Confirm & Pay ${fmt(productTotal)}`;
       }
     }
   });
