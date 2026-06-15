@@ -127,7 +127,7 @@ function notifyProductsUpdated() {
 
 async function bustProductsCache() {
   try {
-    const cache = await caches.open('sm-dynamics-v2');
+    const cache = await caches.open('sm-dynamics-v6');
     await cache.delete('/api/products');
   } catch (_) {}
   if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
@@ -520,7 +520,8 @@ async function editSparePart(id) {
             })
           });
         } catch (err) {
-          console.warn('Server update failed, saving locally only');
+          console.error('Spare part server update failed:', err);
+          toast('Saved locally only (server error: ' + (err.message || 'unknown') + ')', 'warning');
         }
         
         localStorage.setItem('spare_parts', JSON.stringify(spareParts));
@@ -586,29 +587,57 @@ function renderRepairServices() {
   $$('.delete-service').forEach(btn => btn.addEventListener('click', () => deleteRepairService(btn.dataset.id)));
 }
 
-function editRepairService(id) {
+async function editRepairService(id) {
   const service = repairServices.find(s => s.id == id);
   if (!service) { toast('Service not found', 'error'); return; }
-  
+
   const newTitle = prompt('Edit service title:', service.title);
-  if (newTitle && newTitle.trim()) {
-    const newPrice = prompt('Edit price (Kshs):', service.price);
-    if (newPrice) {
-      service.title = newTitle.trim();
-      service.price = parseFloat(newPrice);
-      localStorage.setItem('repair_services', JSON.stringify(repairServices));
-      renderRepairServices();
-      toast('Repair service updated', 'success');
-    }
+  if (!newTitle || !newTitle.trim()) return;
+  const newPrice = prompt('Edit price (Kshs):', service.price);
+  if (!newPrice) return;
+  const newAvailable = confirm('Is this service currently available?');
+
+  service.title = newTitle.trim();
+  service.price = parseFloat(newPrice);
+  service.available = newAvailable;
+
+  try {
+    await api(`/api/management/repair-services/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        title: service.title,
+        brand: service.brand,
+        repairType: service.repairType,
+        price: service.price,
+        available: service.available
+      })
+    });
+    await loadRepairServices();
+    toast('Repair service updated on server', 'success');
+  } catch (err) {
+    console.error('Repair service update failed:', err);
+    // Still update locally so UI reflects the change
+    localStorage.setItem('repair_services', JSON.stringify(repairServices));
+    renderRepairServices();
+    toast('Updated locally (server unreachable: ' + (err.message || 'unknown error') + ')', 'warning');
   }
 }
 
-function deleteRepairService(id) {
-  if (!confirm('Delete this repair service?')) return;
-  repairServices = repairServices.filter(s => s.id != id);
-  localStorage.setItem('repair_services', JSON.stringify(repairServices));
-  renderRepairServices();
-  toast('Repair service deleted', 'success');
+async function deleteRepairService(id) {
+  if (!confirm('Delete this repair service? This cannot be undone.')) return;
+  try {
+    await api(`/api/management/repair-services/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    repairServices = repairServices.filter(s => s.id != id);
+    localStorage.setItem('repair_services', JSON.stringify(repairServices));
+    renderRepairServices();
+    toast('Repair service deleted from server', 'success');
+  } catch (err) {
+    console.error('Repair service delete failed:', err);
+    repairServices = repairServices.filter(s => s.id != id);
+    localStorage.setItem('repair_services', JSON.stringify(repairServices));
+    renderRepairServices();
+    toast('Deleted locally (server unreachable: ' + (err.message || 'unknown error') + ')', 'warning');
+  }
 }
 
 // ============================================
@@ -674,7 +703,7 @@ async function loadAdminData() {
   if ($('#productAdmin')) $('#productAdmin').innerHTML = LOADING.products;
   
   try {
-    const productsData = await api('/api/products');
+    const productsData = await api('/api/products?fresh=1');
     if (productsData.products && productsData.products.length > 0) {
       products = productsData.products;
       localStorage.setItem('management_products', JSON.stringify(products));
@@ -1039,7 +1068,7 @@ $('#repairServiceForm')?.addEventListener('submit', async e => {
     e.target.reset();
     toast('Repair service added', 'success');
   } catch (err) {
-    toast(err.message, 'error');
+    toast('Failed to add repair service: ' + (err.message || 'server error'), 'error');
   }
 });
 
@@ -1101,9 +1130,10 @@ window.forceRefresh = async function() {
   localStorage.removeItem('spare_parts');
   if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
     navigator.serviceWorker.controller.postMessage({ type: 'CLEAR_CACHE' });
+    console.log('[Management] Sent CLEAR_CACHE to service worker v6');
   }
   await loadAdminData();
   toast('Data refreshed from server!', 'success');
 };
 
-console.log('✅ Management.js loaded');
+console.log('✅ Management.js loaded — SW cache: sm-dynamics-v6, server-first edits enabled');
