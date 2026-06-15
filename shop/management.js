@@ -354,7 +354,7 @@ function renderProducts() {
     return `
     <div class="product-item" data-id="${productId}" style="background:#1a1a2e; border-radius:1rem; padding:1rem; margin-bottom:1rem; border:1px solid rgba(255,255,255,0.1);">
       <div style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap;">
-        <img src="${product.img || 'shop/hero-phone.jpg'}" style="width:60px; height:60px; object-fit:cover; border-radius:0.5rem;">
+        <img src="${product.img || '/shop/hero-phone.jpg'}" style="width:60px; height:60px; object-fit:cover; border-radius:0.5rem;">
         <div style="flex:1;">
           <h4>${esc(product.name)}</h4>
           <div style="display:flex; gap:1rem; flex-wrap:wrap; font-size:0.875rem;">
@@ -465,7 +465,7 @@ function renderAdminSpareParts() {
   el.innerHTML = spareParts.map(part => `
     <div class="spare-item" data-id="${part.id}" style="background:#1a1a2e; border-radius:1rem; padding:1rem; margin-bottom:1rem; border:1px solid rgba(255,255,255,0.1);">
       <div style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap;">
-        <img src="${part.image || part.image_path || 'shop/hero-phone.jpg'}" style="width:60px; height:60px; object-fit:cover; border-radius:0.5rem;">
+        <img src="${part.image || part.image_path || '/shop/hero-phone.jpg'}" style="width:60px; height:60px; object-fit:cover; border-radius:0.5rem;">
         <div style="flex:1;">
           <h4>${esc(part.name)}</h4>
           <div style="display:flex; gap:1rem; flex-wrap:wrap; font-size:0.875rem;">
@@ -1034,7 +1034,7 @@ $('#sparePartForm')?.addEventListener('submit', async e => {
       price: parseInt(fd.get('price')),
       stock: parseInt(fd.get('stock')),
       description: fd.get('description'),
-      image: 'shop/hero-phone.jpg'
+      image: '/shop/hero-phone.jpg'
     };
     const existing = JSON.parse(localStorage.getItem('spare_parts') || '[]');
     existing.push(newPart);
