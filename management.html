@@ -50,6 +50,9 @@
   .order-row {
     padding: 1rem;
     border-bottom: 1px solid rgba(255,255,255,0.1);
+    margin-bottom: 1rem;
+    background: rgba(255,255,255,0.02);
+    border-radius: 0.75rem;
   }
   .order-items {
     margin: 0.5rem 0;
@@ -239,6 +242,46 @@
     color: #888;
     font-size: 0.75rem;
   }
+  
+  /* Delivery Date Control */
+  .delivery-date-control {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    margin-top: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .delivery-date-input {
+    padding: 0.4rem 0.8rem;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(255,255,255,0.2);
+    background: #0f0f1a;
+    color: white;
+    font-size: 0.85rem;
+  }
+  .btn-set-delivery-date {
+    background: #7c4dff;
+    color: white;
+    border: none;
+    padding: 0.4rem 0.8rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: all 0.2s;
+  }
+  .btn-set-delivery-date:hover {
+    background: #5e2fcc;
+  }
+  .delivery-date-badge {
+    display: inline-block;
+    background: #00e5ff;
+    color: #000;
+    padding: 0.2rem 0.5rem;
+    border-radius: 0.5rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    margin-left: 0.5rem;
+  }
 </style>
 </head>
 <body class="management-body">
@@ -257,7 +300,6 @@
           <input name="password" type="password" placeholder="Password" autocomplete="current-password" required>
           <button class="btn primary block" type="submit">Login</button>
         </form>
-        
       </div>
     </section>
 
@@ -329,7 +371,7 @@
           <div class="product-admin" id="productAdmin"></div>
         </section>
 
-        <!-- Add Product - Supports both File Upload and Image URL -->
+        <!-- Add Product -->
         <section class="dash-panel wide reveal">
           <h3>➕ Add Product</h3>
           <form class="dash-form product-add" id="productForm">
@@ -362,9 +404,9 @@
               <small>Upload an image from your computer</small>
             </div>
             
-            <!-- Option 2: Paste Image URL (Imgur, Cloudinary, etc.) -->
+            <!-- Option 2: Paste Image URL -->
             <div class="image-url-section">
-              <label>🔗 Option 2: Paste Image URL</label>
+              <label>🔗 Option 2: Paste Image URL (Imgur, Cloudinary, etc.)</label>
               <input type="url" id="productImageUrl" placeholder="https://i.imgur.com/your-image.jpg">
               <small>Paste a direct image URL from Imgur, Cloudinary, or any image hosting service</small>
             </div>
@@ -380,7 +422,7 @@
           <div class="product-admin" id="sparePartAdmin"></div>
         </section>
 
-        <!-- Add Spare Part - Supports both File Upload and Image URL -->
+        <!-- Add Spare Part -->
         <section class="dash-panel wide reveal">
           <h3>➕ Add Spare Part</h3>
           <form class="dash-form" id="sparePartForm">
@@ -390,16 +432,16 @@
             <input name="price" type="number" min="0" step="0.01" placeholder="Price (Kshs)" required>
             <input name="stock" type="number" min="0" placeholder="Stock quantity" required>
             
-            <!-- Option 1: Upload Image File for Spare Part -->
+            <!-- Option 1: Upload Image File -->
             <div class="file-upload-section">
               <label>📁 Option 1: Upload Image File</label>
               <input type="file" id="sparePartImage" accept="image/*">
               <small>Upload an image from your computer</small>
             </div>
             
-            <!-- Option 2: Paste Image URL for Spare Part -->
+            <!-- Option 2: Paste Image URL -->
             <div class="image-url-section">
-              <label>🔗 Option 2: Paste Image URL</label>
+              <label>🔗 Option 2: Paste Image URL (Imgur, Cloudinary, etc.)</label>
               <input type="url" id="sparePartImageUrl" placeholder="https://i.imgur.com/your-image.jpg">
               <small>Paste a direct image URL from Imgur, Cloudinary, or any image hosting service</small>
             </div>
@@ -455,10 +497,7 @@
   <div class="toasts" id="toasts" aria-live="polite"></div>
 
   <script>
-    // ============================================
-    // DELIVERY FEE CONTROL FUNCTIONS
-    // ============================================
-    
+    // Delivery Fee Control Functions
     async function loadDeliveryFee() {
       try {
         const response = await fetch('/api/admin/delivery-fee', {
