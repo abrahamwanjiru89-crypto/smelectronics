@@ -47,14 +47,12 @@ const DUMMY_ANALYTICS = { totalSales:0, totalOrders:0, delivered:0, products:1, 
   { label:'Sun', sales:0, orders:0 }
 ]};
 
-// Add cache-busting to API calls
 async function api(path, options = {}) {
   let res;
   const headers = options.headers ? { ...options.headers } : {};
   if (!(options.body instanceof FormData)) {
     headers['Content-Type'] = 'application/json';
   }
-  // Add cache-busting parameter
   const separator = path.includes('?') ? '&' : '?';
   const cacheBustPath = path + separator + '_=' + Date.now();
   
@@ -104,16 +102,12 @@ function toast(msg, type='info') {
   setTimeout(() => t.remove(), 3300);
 }
 
-// ============================================
-// DISPATCH STORAGE EVENT FOR REPAIR PAGE SYNC
-// ============================================
 function notifySparePartsUpdated() {
   window.dispatchEvent(new StorageEvent('storage', {
     key: 'spare_parts_updated',
     newValue: Date.now().toString(),
     oldValue: null
   }));
-  console.log('Dispatched spare_parts_updated event');
 }
 
 function notifyProductsUpdated() {
@@ -122,7 +116,6 @@ function notifyProductsUpdated() {
     newValue: localStorage.getItem('management_products'),
     oldValue: null
   }));
-  console.log('Dispatched management_products updated event');
 }
 
 async function bustProductsCache() {
@@ -136,11 +129,9 @@ async function bustProductsCache() {
 }
 
 async function broadcastProductUpdate() {
-  console.log('📢 Broadcasting product update to storefront...');
   await loadAdminData();
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('products-updated'));
-    console.log('✅ Dispatched products-updated custom event');
   }
   const productsData = localStorage.getItem('management_products');
   window.dispatchEvent(new StorageEvent('storage', {
@@ -148,26 +139,16 @@ async function broadcastProductUpdate() {
     newValue: productsData,
     oldValue: null
   }));
-  console.log('✅ Dispatched storage event for management_products');
 }
 
 // ============================================
-// PRODUCT BADGE FUNCTIONS - UPDATED with server sync
+// PRODUCT BADGE FUNCTIONS
 // ============================================
 
 window.markAsFlashSale = async function(id) {
-  console.log('🔥 Flash Sale clicked for ID:', id);
-  
   const productId = String(id);
   const product = products.find(p => String(p.id) === productId);
-  
-  if (!product) {
-    console.error('Product not found. ID:', id);
-    toast('Product not found', 'error');
-    return;
-  }
-  
-  console.log('Found product:', product.name);
+  if (!product) { toast('Product not found', 'error'); return; }
   
   let wasPrice = product.was;
   if (!wasPrice) {
@@ -195,7 +176,6 @@ window.markAsFlashSale = async function(id) {
         desc: product.desc || ''
       })
     });
-    
     localStorage.setItem('management_products', JSON.stringify(products));
     await bustProductsCache();
     notifyProductsUpdated();
@@ -203,22 +183,14 @@ window.markAsFlashSale = async function(id) {
     renderProducts();
     toast(`🔥 ${product.name} marked as FLASH SALE!`, 'success');
   } catch (err) {
-    console.error('Failed to save flash sale:', err);
     toast('Failed to save: ' + (err.message || 'server error'), 'error');
   }
 };
 
 window.markAsHot = async function(id) {
-  console.log('⚡ Hot clicked for ID:', id);
-  
   const productId = String(id);
   const product = products.find(p => String(p.id) === productId);
-  
-  if (!product) {
-    console.error('Product not found. ID:', id);
-    toast('Product not found', 'error');
-    return;
-  }
+  if (!product) { toast('Product not found', 'error'); return; }
   
   product.badge = 'hot';
   
@@ -238,7 +210,6 @@ window.markAsHot = async function(id) {
         desc: product.desc || ''
       })
     });
-    
     localStorage.setItem('management_products', JSON.stringify(products));
     await bustProductsCache();
     notifyProductsUpdated();
@@ -246,22 +217,14 @@ window.markAsHot = async function(id) {
     renderProducts();
     toast(`⚡ ${product.name} marked as HOT!`, 'success');
   } catch (err) {
-    console.error('Failed to save hot badge:', err);
     toast('Failed to save: ' + (err.message || 'server error'), 'error');
   }
 };
 
 window.markAsNew = async function(id) {
-  console.log('✨ New clicked for ID:', id);
-  
   const productId = String(id);
   const product = products.find(p => String(p.id) === productId);
-  
-  if (!product) {
-    console.error('Product not found. ID:', id);
-    toast('Product not found', 'error');
-    return;
-  }
+  if (!product) { toast('Product not found', 'error'); return; }
   
   product.badge = 'new';
   
@@ -281,7 +244,6 @@ window.markAsNew = async function(id) {
         desc: product.desc || ''
       })
     });
-    
     localStorage.setItem('management_products', JSON.stringify(products));
     await bustProductsCache();
     notifyProductsUpdated();
@@ -289,22 +251,14 @@ window.markAsNew = async function(id) {
     renderProducts();
     toast(`✨ ${product.name} marked as NEW!`, 'success');
   } catch (err) {
-    console.error('Failed to save new badge:', err);
     toast('Failed to save: ' + (err.message || 'server error'), 'error');
   }
 };
 
 window.removeBadge = async function(id) {
-  console.log('🗑️ Remove Badge clicked for ID:', id);
-  
   const productId = String(id);
   const product = products.find(p => String(p.id) === productId);
-  
-  if (!product) {
-    console.error('Product not found. ID:', id);
-    toast('Product not found', 'error');
-    return;
-  }
+  if (!product) { toast('Product not found', 'error'); return; }
   
   product.badge = '';
   
@@ -324,7 +278,6 @@ window.removeBadge = async function(id) {
         desc: product.desc || ''
       })
     });
-    
     localStorage.setItem('management_products', JSON.stringify(products));
     await bustProductsCache();
     notifyProductsUpdated();
@@ -332,7 +285,6 @@ window.removeBadge = async function(id) {
     renderProducts();
     toast(`${product.name} badge removed`, 'success');
   } catch (err) {
-    console.error('Failed to remove badge:', err);
     toast('Failed to save: ' + (err.message || 'server error'), 'error');
   }
 };
@@ -385,7 +337,6 @@ function renderProducts() {
 }
 
 async function editProduct(id) {
-  console.log('✏️ Editing product:', id);
   const product = products.find(p => p.id == id);
   if (!product) { toast('Product not found', 'error'); return; }
 
@@ -415,44 +366,34 @@ async function editProduct(id) {
     });
     
     localStorage.setItem('management_products', JSON.stringify(products));
-    if (window.clearApiCache) await window.clearApiCache();
     await bustProductsCache();
     notifyProductsUpdated();
     await broadcastProductUpdate();
     await loadAdminData();
-    
     toast('Product updated successfully!', 'success');
   } catch (err) {
-    console.error('Edit product error:', err);
     toast(err.message || 'Failed to update product', 'error');
   }
 }
 
 async function deleteProduct(id) {
-  console.log('🗑️ Deleting product:', id);
   if (!confirm('⚠️ Delete this product? This action cannot be undone.')) return;
-  
   try {
     await api(`/api/admin/products/${encodeURIComponent(id)}`, { method: 'DELETE' });
-    console.log('✅ Product deleted from server');
-    
     products = products.filter(p => p.id != id);
     localStorage.setItem('management_products', JSON.stringify(products));
-    if (window.clearApiCache) await window.clearApiCache();
     await bustProductsCache();
     notifyProductsUpdated();
     await broadcastProductUpdate();
     await loadAdminData();
-    
     toast('Product deleted successfully!', 'success');
   } catch (err) {
-    console.error('Delete product error:', err);
     toast(err.message || 'Failed to delete product', 'error');
   }
 }
 
 // ============================================
-// SPARE PARTS CRUD
+// SPARE PARTS CRUD with Image URL support
 // ============================================
 
 function renderAdminSpareParts() {
@@ -471,7 +412,6 @@ function renderAdminSpareParts() {
           <div style="display:flex; gap:1rem; flex-wrap:wrap; font-size:0.875rem;">
             <span style="color:#00e5ff;">${esc(part.brand)}</span>
             <span style="color:#888;">${esc(part.category || 'Uncategorized')}</span>
-            ${part.modelNumber ? `<span style="color:#888;">Model: ${esc(part.modelNumber)}</span>` : ''}
             <span style="color:#00e5ff;">${fmt(part.price)}</span>
             <span style="${part.stock > 0 ? 'color:#00c853' : 'color:#ff3b30'}">Stock: ${part.stock}</span>
           </div>
@@ -505,7 +445,6 @@ async function editSparePart(id) {
         part.price = parseFloat(newPrice);
         part.stock = parseInt(newStock);
         
-        // Save to server
         try {
           await api(`/api/admin/spare-parts/${id}`, {
             method: 'PUT',
@@ -534,7 +473,6 @@ async function editSparePart(id) {
 
 async function deleteSparePart(id) {
   if (!confirm('Delete this spare part? This cannot be undone.')) return;
-  
   try {
     await api(`/api/admin/spare-parts/${id}`, { method: 'DELETE' });
     spareParts = spareParts.filter(p => p.id != id);
@@ -658,10 +596,7 @@ async function loadRepairServices() {
 }
 
 async function loadAdminData() {
-  console.log('🔄 Loading admin data...');
-  
   if (offlineManager) {
-    console.log('📦 Offline mode - using dummy data');
     products = DUMMY_PRODUCTS;
     staff = DUMMY_STAFF;
     renderStaff();
@@ -678,20 +613,16 @@ async function loadAdminData() {
     if (productsData.products && productsData.products.length > 0) {
       products = productsData.products;
       localStorage.setItem('management_products', JSON.stringify(products));
-      console.log('✅ Loaded', products.length, 'products from server');
     } else {
       const stored = localStorage.getItem('management_products');
       if (stored) {
         products = JSON.parse(stored);
-        console.log('📦 Using localStorage products (server returned empty)');
       }
     }
   } catch (err) {
-    console.error('Products load fail:', err);
     const stored = localStorage.getItem('management_products');
     if (stored) {
       products = JSON.parse(stored);
-      console.log('📦 Using localStorage products (server offline)');
     }
   }
   
@@ -705,12 +636,7 @@ async function loadAdminData() {
   ]);
   
   renderProducts();
-  console.log('✅ Admin data loaded, products count:', products.length);
 }
-
-// ============================================
-// EXISTING FUNCTIONS
-// ============================================
 
 function renderPlacedOrders() {
   const el = $('#placedOrders');
@@ -756,7 +682,6 @@ function renderPlacedOrders() {
     </article>`;
   }).join('') : '<div class="dash-empty">No placed orders yet.</div>';
 
-  // Bind Set Delivery Fee buttons
   el.querySelectorAll('.btn-set-delivery-fee, .btn-update-delivery-fee').forEach(btn => {
     btn.addEventListener('click', () => setOrderDeliveryFee(btn.dataset.id, btn.dataset.location, btn.dataset.current));
   });
@@ -941,13 +866,6 @@ async function loadRepairCategories() {
   renderRepairCategories();
 }
 
-$('#manualSyncBtn')?.addEventListener('click', async () => {
-  console.log('🔵 Manual sync requested');
-  toast('Syncing with storefront...', 'info');
-  await broadcastProductUpdate();
-  toast('Sync complete! Storefront should now show latest products.', 'success');
-});
-
 async function updateView() {
   let data = null;
   try {
@@ -1015,34 +933,150 @@ $('#managerLoginForm')?.addEventListener('submit', async e => {
   }
 });
 
+// Updated Spare Part Form - Supports both File Upload and Image URL
 $('#sparePartForm')?.addEventListener('submit', async e => {
   e.preventDefault();
-  const fd = new FormData(e.target);
-  try {
-    await api('/api/admin/spare-parts', { method:'POST', body:fd });
-    await loadAdminSpareParts();
-    notifySparePartsUpdated();
-    e.target.reset();
-    toast('Spare part added', 'success');
-  } catch (err) {
-    const newPart = {
-      id: Date.now(),
-      name: fd.get('name'),
-      brand: fd.get('brand'),
-      category: fd.get('category'),
-      modelNumber: fd.get('modelNumber'),
-      price: parseInt(fd.get('price')),
-      stock: parseInt(fd.get('stock')),
-      description: fd.get('description'),
-      image: '/shop/hero-phone.jpg'
+  
+  const name = document.querySelector('#sparePartForm input[name="name"]').value;
+  const brand = document.querySelector('#sparePartForm input[name="brand"]').value;
+  const category = document.querySelector('#sparePartForm input[name="category"]').value;
+  const price = parseFloat(document.querySelector('#sparePartForm input[name="price"]').value);
+  const stock = parseInt(document.querySelector('#sparePartForm input[name="stock"]').value);
+  const description = document.querySelector('#sparePartForm textarea[name="description"]').value;
+  
+  const imageFile = document.getElementById('sparePartImage')?.files?.[0];
+  const imageUrl = document.getElementById('sparePartImageUrl')?.value?.trim();
+  
+  let formData = new FormData();
+  let useJson = false;
+  let spareData = {};
+  
+  if (imageUrl && imageUrl.length > 0) {
+    useJson = true;
+    spareData = {
+      name: name,
+      brand: brand,
+      category: category,
+      price: price,
+      stock: stock,
+      description: description,
+      image_url: imageUrl
     };
-    const existing = JSON.parse(localStorage.getItem('spare_parts') || '[]');
-    existing.push(newPart);
-    localStorage.setItem('spare_parts', JSON.stringify(existing));
+    console.log('📝 Submitting spare part with image URL:', imageUrl);
+  } else if (imageFile) {
+    formData.append('name', name);
+    formData.append('brand', brand);
+    formData.append('category', category);
+    formData.append('price', price);
+    formData.append('stock', stock);
+    formData.append('description', description);
+    formData.append('image', imageFile);
+    console.log('📝 Submitting spare part with file upload:', imageFile.name);
+  } else {
+    toast('Please provide either an image file or an image URL', 'error');
+    return;
+  }
+  
+  try {
+    let response;
+    if (useJson) {
+      response = await api('/api/admin/spare-parts', {
+        method: 'POST',
+        body: JSON.stringify(spareData)
+      });
+    } else {
+      response = await api('/api/admin/spare-parts', {
+        method: 'POST',
+        body: formData
+      });
+    }
+    
+    e.target.reset();
+    if (document.getElementById('sparePartImageUrl')) {
+      document.getElementById('sparePartImageUrl').value = '';
+    }
+    if (document.getElementById('sparePartImage')) {
+      document.getElementById('sparePartImage').value = '';
+    }
     await loadAdminSpareParts();
     notifySparePartsUpdated();
+    toast('Spare part added successfully!', 'success');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+});
+
+// Updated Product Form - Supports both File Upload and Image URL
+$('#productForm')?.addEventListener('submit', async e => {
+  e.preventDefault();
+  
+  const name = document.querySelector('#productForm input[name="name"]').value;
+  const category = document.querySelector('#productForm select[name="cat"]').value;
+  const price = parseFloat(document.querySelector('#productForm input[name="price"]').value);
+  const wasValue = document.querySelector('#productForm input[name="was"]').value;
+  const was = wasValue ? parseFloat(wasValue) : null;
+  const badge = document.querySelector('#productForm select[name="badge"]').value;
+  const desc = document.querySelector('#productForm textarea[name="desc"]').value;
+  
+  const imageFile = document.getElementById('productImage')?.files?.[0];
+  const imageUrl = document.getElementById('productImageUrl')?.value?.trim();
+  
+  let useJson = false;
+  let productData = {};
+  let formData = new FormData();
+  
+  if (imageUrl && imageUrl.length > 0) {
+    useJson = true;
+    productData = {
+      name: name,
+      cat: category,
+      price: price,
+      was: was,
+      badge: badge,
+      desc: desc,
+      image_url: imageUrl
+    };
+    console.log('📝 Submitting product with image URL:', imageUrl);
+  } else if (imageFile) {
+    formData.append('name', name);
+    formData.append('cat', category);
+    formData.append('price', price);
+    formData.append('was', was || '');
+    formData.append('badge', badge);
+    formData.append('desc', desc);
+    formData.append('img', imageFile);
+    console.log('📝 Submitting product with file upload:', imageFile.name);
+  } else {
+    toast('Please provide either an image file or an image URL', 'error');
+    return;
+  }
+  
+  try {
+    let response;
+    if (useJson) {
+      response = await api('/api/admin/products', {
+        method: 'POST',
+        body: JSON.stringify(productData)
+      });
+    } else {
+      response = await api('/api/admin/products', {
+        method: 'POST',
+        body: formData
+      });
+    }
+    
     e.target.reset();
-    toast('Spare part added (offline)', 'success');
+    if (document.getElementById('productImageUrl')) {
+      document.getElementById('productImageUrl').value = '';
+    }
+    if (document.getElementById('productImage')) {
+      document.getElementById('productImage').value = '';
+    }
+    await loadAdminData();
+    toast('Product added successfully!', 'success');
+  } catch (err) {
+    console.error('Error adding product:', err);
+    toast(err.message || 'Failed to add product', 'error');
   }
 });
 
@@ -1109,20 +1143,6 @@ $('#repairBookings')?.addEventListener('click', async e => {
   }
 });
 
-$('#productForm')?.addEventListener('submit', async e => {
-  e.preventDefault();
-  const fd = new FormData(e.target);
-
-  try {
-    await api('/api/admin/products', { method:'POST', body:fd });
-    e.target.reset();
-    await loadAdminData();
-    toast('Product added successfully!', 'success');
-  } catch (err) {
-    toast(err.message, 'error');
-  }
-});
-
 $('#managerLogout')?.addEventListener('click', async () => {
   await api('/api/auth/logout', { method:'POST', body:JSON.stringify({}) });
   manager = null;
@@ -1142,9 +1162,7 @@ updateView().catch(() => {
   if (ordersPanel) ordersPanel.hidden = true;
 });
 
-// Force refresh function for debugging
 window.forceRefresh = async function() {
-  console.log('🔄 Force refreshing all data...');
   localStorage.removeItem('management_products');
   localStorage.removeItem('spare_parts');
   if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
