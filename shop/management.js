@@ -56,7 +56,7 @@ async function api(path, options = {}) {
   const separator = path.includes('?') ? '&' : '?';
   const cacheBustPath = path + separator + '_=' + Date.now();
   
-  const maxRetries = (options.method || 'GET') === 'GET' ? 3 : 1;
+  const maxRetries = (options.method || 'GET') === 'GET' ? 2 : 1;
   let lastErr;
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     if (attempt > 0) await new Promise(r => setTimeout(r, 2000 * attempt));
@@ -72,8 +72,8 @@ async function api(path, options = {}) {
           'Expires': '0'
         }
       });
-      if (res.status === 502 || res.status === 503) {
-        lastErr = new Error('Server starting up, retrying...');
+      if (res.status === 502 || res.status === 503 || res.status === 504) {
+        lastErr = new Error('Server is starting up, retrying...');
         continue;
       }
       break;
@@ -86,8 +86,17 @@ async function api(path, options = {}) {
     }
   }
   if (!res) { const e = new Error(lastErr?.message || 'Request failed'); e.network = true; throw e; }
+  
+  // Handle non-OK responses gracefully
+  if (!res.ok) {
+    if (res.status === 502 || res.status === 503) {
+      throw new Error('Server is temporarily unavailable. Please refresh.');
+    }
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Request failed');
+  }
+  
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || 'Request failed');
   return data;
 }
 
@@ -317,7 +326,7 @@ window.setDeliveryDate = async function(orderId) {
       body: JSON.stringify({ deliveryDate: deliveryDate })
     });
     toast(`✅ Delivery date set for order ${orderId}. Customer notified.`, 'success');
-    await loadOrders(); // Refresh orders to show the updated date
+    await loadOrders();
   } catch (err) {
     toast('Failed to set delivery date: ' + err.message, 'error');
   }
@@ -427,7 +436,7 @@ async function deleteProduct(id) {
 }
 
 // ============================================
-// SPARE PARTS CRUD with Image URL support
+// SPARE PARTS CRUD
 // ============================================
 
 function renderAdminSpareParts() {
@@ -654,15 +663,34 @@ async function loadAdminData() {
       }
     }
   } catch (err) {
+    console.error('Products load fail:', err);
     const stored = localStorage.getItem('management_products');
     if (stored) {
       products = JSON.parse(stored);
     }
   }
   
+  // Load staff (non-critical)
+  try {
+    const staffData = await api('/api/admin/staff');
+    staff = staffData.staff || [];
+    renderStaff();
+  } catch (e) {
+    console.error("Staff load fail", e);
+    staff = [];
+    renderStaff();
+  }
+  
+  // Load analytics (non-critical - don't fail if it doesn't work)
+  try {
+    const analyticsData = await api('/api/admin/analytics');
+    renderPerformance(analyticsData);
+  } catch (e) {
+    console.error("Analytics load fail", e);
+    renderPerformance(DUMMY_ANALYTICS);
+  }
+  
   await Promise.allSettled([
-    api('/api/admin/staff').then(d => { staff = d.staff || []; renderStaff(); }).catch(e => console.error("Staff load fail", e)),
-    api('/api/admin/analytics').then(d => renderPerformance(d)).catch(e => console.error("Analytics load fail", e)),
     loadRepairServices().catch(e => console.error("Repair services load fail", e)),
     loadTechnicians().catch(e => console.error("Technicians load fail", e)),
     loadRepairCategories().catch(e => console.error("Repair categories load fail", e)),
@@ -684,7 +712,7 @@ function renderPlacedOrders() {
       : `<span style="background:#4a2000; color:#ffb300; padding:2px 8px; border-radius:10px; font-size:0.75rem;">⏳ Delivery fee not set</span>`;
     
     const deliveryDateBadge = order.deliveryDate
-      ? `<span class="delivery-date-badge">📅 Est. Delivery: ${new Date(order.deliveryDate).toLocaleDateString()}</span>`
+      ? `<span class="delivery-date-badge" style="display:inline-block; background:#00e5ff; color:#000; padding:2px 8px; border-radius:10px; font-size:0.7rem; margin-left:0.5rem;">📅 Est. Delivery: ${new Date(order.deliveryDate).toLocaleDateString()}</span>`
       : '';
     
     const setFeeBtn = !order.deliveryFeeSet
@@ -698,17 +726,16 @@ function renderPlacedOrders() {
          </button>`;
 
     return `
-    <article class="order-row manager-order" style="border-left:3px solid ${order.deliveryFeeSet ? '#00c853' : '#ffb300'};">
+    <article class="order-row manager-order" style="border-left:3px solid ${order.deliveryFeeSet ? '#00c853' : '#ffb300'}; margin-bottom:1rem; padding:1rem; background:rgba(255,255,255,0.02); border-radius:0.75rem;">
       <div style="display:flex; justify-content:space-between; flex-wrap:wrap;">
         <div>
           <b>${esc(order.id)}</b>
           <span class="status ${esc(order.paymentStatus?.toLowerCase().replace(/ /g,'-') || 'pending')}">${esc(order.paymentStatus || 'Pending')}</span>
-          <span>${order.createdAt ? new Date(order.createdAt).toLocaleString() : 'Date Unknown'}</span>
-          <small>${esc(order.customer)} · ${esc(order.email)}</small>
-          ${deliveryDateBadge}
+          <span style="margin-left:0.5rem;">${order.createdAt ? new Date(order.createdAt).toLocaleString() : 'Date Unknown'}</span>
+          <div><small>${esc(order.customer)} · ${esc(order.email)}</small>${deliveryDateBadge}</div>
         </div>
       </div>
-      <div class="order-items">
+      <div class="order-items" style="margin:0.5rem 0;">
         ${(order.items || []).map(item => `${esc(item.name)} x${item.qty}`).join('<br>')}
         <div class="order-meta" style="margin-top:0.4rem;">
           <small>📍 <b>${esc(locationStr)}</b></small>
@@ -720,7 +747,7 @@ function renderPlacedOrders() {
         <span class="status ${esc(order.status?.toLowerCase() || 'pending')}">${esc(order.status || 'Pending')}</span>
         ${setFeeBtn}
       </div>
-      <div class="delivery-date-control" style="margin-top: 0.75rem; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.1);">
+      <div class="delivery-date-control" style="margin-top: 0.75rem; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.1); display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
         <input type="date" id="deliveryDate_${order.id}" class="delivery-date-input" value="${order.deliveryDate || ''}" style="padding: 0.4rem 0.8rem; border-radius: 0.5rem; border: 1px solid rgba(255,255,255,0.2); background: #0f0f1a; color: white; font-size: 0.85rem;">
         <button onclick="window.setDeliveryDate('${order.id}')" class="btn-set-delivery-date" style="background: #7c4dff; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 0.5rem; cursor: pointer; font-size: 0.8rem;">📅 Set Delivery Date</button>
       </div>
@@ -745,7 +772,7 @@ async function setOrderDeliveryFee(orderId, locationStr, currentFee) {
     return;
   }
   try {
-    const res = await api(`/api/admin/orders/${encodeURIComponent(orderId)}/delivery-fee`, {
+    await api(`/api/admin/orders/${encodeURIComponent(orderId)}/delivery-fee`, {
       method: 'PUT',
       body: JSON.stringify({ deliveryFee: fee })
     });
@@ -760,9 +787,9 @@ function renderStaff() {
   const el = $('#staffList');
   if (!el) return;
   el.innerHTML = (staff && staff.length) ? staff.map(user => `
-    <article class="staff-row">
-      <div><b>${esc(user.name)}</b><span>${esc(user.email)}</span></div>
-      <button class="btn ghost js-delete-staff" data-id="${user.id}" type="button">Delete</button>
+    <article class="staff-row" style="display:flex; justify-content:space-between; align-items:center; padding:0.75rem; border-bottom:1px solid rgba(255,255,255,0.1);">
+      <div><b>${esc(user.name)}</b><br><span style="font-size:0.75rem; color:#888;">${esc(user.email)}</span></div>
+      <button class="btn ghost js-delete-staff" data-id="${user.id}" type="button" style="color:#ff3b30;">Delete</button>
     </article>`).join('') : '<div class="dash-empty">No staff accounts yet.</div>';
   $$('.js-delete-staff').forEach(btn => btn.addEventListener('click', async () => {
     try {
@@ -783,19 +810,19 @@ function renderRepairBookings() {
   const el = $('#repairBookings');
   if (!el) return;
   el.innerHTML = (repairBookings && repairBookings.length) ? repairBookings.map(booking => `
-    <article class="order-row manager-order">
+    <article class="order-row manager-order" style="margin-bottom:1rem; padding:1rem; background:rgba(255,255,255,0.02); border-radius:0.75rem;">
       <div>
         <b>${esc(booking.id)}</b>
-        <span>${formatDate(booking.createdAt)}</span>
-        <small>${esc(booking.customer || booking.name)} · ${esc(booking.email)}</small>
+        <span style="margin-left:0.5rem;">${formatDate(booking.createdAt)}</span>
+        <div><small>${esc(booking.customer || booking.name)} · ${esc(booking.email)}</small></div>
       </div>
-      <div>
-        <small>${esc(booking.brand)} ${esc(booking.model)} · ${esc(booking.repairType)}</small>
-        <small>${esc(booking.pickupDropoff)} · ${esc(booking.status)}</small>
+      <div style="margin:0.5rem 0;">
+        <small>${esc(booking.brand)} ${esc(booking.model)} · ${esc(booking.repairType)}</small><br>
+        <small>${esc(booking.pickupDropoff)} · ${esc(booking.status)}</small><br>
         <small>${esc(booking.repairServiceTitle || 'Custom repair')}</small>
       </div>
       <div>
-        <button class="btn ghost js-update-booking" type="button" data-id="${esc(booking.id)}">Update</button>
+        <button class="btn ghost js-update-booking" type="button" data-id="${esc(booking.id)}" style="background:#00e5ff; color:#000; padding:0.3rem 0.8rem; border-radius:0.5rem;">Update</button>
       </div>
     </article>
   `).join('') : '<div class="dash-empty">No repair bookings found.</div>';
@@ -805,9 +832,9 @@ function renderTechnicians() {
   const el = $('#technicianList');
   if (!el) return;
   el.innerHTML = (technicians && technicians.length) ? technicians.map(tech => `
-    <article class="staff-row">
-      <div><b>${esc(tech.name)}</b><span>${esc(tech.email)}</span></div>
-      <button class="btn ghost danger-btn js-delete-technician" type="button" data-id="${esc(tech.id)}">Delete</button>
+    <article class="staff-row" style="display:flex; justify-content:space-between; align-items:center; padding:0.75rem; border-bottom:1px solid rgba(255,255,255,0.1);">
+      <div><b>${esc(tech.name)}</b><br><span style="font-size:0.75rem; color:#888;">${esc(tech.email)}</span></div>
+      <button class="btn ghost danger-btn js-delete-technician" type="button" data-id="${esc(tech.id)}" style="color:#ff3b30;">Delete</button>
     </article>
   `).join('') : '<div class="dash-empty">No technicians assigned yet.</div>';
   $$('.js-delete-technician').forEach(btn => btn.addEventListener('click', async () => {
@@ -833,10 +860,11 @@ function renderRepairCategories() {
 function renderPerformance(analytics) {
   const metrics = $('#metrics');
   if (metrics) metrics.innerHTML = `
-    <div><b>${fmt(analytics.totalSales)}</b><span>Total Sales</span></div>
-    <div><b>${analytics.totalOrders}</b><span>Total Orders</span></div>
-    <div><b>${analytics.delivered}</b><span>Delivered</span></div>
-    <div><b>${analytics.products}</b><span>Products</span></div>`;
+    <div style="background:rgba(0,229,255,0.1); padding:1rem; border-radius:1rem; text-align:center;"><b style="display:block; font-size:1.5rem; color:#00e5ff;">${fmt(analytics.totalSales)}</b><span>Total Sales</span></div>
+    <div style="background:rgba(0,229,255,0.1); padding:1rem; border-radius:1rem; text-align:center;"><b style="display:block; font-size:1.5rem; color:#00e5ff;">${analytics.totalOrders}</b><span>Total Orders</span></div>
+    <div style="background:rgba(0,229,255,0.1); padding:1rem; border-radius:1rem; text-align:center;"><b style="display:block; font-size:1.5rem; color:#00e5ff;">${analytics.delivered}</b><span>Delivered</span></div>
+    <div style="background:rgba(0,229,255,0.1); padding:1rem; border-radius:1rem; text-align:center;"><b style="display:block; font-size:1.5rem; color:#00e5ff;">${analytics.products}</b><span>Products</span></div>`;
+  
   const canvas = $('#performanceChart');
   if (!canvas) return;
   const data = analytics.days || [];
@@ -873,9 +901,15 @@ async function loadOrders() {
     renderPlacedOrders();
     return;
   }
-  const data = await api('/api/management/orders/placed');
-  orders = data.orders || [];
-  renderPlacedOrders();
+  try {
+    const data = await api('/api/management/orders/placed');
+    orders = data.orders || [];
+    renderPlacedOrders();
+  } catch (err) {
+    console.error('Failed to load orders:', err);
+    orders = [];
+    renderPlacedOrders();
+  }
 }
 
 async function loadRepairBookings() {
@@ -884,9 +918,15 @@ async function loadRepairBookings() {
     renderRepairBookings();
     return;
   }
-  const data = await api('/api/management/repair-bookings');
-  repairBookings = data.bookings || [];
-  renderRepairBookings();
+  try {
+    const data = await api('/api/management/repair-bookings');
+    repairBookings = data.bookings || [];
+    renderRepairBookings();
+  } catch (err) {
+    console.error('Failed to load repair bookings:', err);
+    repairBookings = [];
+    renderRepairBookings();
+  }
 }
 
 async function loadTechnicians() {
@@ -895,9 +935,15 @@ async function loadTechnicians() {
     renderTechnicians();
     return;
   }
-  const data = await api('/api/repair/technicians');
-  technicians = data.technicians || [];
-  renderTechnicians();
+  try {
+    const data = await api('/api/repair/technicians');
+    technicians = data.technicians || [];
+    renderTechnicians();
+  } catch (err) {
+    console.error('Failed to load technicians:', err);
+    technicians = [];
+    renderTechnicians();
+  }
 }
 
 async function loadRepairCategories() {
@@ -906,9 +952,15 @@ async function loadRepairCategories() {
     renderRepairCategories();
     return;
   }
-  const data = await api('/api/repair/categories');
-  repairCategories = data.categories || [];
-  renderRepairCategories();
+  try {
+    const data = await api('/api/repair/categories');
+    repairCategories = data.categories || [];
+    renderRepairCategories();
+  } catch (err) {
+    console.error('Failed to load repair categories:', err);
+    repairCategories = [];
+    renderRepairCategories();
+  }
 }
 
 async function updateView() {
@@ -978,7 +1030,7 @@ $('#managerLoginForm')?.addEventListener('submit', async e => {
   }
 });
 
-// Spare Part Form - Supports both File Upload and Image URL
+// Spare Part Form
 $('#sparePartForm')?.addEventListener('submit', async e => {
   e.preventDefault();
   
@@ -1051,7 +1103,7 @@ $('#sparePartForm')?.addEventListener('submit', async e => {
   }
 });
 
-// Product Form - Supports both File Upload and Image URL
+// Product Form
 $('#productForm')?.addEventListener('submit', async e => {
   e.preventDefault();
   
