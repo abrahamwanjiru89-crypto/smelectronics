@@ -4,19 +4,23 @@
    FIXED: Simplified location entry (manual input)
    ADDED: Delivery date display on customer dashboard
    REMOVED: Default products - only server products
+   FIXED: Image handling with placeholders
 ========================================================= */
 
 // ----- Helper function for images -----
 function getImageUrl(imgPath) {
-    if (!imgPath) return '/shop/hero-phone.jpg';
+    if (!imgPath) return null;
     if (imgPath.startsWith('http://') || imgPath.startsWith('https://')) {
         return imgPath;
     }
     if (imgPath.startsWith('/')) {
         return imgPath;
     }
-    return '/shop/hero-phone.jpg';
+    return null;
 }
+
+// Placeholder SVG for missing images
+const PLACEHOLDER_SVG = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300"%3E%3Crect width="300" height="300" fill="%231a1a2e"/%3E%3Ctext x="150" y="150" font-size="14" text-anchor="middle" fill="%23666" font-family="Arial"%3ENo Image%3C/text%3E%3C/svg%3E';
 
 // ----- PRODUCT DATA -----
 // Products are loaded from server API. No hardcoded defaults.
@@ -127,12 +131,6 @@ function loadCounties() {
   
   el.innerHTML = '<option value="">Select County</option>' + 
     counties.map(c => `<option value="${c}">${c}</option>`).join('');
-  
-  // Remove the sub-location dropdown as we're using manual entry
-  const subLocationGroup = $('.form-group select#subLocation')?.parentElement;
-  if (subLocationGroup) {
-    subLocationGroup.style.display = 'none';
-  }
 }
 
 // ============================================
@@ -227,7 +225,7 @@ function showOrderSuccessModal(order) {
 }
 
 // ============================================
-// CHECKOUT HANDLER — With order persistence fix
+// CHECKOUT HANDLER
 // ============================================
 async function handleCheckout() {
   if (!state.cart.length) {
@@ -425,10 +423,12 @@ function card(p, opts = {}) {
   const isWish = state.wish.includes(p.id);
   const stockPct = opts.stock || Math.floor(Math.random() * 60 + 20);
   const out = p.inStock === false;
+  const imgSrc = getImageUrl(p.img) || PLACEHOLDER_SVG;
+  
   return `
     <article class="card ${out ? 'out-of-stock' : ''}" data-id="${p.id}">
       <div class="card-media">
-        <img src="${getImageUrl(p.img)}" alt="${p.name}" loading="lazy" width="600" height="600" onerror="this.src='/shop/hero-phone.jpg'">
+        <img src="${imgSrc}" alt="${p.name}" loading="lazy" width="600" height="600" onerror="this.src='${PLACEHOLDER_SVG}'">
         <div class="card-badges">
           ${out ? '<span class="b b-out">Out of Stock</span>' : ''}
           ${p.badge === 'new' ? '<span class="b b-new">New</span>' : ''}
@@ -520,8 +520,9 @@ function renderCart() {
     box.innerHTML = state.cart.map(c => {
       const p = getProductWithSpares(c.id);
       if (!p) return '';
+      const imgSrc = getImageUrl(p.img) || PLACEHOLDER_SVG;
       return `<div class="cart-item">
-        <img src="${getImageUrl(p.img)}" alt="${p.name}" onerror="this.src='/shop/hero-phone.jpg'">
+        <img src="${imgSrc}" alt="${p.name}" onerror="this.src='${PLACEHOLDER_SVG}'">
         <div><div class="ci-title">${p.name}</div><div class="ci-price">${fmt(p.price)}</div>
           <div class="ci-qty"><button data-act="dec" data-id="${p.id}">−</button><span>${c.qty}</span><button data-act="inc" data-id="${p.id}">+</button></div>
         </div>
@@ -583,12 +584,13 @@ function openModal(id) {
     renderRecent();
   }
   const imgs = [p.img, p.img, p.img];
+  const imgSrc = getImageUrl(p.img) || PLACEHOLDER_SVG;
   $('#modalCard').innerHTML = `
     <button class="modal-close" aria-label="Close">✕</button>
     <div class="modal-inner">
       <div class="modal-media">
-        <img id="mImg" src="${getImageUrl(p.img)}" alt="${p.name}" onerror="this.src='/shop/hero-phone.jpg'">
-        <div class="modal-thumbs">${imgs.map((i, k) => `<button class="${k===0?'active':''}" data-src="${getImageUrl(i)}"><img src="${getImageUrl(i)}" alt="" onerror="this.src='/shop/hero-phone.jpg'"></button>`).join('')}</div>
+        <img id="mImg" src="${imgSrc}" alt="${p.name}" onerror="this.src='${PLACEHOLDER_SVG}'">
+        <div class="modal-thumbs">${imgs.map((i, k) => `<button class="${k===0?'active':''}" data-src="${getImageUrl(i) || PLACEHOLDER_SVG}"><img src="${getImageUrl(i) || PLACEHOLDER_SVG}" alt="" onerror="this.src='${PLACEHOLDER_SVG}'"></button>`).join('')}</div>
       </div>
       <div class="modal-body">
         <span class="eyebrow"><span class="dot"></span>${p.cat}</span>
@@ -746,11 +748,14 @@ $('#searchInput').addEventListener('input', e => {
   const r = $('#searchResults');
   if (!q) { r.innerHTML = ''; return; }
   const hits = PRODUCTS.filter(p => p.name.toLowerCase().includes(q) || p.cat.includes(q)).slice(0, 8);
-  r.innerHTML = hits.length ? hits.map(p => `
+  r.innerHTML = hits.length ? hits.map(p => {
+    const imgSrc = getImageUrl(p.img) || PLACEHOLDER_SVG;
+    return `
     <button class="sr-item" data-id="${p.id}">
-      <img src="${getImageUrl(p.img)}" alt="${p.name}" loading="lazy" onerror="this.src='/shop/hero-phone.jpg'">
+      <img src="${imgSrc}" alt="${p.name}" loading="lazy" onerror="this.src='${PLACEHOLDER_SVG}'">
       <div><div>${p.name}</div><small>${fmt(p.price)} · ${p.cat}</small></div>
-    </button>`).join('') : '<p class="muted" style="padding:1rem">No matches.</p>';
+    </button>`;
+  }).join('') : '<p class="muted" style="padding:1rem">No matches.</p>';
   r.querySelectorAll('.sr-item').forEach(b => b.addEventListener('click', () => { openModal(b.dataset.id); searchPanel.classList.remove('open'); }));
 });
 
@@ -812,7 +817,8 @@ function liveNotif() {
   const who = FAKE[Math.floor(Math.random() * FAKE.length)];
   const el = $('#liveNotif');
   if (!el) return;
-  el.innerHTML = `<img src="${getImageUrl(p.img)}" alt="" onerror="this.src='/shop/hero-phone.jpg'"><div><b>${who}</b><small>just bought ${p.name}</small></div>`;
+  const imgSrc = getImageUrl(p.img) || PLACEHOLDER_SVG;
+  el.innerHTML = `<img src="${imgSrc}" alt="" onerror="this.src='${PLACEHOLDER_SVG}'"><div><b>${who}</b><small>just bought ${p.name}</small></div>`;
   el.classList.add('show');
   setTimeout(() => el.classList.remove('show'), 4500);
 }
@@ -835,38 +841,6 @@ window.addEventListener('storage', (e) => {
   }
 });
 window.addEventListener('products-updated', () => refreshProducts());
-
-// ============================================
-// FORCE HOMEPAGE CONTENT VISIBILITY FIX
-// ============================================
-(function ensureContentVisible() {
-    window.addEventListener('load', function() {
-        setTimeout(function() {
-            const containers = ['hero', 'flash-sale', 'products-section', 'testimonials', 'featured-products', 'recent-section', 'productGrid', 'flashGrid', 'recentGrid'];
-            containers.forEach(function(id) {
-                const el = document.getElementById(id);
-                if (el) {
-                    el.style.display = 'block';
-                    el.style.visibility = 'visible';
-                    el.style.opacity = '1';
-                }
-            });
-            const grids = document.querySelectorAll('#productGrid, #flashGrid, #recentGrid');
-            grids.forEach(function(grid) {
-                if (grid) {
-                    grid.style.display = 'grid';
-                    grid.style.visibility = 'visible';
-                }
-            });
-            const sections = document.querySelectorAll('main > section, .container > section');
-            sections.forEach(function(section) {
-                if (section.classList.contains('hidden')) section.classList.remove('hidden');
-                if (section.hasAttribute('hidden')) section.removeAttribute('hidden');
-            });
-            console.log('✅ Homepage content visibility enforced');
-        }, 500);
-    });
-})();
 
 // Initialize
 (async function initApp() {
