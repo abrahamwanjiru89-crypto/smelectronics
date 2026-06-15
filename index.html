@@ -17,6 +17,51 @@
 <meta name="apple-mobile-web-app-title" content="SM Dynamics Electronics">
 <meta name="apple-touch-icon" href="shop/brand logo.png">
 <link rel="icon" href="shop/brand logo.png">
+<style>
+  /* Additional styles for auth forms */
+  .auth-form {
+    width: 100%;
+  }
+  .forgot-password-link {
+    display: block;
+    text-align: right;
+    margin-top: 0.5rem;
+    margin-bottom: 1rem;
+    font-size: 0.8rem;
+    color: #00e5ff;
+    text-decoration: none;
+  }
+  .forgot-password-link:hover {
+    text-decoration: underline;
+  }
+  .auth-switch {
+    text-align: center;
+    margin-top: 1rem;
+    font-size: 0.85rem;
+    color: #888;
+  }
+  .auth-switch a {
+    color: #00e5ff;
+    text-decoration: none;
+  }
+  .auth-switch a:hover {
+    text-decoration: underline;
+  }
+  .no-products-message {
+    text-align: center;
+    padding: 3rem;
+    background: rgba(0,229,255,0.05);
+    border-radius: 1rem;
+    margin: 2rem 0;
+  }
+  .no-products-message h3 {
+    color: #00e5ff;
+    margin-bottom: 0.5rem;
+  }
+  .no-products-message p {
+    color: #888;
+  }
+</style>
 </head>
 <body>
 
@@ -79,7 +124,7 @@
 </aside>
 
 <main>
-  <section class="hero">
+  <section class="hero" id="hero">
     <canvas id="particles"></canvas>
     <div class="hero-grid">
     <div class="hero-copy">
@@ -202,16 +247,15 @@
     <div class="filters reveal">
       <div class="chips" id="filterChips">
         <button class="chip active" data-cat="all">All</button>
-         <button class="chip" data-cat="phones">Tv & Home Theatre Accessories</button>
-         <button class="chip" data-cat="phones">Power & Charging Accessories</button>
-         <button class="chip" data-cat="phones">General/Cables & Adapters</button>
-        <button class="chip" data-cat="audio">Mobile Accessories</button>
         <button class="chip" data-cat="phones">Phones</button>
         <button class="chip" data-cat="audio">Audio</button>
         <button class="chip" data-cat="laptops">Computer & Laptop Accessories</button>
         <button class="chip" data-cat="wearables">Wearables</button>
         <button class="chip" data-cat="gaming">Gaming</button>
         <button class="chip" data-cat="home">Smart Home</button>
+        <button class="chip" data-cat="accessories">Mobile Accessories</button>
+        <button class="chip" data-cat="cables">Cables & Adapters</button>
+        <button class="chip" data-cat="power">Power & Charging</button>
       </div>
       <div class="sort">
         <label for="sortBy" class="sr">Sort</label>
@@ -223,7 +267,14 @@
         </select>
       </div>
     </div>
-    <div class="products" id="productGrid"></div>
+    <div class="products" id="productGrid">
+      <!-- Products will be loaded here by app.js -->
+      <div class="no-products-message">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">🛍️</div>
+        <h3>Products Coming Soon!</h3>
+        <p>We're adding exciting new products. Check back later!</p>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -341,7 +392,7 @@
   <div class="modal-card" id="modalCard"></div>
 </div>
 
-<!-- AUTH MODAL -->
+<!-- AUTH MODAL - Updated with Forgot Password -->
 <div class="modal" id="authModal" aria-hidden="true" role="dialog">
   <div class="modal-card auth-card">
     <button class="modal-close" id="authClose" aria-label="Close">×</button>
@@ -349,23 +400,35 @@
       <div class="auth-side">
         <span class="eyebrow"><span class="dot"></span> Account</span>
         <h2>Login or create your shopping profile.</h2>
-        <p>Customers Must or Register login to place orders and track their order status.</p>
+        <p>Login to place orders and track your order status.</p>
       </div>
       <div class="auth-panel">
         <div class="auth-tabs" role="tablist">
           <button class="active" data-auth-tab="login" type="button">Login</button>
           <button data-auth-tab="register" type="button">Register</button>
         </div>
+        
+        <!-- LOGIN FORM -->
         <form id="loginForm" class="auth-form">
-          <input name="email" type="email" placeholder="Email" autocomplete="email" required>
-          <input name="password" type="password" placeholder="Password" autocomplete="current-password" required>
+          <input name="email" type="email" placeholder="Enter your email" autocomplete="email" required>
+          <input name="password" type="password" placeholder="Enter your password" autocomplete="current-password" required>
+          <a href="#" id="forgotPasswordLink" class="forgot-password-link">Forgot password?</a>
           <button class="btn primary block" type="submit">Login</button>
+          <div class="auth-switch">
+            Don't have an account? <a href="#" id="switchToRegister">Signup</a>
+          </div>
         </form>
+        
+        <!-- REGISTER FORM -->
         <form id="registerForm" class="auth-form" hidden>
-          <input name="name" type="text" placeholder="Full name" autocomplete="name" required>
-          <input name="email" type="email" placeholder="Email" autocomplete="email" required>
-          <input name="password" type="password" placeholder="Password" autocomplete="new-password" minlength="4" required>
-          <button class="btn primary block" type="submit">Create Customer Account</button>
+          <input name="name" type="text" placeholder="Enter your name" autocomplete="name" required>
+          <input name="email" type="email" placeholder="Enter your email" autocomplete="email" required>
+          <input name="password" type="password" placeholder="Choose a password" autocomplete="new-password" minlength="4" required>
+          <input name="confirm_password" type="password" placeholder="Confirm your password" autocomplete="new-password" minlength="4" required>
+          <button class="btn primary block" type="submit">Signup</button>
+          <div class="auth-switch">
+            Already have an account? <a href="#" id="switchToLogin">Login</a>
+          </div>
         </form>
       </div>
     </div>
@@ -420,14 +483,13 @@
   // Hide the loader automatically if app scripts fail or take too long.
   setTimeout(() => document.getElementById('loader')?.classList.add('hide'), 5000);
 </script>
-  <script>
+<script>
 // Force service worker update and clear cache
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.ready.then(registration => {
     registration.update();
   });
   
-  // Listen for reload messages from service worker
   navigator.serviceWorker.addEventListener('message', event => {
     if (event.data?.type === 'FORCE_RELOAD') {
       console.log('🔄 Service worker forcing reload...');
@@ -436,7 +498,6 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-// Clear all caches on page load (temporary - remove after fix)
 async function clearAllCaches() {
   if ('caches' in window) {
     const keys = await caches.keys();
@@ -448,8 +509,84 @@ async function clearAllCaches() {
   }
 }
 
-// Run this once to clear old cache
 clearAllCaches();
+
+// Auth tab switching
+document.addEventListener('DOMContentLoaded', function() {
+  const switchToRegister = document.getElementById('switchToRegister');
+  const switchToLogin = document.getElementById('switchToLogin');
+  const loginForm = document.getElementById('loginForm');
+  const registerForm = document.getElementById('registerForm');
+  const loginTab = document.querySelector('[data-auth-tab="login"]');
+  const registerTab = document.querySelector('[data-auth-tab="register"]');
+  
+  if (switchToRegister) {
+    switchToRegister.addEventListener('click', function(e) {
+      e.preventDefault();
+      if (loginForm) loginForm.hidden = true;
+      if (registerForm) registerForm.hidden = false;
+      if (loginTab) loginTab.classList.remove('active');
+      if (registerTab) registerTab.classList.add('active');
+    });
+  }
+  
+  if (switchToLogin) {
+    switchToLogin.addEventListener('click', function(e) {
+      e.preventDefault();
+      if (loginForm) loginForm.hidden = false;
+      if (registerForm) registerForm.hidden = true;
+      if (loginTab) loginTab.classList.add('active');
+      if (registerTab) registerTab.classList.remove('active');
+    });
+  }
+  
+  // Forgot password link
+  const forgotLink = document.getElementById('forgotPasswordLink');
+  if (forgotLink) {
+    forgotLink.addEventListener('click', function(e) {
+      e.preventDefault();
+      const email = prompt('Enter your email address to reset your password:');
+      if (email && email.includes('@')) {
+        // This will be handled by app.js forgotPassword function
+        if (typeof forgotPassword === 'function') {
+          forgotPassword(email);
+        } else {
+          alert('Password reset feature is being implemented. Please contact support.');
+        }
+      } else if (email) {
+        alert('Please enter a valid email address');
+      }
+    });
+  }
+});
+
+// Force show product grid even if empty
+window.addEventListener('load', function() {
+  setTimeout(function() {
+    const productGrid = document.getElementById('productGrid');
+    if (productGrid && productGrid.children.length === 0) {
+      productGrid.innerHTML = `
+        <div class="no-products-message">
+          <div style="font-size: 3rem; margin-bottom: 1rem;">🛍️</div>
+          <h3 style="color: #00e5ff;">Products Coming Soon!</h3>
+          <p style="color: #888;">We're adding exciting new products. Check back later!</p>
+          <button onclick="window.location.href='management.html'" class="btn primary" style="margin-top: 1rem;">Admin: Add Products</button>
+        </div>
+      `;
+    }
+    
+    // Force all sections to be visible
+    const sections = document.querySelectorAll('section');
+    sections.forEach(section => {
+      if (section.id !== 'dashboard') {
+        section.style.display = 'block';
+        section.style.visibility = 'visible';
+      }
+    });
+    
+    console.log('✅ Content visibility enforced');
+  }, 1000);
+});
 </script>
 <script src="shop/app.js" defer></script>
 <script src="shop/pwa.js" defer></script>
