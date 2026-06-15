@@ -290,6 +290,40 @@ window.removeBadge = async function(id) {
 };
 
 // ============================================
+// DELIVERY DATE FUNCTION
+// ============================================
+
+window.setDeliveryDate = async function(orderId) {
+  const dateInput = document.getElementById(`deliveryDate_${orderId}`);
+  if (!dateInput) {
+    toast('Date input not found', 'error');
+    return;
+  }
+  
+  const deliveryDate = dateInput.value;
+  
+  if (!deliveryDate) {
+    toast('Please select a delivery date', 'error');
+    return;
+  }
+  
+  if (!confirm(`Set delivery date to ${new Date(deliveryDate).toLocaleDateString()} for order ${orderId}? The customer will be notified.`)) {
+    return;
+  }
+  
+  try {
+    await api(`/api/admin/orders/${encodeURIComponent(orderId)}/delivery-date`, {
+      method: 'PUT',
+      body: JSON.stringify({ deliveryDate: deliveryDate })
+    });
+    toast(`✅ Delivery date set for order ${orderId}. Customer notified.`, 'success');
+    await loadOrders(); // Refresh orders to show the updated date
+  } catch (err) {
+    toast('Failed to set delivery date: ' + err.message, 'error');
+  }
+};
+
+// ============================================
 // RENDER PRODUCTS
 // ============================================
 
@@ -306,7 +340,7 @@ function renderProducts() {
     return `
     <div class="product-item" data-id="${productId}" style="background:#1a1a2e; border-radius:1rem; padding:1rem; margin-bottom:1rem; border:1px solid rgba(255,255,255,0.1);">
       <div style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap;">
-        <img src="${product.img || '/shop/hero-phone.jpg'}" style="width:60px; height:60px; object-fit:cover; border-radius:0.5rem;">
+        <img src="${product.img || '/shop/hero-phone.jpg'}" style="width:60px; height:60px; object-fit:cover; border-radius:0.5rem;" onerror="this.src='/shop/hero-phone.jpg'">
         <div style="flex:1;">
           <h4>${esc(product.name)}</h4>
           <div style="display:flex; gap:1rem; flex-wrap:wrap; font-size:0.875rem;">
@@ -406,7 +440,7 @@ function renderAdminSpareParts() {
   el.innerHTML = spareParts.map(part => `
     <div class="spare-item" data-id="${part.id}" style="background:#1a1a2e; border-radius:1rem; padding:1rem; margin-bottom:1rem; border:1px solid rgba(255,255,255,0.1);">
       <div style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap;">
-        <img src="${part.image || part.image_path || '/shop/hero-phone.jpg'}" style="width:60px; height:60px; object-fit:cover; border-radius:0.5rem;">
+        <img src="${part.image || part.image_path || '/shop/hero-phone.jpg'}" style="width:60px; height:60px; object-fit:cover; border-radius:0.5rem;" onerror="this.src='/shop/hero-phone.jpg'">
         <div style="flex:1;">
           <h4>${esc(part.name)}</h4>
           <div style="display:flex; gap:1rem; flex-wrap:wrap; font-size:0.875rem;">
@@ -649,6 +683,10 @@ function renderPlacedOrders() {
       ? `<span style="background:#1b5e20; color:#69f0ae; padding:2px 8px; border-radius:10px; font-size:0.75rem;">✅ Delivery: ${fmt(order.deliveryFee)}</span>`
       : `<span style="background:#4a2000; color:#ffb300; padding:2px 8px; border-radius:10px; font-size:0.75rem;">⏳ Delivery fee not set</span>`;
     
+    const deliveryDateBadge = order.deliveryDate
+      ? `<span class="delivery-date-badge">📅 Est. Delivery: ${new Date(order.deliveryDate).toLocaleDateString()}</span>`
+      : '';
+    
     const setFeeBtn = !order.deliveryFeeSet
       ? `<button class="btn-set-delivery-fee" data-id="${esc(order.id)}" data-location="${esc(locationStr)}"
            style="background:#00e5ff; color:#000; border:none; padding:0.45rem 0.9rem; border-radius:0.5rem; cursor:pointer; font-weight:600; font-size:0.8rem; white-space:nowrap;">
@@ -661,11 +699,14 @@ function renderPlacedOrders() {
 
     return `
     <article class="order-row manager-order" style="border-left:3px solid ${order.deliveryFeeSet ? '#00c853' : '#ffb300'};">
-      <div>
-        <b>${esc(order.id)}</b>
-        <span class="status ${esc(order.paymentStatus?.toLowerCase().replace(/ /g,'-') || 'pending')}">${esc(order.paymentStatus || 'Pending')}</span>
-        <span>${order.createdAt ? new Date(order.createdAt).toLocaleString() : 'Date Unknown'}</span>
-        <small>${esc(order.customer)} · ${esc(order.email)}</small>
+      <div style="display:flex; justify-content:space-between; flex-wrap:wrap;">
+        <div>
+          <b>${esc(order.id)}</b>
+          <span class="status ${esc(order.paymentStatus?.toLowerCase().replace(/ /g,'-') || 'pending')}">${esc(order.paymentStatus || 'Pending')}</span>
+          <span>${order.createdAt ? new Date(order.createdAt).toLocaleString() : 'Date Unknown'}</span>
+          <small>${esc(order.customer)} · ${esc(order.email)}</small>
+          ${deliveryDateBadge}
+        </div>
       </div>
       <div class="order-items">
         ${(order.items || []).map(item => `${esc(item.name)} x${item.qty}`).join('<br>')}
@@ -678,6 +719,10 @@ function renderPlacedOrders() {
         <b>${fmt(order.total)}</b>
         <span class="status ${esc(order.status?.toLowerCase() || 'pending')}">${esc(order.status || 'Pending')}</span>
         ${setFeeBtn}
+      </div>
+      <div class="delivery-date-control" style="margin-top: 0.75rem; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.1);">
+        <input type="date" id="deliveryDate_${order.id}" class="delivery-date-input" value="${order.deliveryDate || ''}" style="padding: 0.4rem 0.8rem; border-radius: 0.5rem; border: 1px solid rgba(255,255,255,0.2); background: #0f0f1a; color: white; font-size: 0.85rem;">
+        <button onclick="window.setDeliveryDate('${order.id}')" class="btn-set-delivery-date" style="background: #7c4dff; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 0.5rem; cursor: pointer; font-size: 0.8rem;">📅 Set Delivery Date</button>
       </div>
     </article>`;
   }).join('') : '<div class="dash-empty">No placed orders yet.</div>';
@@ -933,7 +978,7 @@ $('#managerLoginForm')?.addEventListener('submit', async e => {
   }
 });
 
-// Updated Spare Part Form - Supports both File Upload and Image URL
+// Spare Part Form - Supports both File Upload and Image URL
 $('#sparePartForm')?.addEventListener('submit', async e => {
   e.preventDefault();
   
@@ -1006,7 +1051,7 @@ $('#sparePartForm')?.addEventListener('submit', async e => {
   }
 });
 
-// Updated Product Form - Supports both File Upload and Image URL
+// Product Form - Supports both File Upload and Image URL
 $('#productForm')?.addEventListener('submit', async e => {
   e.preventDefault();
   
