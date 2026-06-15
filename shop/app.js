@@ -134,27 +134,30 @@ async function api(path, options = {}) {
 }
 
 // ============================================
-// UPDATED: CHECKOUT MODAL - Partial Payment (Only Delivery Fee)
+// CHECKOUT MODAL - Customer pays product total only via M-Pesa STK
 // ============================================
-function showCheckoutModal(subtotal, deliveryFeeAmount, onConfirm) {
+function showCheckoutModal(productTotal, onConfirm) {
   const existingModal = document.querySelector('.checkout-modal');
   if (existingModal) existingModal.remove();
-  
-  const total = subtotal + deliveryFeeAmount;
-  const remainingAmount = subtotal;
   
   const modal = document.createElement('div');
   modal.className = 'checkout-modal';
   modal.innerHTML = `
     <div class="checkout-card">
-      <h3>💰 Payment Summary</h3>
+      <h3>💰 Order Summary</h3>
       <div class="details" style="text-align: left;">
-        <p><strong>Subtotal:</strong> ${fmt(subtotal)}</p>
-        <p><strong>Delivery Fee (Pay Now):</strong> <span style="color: #00e5ff;">${fmt(deliveryFeeAmount)}</span></p>
-        <p><strong>Remaining on Delivery:</strong> ${fmt(remainingAmount)}</p>
-        <hr style="margin: 1rem 0; border-color: rgba(255,255,255,0.1);">
-        <p style="font-size: 0.85rem;">✅ You will only pay the delivery fee now via M-Pesa</p>
-        <p style="font-size: 0.85rem;">📦 The remaining amount (${fmt(remainingAmount)}) will be paid when you receive your product</p>
+        <div style="background:rgba(0,229,255,0.08); border:1px solid rgba(0,229,255,0.25); border-radius:0.75rem; padding:1rem; margin-bottom:1rem;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:0.4rem;">
+            <span>Products Total:</span>
+            <b style="color:#00e5ff;">${fmt(productTotal)}</b>
+          </div>
+          <div style="display:flex; justify-content:space-between; color:#aaa; font-size:0.85rem;">
+            <span>Delivery Fee:</span>
+            <span>Set by admin after order</span>
+          </div>
+        </div>
+        <p style="font-size:0.85rem; color:#aaa;">✅ Pay only the product total now via M-Pesa.</p>
+        <p style="font-size:0.85rem; color:#aaa;">🚚 Delivery fee will be communicated to you after your order is confirmed.</p>
         <div style="margin-top:1rem;">
           <label for="mpesaPhoneInput" style="display:block; font-size:0.85rem; margin-bottom:0.35rem;">M-Pesa Phone Number</label>
           <input type="tel" id="mpesaPhoneInput" placeholder="e.g. 0712345678" class="input" style="width:100%; padding:0.6rem 0.75rem; border-radius:0.5rem; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.05); color:inherit;">
@@ -163,7 +166,7 @@ function showCheckoutModal(subtotal, deliveryFeeAmount, onConfirm) {
       </div>
       <div class="checkout-actions">
         <button class="btn-cancel">Cancel</button>
-        <button class="btn-confirm">Pay Delivery Fee (${fmt(deliveryFeeAmount)})</button>
+        <button class="btn-confirm">Pay ${fmt(productTotal)} via M-Pesa</button>
       </div>
     </div>
   `;
@@ -202,7 +205,7 @@ function showCheckoutModal(subtotal, deliveryFeeAmount, onConfirm) {
   });
 }
 
-function showOrderSuccessModal(order, deliveryFee, remaining) {
+function showOrderSuccessModal(order) {
   const existing = document.querySelector('.checkout-modal');
   if (existing) { existing.classList.remove('show'); setTimeout(() => existing.remove(), 300); }
 
@@ -213,10 +216,10 @@ function showOrderSuccessModal(order, deliveryFee, remaining) {
       <h3>✅ Order Placed!</h3>
       <div class="details" style="text-align: left;">
         <p><strong>Order ID:</strong> ${esc(order.id)}</p>
-        <p><strong>Delivery fee paid:</strong> <span style="color:#00e5ff;">${fmt(deliveryFee)}</span></p>
-        <p><strong>Remaining on delivery:</strong> ${fmt(remaining)}</p>
+        <p><strong>Amount paid:</strong> <span style="color:#00e5ff;">${fmt(order.total)}</span></p>
         <hr style="margin: 1rem 0; border-color: rgba(255,255,255,0.1);">
-        <p style="font-size: 0.85rem;">📲 Check your phone for the M-Pesa prompt to complete the delivery fee payment.</p>
+        <p style="font-size: 0.85rem;">📲 Check your phone for the M-Pesa prompt to complete payment.</p>
+        <p style="font-size: 0.85rem;">🚚 Your delivery fee will be set by our team — we'll notify you with the amount.</p>
         <p style="font-size: 0.85rem;">📦 We'll prepare your order and contact you when it's ready for delivery.</p>
       </div>
       <div class="checkout-actions">
@@ -240,56 +243,29 @@ async function updateCartTotals() {
     const p = getProductWithSpares(c.id);
     return s + (p?.price || 0) * c.qty;
   }, 0);
-  const subLocId = getSelectedSubLocation()?.id;
-  const weight = state.cart.reduce((w, c) => {
-    const p = getProductWithSpares(c.id);
-    return w + (p?.weight || 0.5) * c.qty;
-  }, 0);
-  
-  if (subLocId) {
-    try {
-      const data = await api('/api/delivery/calculate', { method: 'POST', body: JSON.stringify({ subLocationId: subLocId, weight, distanceKm: 0 }) });
-      deliveryFee = data.fee;
-      if (data.breakdown && $('#deliveryBreakdown')) {
-        $('#deliveryBreakdown').textContent = `Zone: ${data.breakdown.zone || 'N/A'} · Base ${fmt(data.breakdown.base)} · Weight ${data.breakdown.weight}kg`;
-      }
-    } catch (e) { deliveryFee = 600; }
-  } else {
-    deliveryFee = 600;
-  }
-
-  if ($('#deliveryFee')) $('#deliveryFee').textContent = fmt(deliveryFee);
-  
   updateCartFooter(subtotal);
 }
 
 function updateCartFooter(subtotal) {
   const cartFooter = $('.cart-foot');
   if (cartFooter) {
-    const total = subtotal + deliveryFee;
-    const remainingOnDelivery = subtotal;
-    
     cartFooter.innerHTML = `
       <div class="cart-total">
         <div style="margin-bottom: 0.75rem;">
           <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-            <span>Subtotal:</span>
-            <b>${fmt(subtotal)}</b>
+            <span>Products Total:</span>
+            <b style="color:#00e5ff;">${fmt(subtotal)}</b>
           </div>
-          <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-            <span>Delivery Fee (Pay Now):</span>
-            <b style="color: #00e5ff;">${fmt(deliveryFee)}</b>
-          </div>
-          <div style="display: flex; justify-content: space-between; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.1);">
-            <span>Remaining on Delivery:</span>
-            <b>${fmt(remainingOnDelivery)}</b>
+          <div style="display:flex; justify-content:space-between; color:#aaa; font-size:0.85rem; padding-top:0.5rem; border-top:1px solid rgba(255,255,255,0.1);">
+            <span>Delivery Fee:</span>
+            <span>Set after order confirmation</span>
           </div>
         </div>
-        <div style="background: rgba(0,229,255,0.1); padding: 0.75rem; border-radius: 0.75rem; margin-top: 0.5rem;">
-          <small>💡 You only pay delivery fee (${fmt(deliveryFee)}) now. The remaining ${fmt(remainingOnDelivery)} will be paid when you receive your product.</small>
+        <div style="background: rgba(0,229,255,0.07); padding: 0.75rem; border-radius: 0.75rem; margin-bottom:0.75rem;">
+          <small>💡 Pay your full product total now. Delivery fee is calculated by our team based on your location and communicated to you separately.</small>
         </div>
       </div>
-      <button class="btn primary block" id="checkoutBtn">Pay Delivery Fee & Place Order</button>
+      <button class="btn primary block" id="checkoutBtn">Pay ${fmt(subtotal)} via M-Pesa & Place Order</button>
     `;
     
     const newCheckoutBtn = document.getElementById('checkoutBtn');
@@ -300,7 +276,7 @@ function updateCartFooter(subtotal) {
 }
 
 // ============================================
-// UPDATED: CHECKOUT HANDLER - Partial Payment
+// CHECKOUT HANDLER — customer pays product total only
 // ============================================
 async function handleCheckout() {
   if (!state.cart.length) {
@@ -330,13 +306,12 @@ async function handleCheckout() {
     return;
   }
 
-  const subtotal = state.cart.reduce((s, c) => {
+  const productTotal = state.cart.reduce((s, c) => {
     const p = getProductWithSpares(c.id);
     return s + (p?.price || 0) * c.qty;
   }, 0);
-  const total = subtotal + deliveryFee;
 
-  showCheckoutModal(subtotal, deliveryFee, async (phone, modal) => {
+  showCheckoutModal(productTotal, async (phone, modal) => {
     try {
       const orderResp = await api('/api/orders', {
         method: 'POST',
@@ -345,8 +320,8 @@ async function handleCheckout() {
           county: $('#county option:checked')?.textContent || '',
           constituency: subLocation.name,
           street,
-          depositAmount: deliveryFee,
-          depositMpesa: "MOCK-" + Date.now(),
+          depositAmount: productTotal,
+          depositMpesa: "MPESA-" + Date.now(),
         })
       });
       const order = orderResp.order;
@@ -355,9 +330,8 @@ async function handleCheckout() {
       state.cart = [];
       save('nova_cart', state.cart);
       renderCart();
-
       openCart(false);
-      showOrderSuccessModal(order, deliveryFee, subtotal);
+      showOrderSuccessModal(order);
       renderDashboard();
 
       try {
@@ -365,12 +339,12 @@ async function handleCheckout() {
           method: 'POST',
           body: JSON.stringify({
             phone,
-            amount: deliveryFee,
+            amount: productTotal,
             orderId: order.id,
-            paymentType: 'delivery_fee'
+            paymentType: 'product_total'
           })
         });
-        toast(`✅ M-Pesa prompt sent for ${fmt(deliveryFee)}`, 'success');
+        toast(`✅ M-Pesa prompt sent for ${fmt(productTotal)}`, 'success');
       } catch (stkErr) {
         toast('Order placed, but the M-Pesa prompt could not be sent. Please contact us to complete payment.', 'warning');
       }
@@ -385,7 +359,7 @@ async function handleCheckout() {
       }
       if (confirmBtn) {
         confirmBtn.disabled = false;
-        confirmBtn.textContent = `Pay Delivery Fee (${fmt(deliveryFee)})`;
+        confirmBtn.textContent = `Pay ${fmt(productTotal)} via M-Pesa`;
       }
     }
   });
@@ -802,7 +776,6 @@ function renderCart() {
     return s + (p?.price || 0) * c.qty;
   }, 0);
   $('#cartCount').textContent = state.cart.reduce((s, c) => s + c.qty, 0);
-  
   updateCartFooter(subtotal);
 }
 
@@ -978,7 +951,14 @@ async function login(email, password, successMessage = 'Login successful') {
 }
 function renderOrderList(orders, mode = 'user') {
   if (!orders.length) return '<div class="dash-empty">No orders yet.</div>';
-  return orders.map(order => `
+  return orders.map(order => {
+    const dfStatus = order.deliveryFeeSet
+      ? `<span style="color:#00c853;">🚚 Delivery Fee: ${fmt(order.deliveryFee)}</span>`
+      : `<span style="color:#ffb300;">⏳ Delivery fee pending — our team will contact you</span>`;
+    const latestNotif = order.notifications && order.notifications.length
+      ? `<div class="order-meta" style="margin-top:0.35rem; background:rgba(0,229,255,0.07); border-radius:0.5rem; padding:0.4rem 0.6rem;"><small>📬 ${esc(order.notifications[0].message)}</small></div>`
+      : '';
+    return `
     <article class="order-row">
       <div>
         <b>${esc(order.id)}</b>
@@ -988,11 +968,13 @@ function renderOrderList(orders, mode = 'user') {
       <div class="order-items">
         ${order.items.map(i => `${esc(i.name)} x${i.qty}`).join('<br>')}
         <div class="order-meta"><small>Location: ${esc(order.location.county)}, ${esc(order.location.constituency)} · ${esc(order.location.street)}</small></div>
-        <div class="order-meta"><small>Deposit: ${fmt(order.depositAmount)} · MPesa: ${esc(order.depositMpesa)}</small></div>
-        ${order.deliveryDate ? `<div class="order-meta"><small>Delivery: ${esc(order.deliveryDate)}</small></div>` : ''}
+        <div class="order-meta"><small>Paid: ${fmt(order.depositAmount)} · Ref: ${esc(order.depositMpesa || 'N/A')}</small></div>
+        <div class="order-meta" style="margin-top:0.25rem;">${dfStatus}</div>
+        ${latestNotif}
       </div>
       <div><b>${fmt(order.total)}</b><span class="status ${order.status.toLowerCase()}">${esc(order.status)}</span></div>
-    </article>`).join('');
+    </article>`;
+  }).join('');
 }
 function renderDashboard() {
   const user = currentUser();
@@ -1128,16 +1110,6 @@ window.forceRefresh = async function() {
   renderRecent();
   $('#wishCount').textContent = state.wish.length;
   loadCounties();
-  
-  try {
-    const feeData = await api('/api/delivery-fee');
-    if (feeData && feeData.fee) {
-      deliveryFee = feeData.fee;
-      updateCartTotals();
-    }
-  } catch (err) {
-    console.log('Using default delivery fee');
-  }
   
   try {
     const session = await api('/api/auth/me');
