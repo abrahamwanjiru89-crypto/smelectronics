@@ -1629,13 +1629,32 @@ class Handler(BaseHTTPRequestHandler):
             product_id = path.split("/")[-1]
             with db() as conn:
                 cursor = conn.cursor()
+                
+                # Check if product exists in any orders
+                cursor.execute("SELECT COUNT(*) as count FROM order_items WHERE product_id = %s" if USE_POSTGRES else "SELECT COUNT(*) as count FROM order_items WHERE product_id = ?", (product_id,))
+                result = cursor.fetchone()
+                order_count = result["count"] if USE_POSTGRES else result[0]
+                
+                # Get product image before deletion
                 cursor.execute("SELECT img FROM products WHERE id = %s" if USE_POSTGRES else "SELECT img FROM products WHERE id = ?", (product_id,))
                 product = cursor.fetchone()
+                
+                if order_count > 0:
+                    # Product has orders - just mark as out of stock instead of deleting
+                    cursor.execute("UPDATE products SET in_stock = 0 WHERE id = %s" if USE_POSTGRES else "UPDATE products SET in_stock = 0 WHERE id = ?", (product_id,))
+                    conn.commit()
+                    self.send_json({"ok": True, "warning": "Product has existing orders. Marked as out of stock instead of deleting."})
+                    return
+                
+                # No orders - safe to delete completely
                 if product and product["img"] and not product["img"].startswith('/shop/'):
                     filename = product["img"].split('/')[-1]
                     target = UPLOAD_DIR / filename
                     if target.exists():
                         target.unlink()
+                
+                # Delete from order_items (should be empty but just in case)
+                cursor.execute("DELETE FROM order_items WHERE product_id = %s" if USE_POSTGRES else "DELETE FROM order_items WHERE product_id = ?", (product_id,))
                 cursor.execute("DELETE FROM products WHERE id = %s" if USE_POSTGRES else "DELETE FROM products WHERE id = ?", (product_id,))
                 conn.commit()
             self.send_json({"ok": True})
