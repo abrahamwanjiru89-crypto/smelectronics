@@ -18,48 +18,135 @@
 <meta name="apple-touch-icon" href="shop/brand logo.png">
 <link rel="icon" href="shop/brand logo.png">
 <style>
-  /* Additional styles for auth forms */
-  .auth-form {
-    width: 100%;
+  /* FIX: Force all content to be visible */
+  body, main, section, .hero, .section, .container, .products, .products-grid {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
   }
-  .forgot-password-link {
+  
+  .products-grid, #productGrid, #flashGrid, #recentGrid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
+    gap: 1.5rem !important;
+    min-height: 200px;
+  }
+  
+  /* Simple Auth Modal Styles */
+  .auth-modal-simple {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.8);
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    visibility: hidden;
+    opacity: 0;
+    transition: all 0.3s ease;
+  }
+  
+  .auth-modal-simple.open {
+    visibility: visible;
+    opacity: 1;
+  }
+  
+  .auth-card-simple {
+    background: #0f0f1a;
+    border-radius: 1.5rem;
+    padding: 2rem;
+    max-width: 400px;
+    width: 90%;
+    border: 1px solid rgba(0,229,255,0.2);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+  }
+  
+  .auth-card-simple h2 {
+    color: #00e5ff;
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .auth-card-simple input {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    margin-bottom: 1rem;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: #1a1a2e;
+    color: white;
+    font-size: 1rem;
+  }
+  
+  .auth-card-simple input:focus {
+    outline: none;
+    border-color: #00e5ff;
+  }
+  
+  .auth-card-simple .btn {
+    width: 100%;
+    padding: 0.8rem;
+    margin-top: 0.5rem;
+  }
+  
+  .forgot-link {
     display: block;
     text-align: right;
-    margin-top: 0.5rem;
     margin-bottom: 1rem;
     font-size: 0.8rem;
     color: #00e5ff;
     text-decoration: none;
   }
-  .forgot-password-link:hover {
+  
+  .forgot-link:hover {
     text-decoration: underline;
   }
+  
   .auth-switch {
     text-align: center;
     margin-top: 1rem;
     font-size: 0.85rem;
     color: #888;
   }
+  
   .auth-switch a {
     color: #00e5ff;
     text-decoration: none;
   }
+  
   .auth-switch a:hover {
     text-decoration: underline;
   }
+  
+  .close-auth {
+    float: right;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+  }
+  
   .no-products-message {
     text-align: center;
     padding: 3rem;
     background: rgba(0,229,255,0.05);
     border-radius: 1rem;
-    margin: 2rem 0;
+    grid-column: 1 / -1;
   }
+  
   .no-products-message h3 {
     color: #00e5ff;
     margin-bottom: 0.5rem;
   }
-  .no-products-message p {
-    color: #888;
+  
+  /* Ensure all sections are visible */
+  .hero, #categories, #repair, #flash, #featured, #reviews, .newsletter, .footer {
+    display: block !important;
   }
 </style>
 </head>
@@ -124,313 +211,186 @@
 </aside>
 
 <main>
+  <!-- HERO SECTION -->
   <section class="hero" id="hero">
-    <canvas id="particles"></canvas>
     <div class="hero-grid">
-    <div class="hero-copy">
-      <span class="eyebrow"><span class="dot"></span> New · 2026 Collection</span>
-      <h1 class="display">The Future, <span class="grad">Held in Your Hand.</span></h1>
-      <p class="lede">Discover a curated universe of premium electronics — flagship phones, studio-grade audio, and AI-powered devices, all engineered for the way you live next.</p>
-      <div class="hero-cta">
-        <a href="#featured" class="btn primary">Shop Collection <span>→</span></a>
-        <a href="#flash" class="btn ghost">View Flash Sale</a>
-        <button class="btn ghost" id="installBtn" type="button" style="display:none;">Install App</button>
-        <button class="btn ghost" id="notifyBtn" type="button">Enable notifications</button>
+      <div class="hero-copy">
+        <span class="eyebrow"><span class="dot"></span> New · 2026 Collection</span>
+        <h1 class="display">The Future, <span class="grad">Held in Your Hand.</span></h1>
+        <p class="lede">Discover a curated universe of premium electronics — flagship phones, studio-grade audio, and AI-powered devices, all engineered for the way you live next.</p>
+        <div class="hero-cta">
+          <a href="#featured" class="btn primary">Shop Collection <span>→</span></a>
+          <a href="#flash" class="btn ghost">View Flash Sale</a>
+        </div>
       </div>
-      <div class="hero-stats">
-        <div><b data-count="248">0</b><span>Products</span></div>
-        <div><b data-count="124">0</b><span>Brands</span></div>
-        <div><b data-count="98">0</b><span>% Satisfied</span></div>
+      <div class="hero-slider" id="heroSlider">
+        <div class="hero-slide active">
+          <div class="slide-tag">Physical Store</div>
+          <div class="slide-meta"><h3>Visit Our Store</h3><p>Nakuru, Kenya</p></div>
+        </div>
       </div>
     </div>
-    <div class="hero-slider" id="heroSlider" aria-label="Featured products">
-      <div class="hero-slide" style="--bg:url('../uploads/Sm dynamic.jpg')">
-        <div class="slide-tag">Physical Store</div>
-        <div class="slide-meta"><h3>Visit Our Store</h3><p>Nakuru, Kenya</p></div>
+  </section>
+
+  <!-- CATEGORIES -->
+  <section class="section" id="categories">
+    <div class="container">
+      <header class="section-head reveal">
+        <span class="eyebrow"><span class="dot"></span> Categories</span>
+        <h2>Shop by <span class="grad">category</span></h2>
+      </header>
+      <div class="cats">
+        <a class="cat reveal" href="#featured"><div class="cat-icon">📱</div><h3>Phones</h3></a>
+        <a class="cat reveal" href="#featured"><div class="cat-icon">🎧</div><h3>Audio</h3></a>
+        <a class="cat reveal" href="#featured"><div class="cat-icon">💻</div><h3>Laptops</h3></a>
+        <a class="cat reveal" href="#featured"><div class="cat-icon">⌚</div><h3>Wearables</h3></a>
+        <a class="cat reveal" href="#featured"><div class="cat-icon">🎮</div><h3>Gaming</h3></a>
+        <a class="cat reveal" href="#featured"><div class="cat-icon">🏠</div><h3>Smart Home</h3></a>
       </div>
-      <div class="hero-dots"></div>
     </div>
-  </div>
-  <div class="scroll-cue" aria-hidden="true"><span></span></div>
-</section>
+  </section>
 
-<!-- CATEGORIES -->
-<section class="section" id="categories">
-  <div class="container">
-    <header class="section-head reveal">
-      <span class="eyebrow"><span class="dot"></span> Categories</span>
-      <h2>Shop by <span class="grad">universe</span></h2>
-      <p>Six curated worlds — from pocket flagships to immersive realities.</p>
-    </header>
-    <div class="cats">
-      <a class="cat reveal" data-color="cyan" href="#featured">
-        <div class="cat-icon">📱</div>
-        <h3>Phones</h3><p>42 products</p>
-      </a>
-      <a class="cat reveal" data-color="magenta" href="#featured">
-        <div class="cat-icon">🎧</div>
-        <h3>Audio</h3><p>38 products</p>
-      </a>
-      <a class="cat reveal" data-color="violet" href="#featured">
-        <div class="cat-icon">💻</div>
-        <h3>Computer & Laptop Accessories</h3><p>27 products</p>
-      </a>
-      <a class="cat reveal" data-color="amber" href="#featured">
-        <div class="cat-icon">📱</div>
-        <h3>Mobile Accessories</h3><p>19 products</p>
-      </a>
-      <a class="cat reveal" data-color="emerald" href="#featured">
-        <div class="cat-icon">🎮</div>
-        <h3>Gaming</h3><p>56 products</p>
-      </a>
-      <a class="cat reveal" data-color="rose" href="#featured">
-        <div class="cat-icon">🏠</div>
-        <h3>Smart Home</h3><p>33 products</p>
-      </a>
-      <a class="cat reveal" data-color="magenta" href="#featured">
-        <div class="cat-icon">🔌</div>
-        <h3>General/Cables & Adapters</h3><p>38 products</p>
-      </a>
-      <a class="cat reveal" data-color="magenta" href="#featured">
-        <div class="cat-icon">📺</div>
-        <h3>TV & Home Theater Accessories</h3><p>38 products</p>
-      </a>
-      <a class="cat reveal" data-color="magenta" href="#featured">
-        <div class="cat-icon">⚡</div>
-        <h3>Power & Charging Accessories</h3><p>38 products</p>
-      </a>
-      <a class="cat reveal" data-color="magenta" href="#featured">
-        <div class="cat-icon">⌚</div>
-        <h3>Wearables</h3><p>38 products</p>
-      </a>
-    </div>
-  </div>
-</section>
-
-<!-- REPAIR SERVICES -->
-<section class="section" id="repair">
-  <div class="container">
-    <header class="section-head reveal">
-      <span class="eyebrow"><span class="dot"></span> Mobile Repair</span>
-      <h2>Mobile repair for <span class="grad">every brand.</span></h2>
-      <p>We handle screen, battery, charging port, speaker, software and network repairs across Kenya. Tap below to explore full service pricing and book your repair.</p>
-    </header>
-    <div class="repair-cta reveal">
-      <p class="lead">Visit our dedicated mobile repair page to search phone brands, compare service prices, and submit your repair request.</p>
-      <a href="repair.html" class="btn primary">Open Mobile Repair Hub</a>
-    </div>
-  </div>
-</section>
-
-<!-- FLASH SALE -->
-<section class="section flash" id="flash">
-  <div class="container">
-    <div class="flash-head reveal">
-      <div>
+  <!-- FLASH SALE -->
+  <section class="section flash" id="flash">
+    <div class="container">
+      <div class="flash-head reveal">
         <span class="eyebrow danger"><span class="dot pulse"></span> Live · Flash Sale</span>
-        <h2>Ends in <span id="countdown" class="grad">--:--:--</span></h2>
+        <h2>Limited Time Offers</h2>
       </div>
-      <p>Limited stock. Once it's gone, it's gone — these prices won't return.</p>
-    </div>
-    <div class="flash-grid" id="flashGrid"></div>
-  </div>
-</section>
-
-<!-- FEATURED -->
-<section class="section" id="featured">
-  <div class="container">
-    <header class="section-head reveal">
-      <span class="eyebrow"><span class="dot"></span> Featured</span>
-      <h2>Engineered to <span class="grad">amaze.</span></h2>
-      <p>Hand-picked devices, rated by thousands of creators and engineers.</p>
-    </header>
-    <div class="filters reveal">
-      <div class="chips" id="filterChips">
-        <button class="chip active" data-cat="all">All</button>
-        <button class="chip" data-cat="phones">Phones</button>
-        <button class="chip" data-cat="audio">Audio</button>
-        <button class="chip" data-cat="laptops">Computer & Laptop Accessories</button>
-        <button class="chip" data-cat="wearables">Wearables</button>
-        <button class="chip" data-cat="gaming">Gaming</button>
-        <button class="chip" data-cat="home">Smart Home</button>
-        <button class="chip" data-cat="accessories">Mobile Accessories</button>
-        <button class="chip" data-cat="cables">Cables & Adapters</button>
-        <button class="chip" data-cat="power">Power & Charging</button>
-      </div>
-      <div class="sort">
-        <label for="sortBy" class="sr">Sort</label>
-        <select id="sortBy">
-          <option value="featured">Featured</option>
-          <option value="low">Price: Low → High</option>
-          <option value="high">Price: High → Low</option>
-          <option value="rating">Top Rated</option>
-        </select>
+      <div class="flash-grid" id="flashGrid">
+        <div class="no-products-message">No flash sale items at the moment.</div>
       </div>
     </div>
-    <div class="products" id="productGrid">
-      <!-- Products will be loaded here by app.js -->
-      <div class="no-products-message">
-        <div style="font-size: 3rem; margin-bottom: 1rem;">🛍️</div>
-        <h3>Products Coming Soon!</h3>
-        <p>We're adding exciting new products. Check back later!</p>
+  </section>
+
+  <!-- FEATURED PRODUCTS -->
+  <section class="section" id="featured">
+    <div class="container">
+      <header class="section-head reveal">
+        <span class="eyebrow"><span class="dot"></span> Featured</span>
+        <h2>Engineered to <span class="grad">amaze.</span></h2>
+      </header>
+      <div class="filters reveal">
+        <div class="chips" id="filterChips">
+          <button class="chip active" data-cat="all">All</button>
+          <button class="chip" data-cat="phones">Phones</button>
+          <button class="chip" data-cat="audio">Audio</button>
+          <button class="chip" data-cat="laptops">Laptops</button>
+        </div>
+        <div class="sort">
+          <select id="sortBy">
+            <option value="featured">Featured</option>
+            <option value="low">Price: Low → High</option>
+            <option value="high">Price: High → Low</option>
+          </select>
+        </div>
+      </div>
+      <div class="products" id="productGrid">
+        <div class="no-products-message">
+          <div style="font-size: 3rem; margin-bottom: 1rem;">🛍️</div>
+          <h3>Products Coming Soon!</h3>
+          <p>We're adding exciting new products. Check back later!</p>
+        </div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<!-- AI CONCIERGE -->
-<section class="section ai-section">
-  <div class="container">
-    <div class="ai-card reveal">
-      <div class="ai-orb"><span></span><span></span><span></span></div>
-      <div class="ai-copy">
-        <span class="eyebrow"><span class="dot"></span> S.M Dynamics · AI Concierge</span>
-        <h2>Tell us what you need. <span class="grad">We'll find it.</span></h2>
-        <p>Describe how you'll use it — work, travel, gaming, photography — and our assistant curates the perfect device in seconds.</p>
-        <form class="ai-form" id="aiForm">
-          <input id="aiInput" type="text" placeholder="e.g. a lightweight laptop for video editing under $2000" aria-label="Ask the AI concierge" />
-          <button class="btn primary" type="submit">Ask AI</button>
-        </form>
-        <div class="ai-answer" id="aiAnswer"></div>
+  <!-- TESTIMONIALS -->
+  <section class="section" id="reviews">
+    <div class="container">
+      <header class="section-head reveal">
+        <span class="eyebrow"><span class="dot"></span> Reviews</span>
+        <h2>What our <span class="grad">customers say</span></h2>
+      </header>
+      <div class="reviews">
+        <div class="rv-track" id="rvTrack">
+          <article class="rv-card">
+            <div class="stars">★★★★★</div>
+            <q>Amazing quality products and fast delivery!</q>
+            <div class="rv-who"><b>John M.</b><br><small>Nairobi</small></div>
+          </article>
+        </div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<!-- TESTIMONIALS -->
-<section class="section" id="reviews">
-  <div class="container">
-    <header class="section-head reveal">
-      <span class="eyebrow"><span class="dot"></span> Reviews</span>
-      <h2>Loved by <span class="grad">Kenyans.</span></h2>
-    </header>
-    <div class="reviews">
-      <button class="rv-nav prev" aria-label="Previous">‹</button>
-      <div class="rv-track" id="rvTrack"></div>
-      <button class="rv-nav next" aria-label="Next">›</button>
-    </div>
-  </div>
-</section>
-
-<!-- NEWSLETTER -->
-<section class="section newsletter">
-  <div class="container nl-card reveal">
-    <div>
-      <h2>Get the <span class="grad">drop</span> first.</h2>
-      <p>Exclusive launches, early access and member-only pricing.</p>
-    </div>
-    <form id="nlForm" class="nl-form">
-      <input type="email" required placeholder="your@email.com" aria-label="Email" />
-      <button class="btn primary" type="submit">Subscribe</button>
-    </form>
-  </div>
-</section>
-
-<!-- FOOTER -->
-<footer class="footer">
-  <div class="container foot-grid">
-    <div class="foot-col">
-      <a href="#" class="brand"><img src="shop/brand logo.png" alt="S.M Dynamics Electronics" class="brand-logo-sm"><span class="brand-name">S.M Dynamics Electronics</span></a>
-      <p class="muted">Premium electronics and repair services across Kenya.</p>
-      <div class="socials">
-        <a href="https://www.facebook.com/Smatelectronics/" aria-label="Facebook">f</a>
-        <a href="https://x.com" aria-label="X">𝕏</a>
-        <a href="https://www.tiktok.com/@samizayn462?lang=en" aria-label="TikTok">♪</a>
-        <a href="https://wa.me/254717043977" aria-label="WhatsApp">💬</a>
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container foot-grid">
+      <div class="foot-col">
+        <a href="#" class="brand"><img src="shop/brand logo.png" alt="S.M Dynamics" class="brand-logo-sm"><span>S.M Dynamics Electronics</span></a>
+        <p class="muted">Premium electronics and repair services across Kenya.</p>
       </div>
+      <div class="foot-col"><h4>Shop</h4><a href="#categories">Phones</a><a href="#categories">Audio</a><a href="#categories">Laptops</a></div>
+      <div class="foot-col"><h4>Support</h4><a href="contact.html">Help Center</a><a href="contact.html">Contact</a></div>
+      <div class="foot-col"><h4>Contact</h4><a href="https://wa.me/254717043977">💬 WhatsApp: +254 717 043 977</a><a href="mailto:info@smdynamics.com">📧 info@smdynamics.com</a></div>
     </div>
-    <div class="foot-col"><h4>Shop</h4><a href="#categories">Phones</a><a href="#categories">Audio</a><a href="#categories">Laptops</a><a href="#categories">Gaming</a></div>
-    <div class="foot-col"><h4>Support</h4><a href="contact.html">Help Center</a><a href="contact.html">Shipping</a><a href="contact.html">Returns</a><a href="contact.html">Warranty</a></div>
-    <div class="foot-col"><h4>Contact</h4><a href="https://wa.me/254717043977" target="_blank" rel="noopener">💬 WhatsApp: +254 717 043 977</a><a href="mailto:info@smdynamics.com">📧 info@smdynamics.com</a><a href="https://www.tiktok.com/@samizayn462?lang=en" target="_blank">🎵 TikTok</a><a href="https://maps.google.com/maps?q=S.M+Dynamics+Electronics+Kenya" target="_blank">📍 Location</a></div>
-    <div class="foot-col"><h4>Company</h4><a href="contact.html">About</a><a href="contact.html">Terms and Conditions</a><a href="contact.html">Founder</a><a href="management.html">Management</a></div>
-  </div>
-  <div class="foot-bot container">
-    <span>© 2026 S.M Dynamics Electronics. All rights reserved.</span>
-    <span>Designed by abrahamwanjiru89@gmail.com.</span>
-  </div>
-</footer>
-
+    <div class="foot-bot container">
+      <span>© 2026 S.M Dynamics Electronics. All rights reserved.</span>
+    </div>
+  </footer>
 </main>
 
 <!-- CART SIDEBAR -->
 <div class="overlay" id="overlay"></div>
-<aside class="cart-side" id="cartSide" aria-hidden="true" aria-label="Shopping cart">
+<aside class="cart-side" id="cartSide" aria-hidden="true">
   <header class="cart-head">
     <h3>Your Cart</h3>
-    <button class="btn ghost small" id="cartClear" aria-label="Clear cart">Clear All</button>
-    <button class="icon-btn" id="cartClose" aria-label="Close cart">✕</button>
+    <button class="icon-btn" id="cartClose">✕</button>
   </header>
   <div class="cart-body">
     <div class="cart-items" id="cartItems"></div>
     <div class="cart-meta">
       <h4>Delivery details</h4>
       <label>Phone Number (M-Pesa)
-        <input id="customerPhone" type="tel" placeholder="e.g. 0712345678" autocomplete="tel" required>
+        <input id="customerPhone" type="tel" placeholder="0712345678">
       </label>
       <label>County
-        <select id="county" autocomplete="address-level1" required>
-          <option value="">Choose county</option>
-        </select>
+        <select id="county"><option value="">Select County</option></select>
       </label>
-      <label>Sub-location
-        <input id="subLocation" list="sublocationsList" placeholder="Start typing area (e.g. Nakuru Town)" autocomplete="address-level2" required>
-        <datalist id="sublocationsList"></datalist>
-      </label>
-      <label>Street / center
-        <input id="street" type="text" placeholder="e.g. 3rd Avenue, Kiamunyeki" autocomplete="street-address" required>
+      <label>Street / Area
+        <input id="street" type="text" placeholder="Your street or area">
       </label>
     </div>
   </div>
   <footer class="cart-foot">
-    <div class="cart-total"><span>Total</span><b id="cartTotal">Kshs 0</b></div>
-    <button class="btn primary block" id="checkoutBtn">Checkout</button>
+    <button class="btn primary block" id="checkoutBtn">Proceed to Checkout</button>
   </footer>
 </aside>
 
 <!-- PRODUCT MODAL -->
-<div class="modal" id="productModal" aria-hidden="true" role="dialog">
+<div class="modal" id="productModal" aria-hidden="true">
   <div class="modal-card" id="modalCard"></div>
 </div>
 
-<!-- AUTH MODAL - Updated with Forgot Password -->
-<div class="modal" id="authModal" aria-hidden="true" role="dialog">
-  <div class="modal-card auth-card">
-    <button class="modal-close" id="authClose" aria-label="Close">×</button>
-    <div class="auth-grid">
-      <div class="auth-side">
-        <span class="eyebrow"><span class="dot"></span> Account</span>
-        <h2>Login or create your shopping profile.</h2>
-        <p>Login to place orders and track your order status.</p>
-      </div>
-      <div class="auth-panel">
-        <div class="auth-tabs" role="tablist">
-          <button class="active" data-auth-tab="login" type="button">Login</button>
-          <button data-auth-tab="register" type="button">Register</button>
+<!-- SIMPLE AUTH MODAL -->
+<div class="auth-modal-simple" id="authModal">
+  <div class="auth-card-simple">
+    <button class="close-auth" id="authClose">×</button>
+    <h2 id="authTitle">Login</h2>
+    
+    <div id="loginView">
+      <form id="simpleLoginForm">
+        <input type="email" id="loginEmail" placeholder="admin@smdynamics.com" required>
+        <input type="password" id="loginPassword" placeholder="Enter your password" required>
+        <a href="#" id="forgotPasswordLink" class="forgot-link">Forgot password?</a>
+        <button type="submit" class="btn primary">LOGIN</button>
+        <div class="auth-switch">
+          Don't have an account? <a href="#" id="showSignup">Signup</a>
         </div>
-        
-        <!-- LOGIN FORM -->
-        <form id="loginForm" class="auth-form">
-          <input name="email" type="email" placeholder="Enter your email" autocomplete="email" required>
-          <input name="password" type="password" placeholder="Enter your password" autocomplete="current-password" required>
-          <a href="#" id="forgotPasswordLink" class="forgot-password-link">Forgot password?</a>
-          <button class="btn primary block" type="submit">Login</button>
-          <div class="auth-switch">
-            Don't have an account? <a href="#" id="switchToRegister">Signup</a>
-          </div>
-        </form>
-        
-        <!-- REGISTER FORM -->
-        <form id="registerForm" class="auth-form" hidden>
-          <input name="name" type="text" placeholder="Enter your name" autocomplete="name" required>
-          <input name="email" type="email" placeholder="Enter your email" autocomplete="email" required>
-          <input name="password" type="password" placeholder="Choose a password" autocomplete="new-password" minlength="4" required>
-          <input name="confirm_password" type="password" placeholder="Confirm your password" autocomplete="new-password" minlength="4" required>
-          <button class="btn primary block" type="submit">Signup</button>
-          <div class="auth-switch">
-            Already have an account? <a href="#" id="switchToLogin">Login</a>
-          </div>
-        </form>
-      </div>
+      </form>
+    </div>
+    
+    <div id="signupView" style="display: none;">
+      <form id="simpleSignupForm">
+        <input type="text" id="signupName" placeholder="Full name" required>
+        <input type="email" id="signupEmail" placeholder="Email address" required>
+        <input type="password" id="signupPassword" placeholder="Choose a password" minlength="4" required>
+        <button type="submit" class="btn primary">SIGNUP</button>
+        <div class="auth-switch">
+          Already have an account? <a href="#" id="showLogin">Login</a>
+        </div>
+      </form>
     </div>
   </div>
 </div>
@@ -439,156 +399,140 @@
 <section class="section dashboard" id="dashboard" hidden>
   <div class="container">
     <header class="dash-head">
-      <div>
-        <span class="eyebrow"><span class="dot"></span><span id="dashRole">Dashboard</span></span>
-        <h2 id="dashTitle">Account Dashboard</h2>
-      </div>
-      <button class="btn ghost" id="logoutBtn" type="button">Logout</button>
+      <h2 id="dashTitle">My Orders</h2>
+      <button class="btn ghost" id="logoutBtn">Logout</button>
     </header>
     <div class="dash-grid" id="dashGrid"></div>
   </div>
 </section>
 
-<!-- RECENTLY VIEWED -->
-<section class="section recent" id="recentSection" hidden>
-  <div class="container">
-    <header class="section-head"><h2>Recently <span class="grad">viewed</span></h2></header>
-    <div class="products" id="recentGrid"></div>
-  </div>
-</section>
-
 <!-- Toasts -->
-<div class="toasts" id="toasts" aria-live="polite"></div>
-
-<!-- Live purchase notification -->
-<div class="live-notif" id="liveNotif" aria-hidden="true"></div>
-
-<!-- Live chat -->
-<button class="chat-fab" id="chatFab" aria-label="Open chat">💬</button>
-<aside class="chat-panel" id="chatPanel" aria-hidden="true">
-  <header><b>Live Support</b><button id="chatClose" aria-label="Close">✕</button></header>
-  <div class="chat-log" id="chatLog">
-    <div class="msg bot">Hi! 👋 I'm Aria. How can I help today?</div>
-  </div>
-  <form id="chatForm" class="chat-form">
-    <input id="chatInput" placeholder="Type a message..." aria-label="Message" />
-    <button class="btn primary" type="submit">Send</button>
-  </form>
-</aside>
+<div class="toasts" id="toasts"></div>
 
 <!-- Back to top -->
-<button class="to-top" id="toTop" aria-label="Back to top">↑</button>
+<button class="to-top" id="toTop">↑</button>
 
 <script>
-  // Hide the loader automatically if app scripts fail or take too long.
-  setTimeout(() => document.getElementById('loader')?.classList.add('hide'), 5000);
-</script>
-<script>
-// Force service worker update and clear cache
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.ready.then(registration => {
-    registration.update();
-  });
-  
-  navigator.serviceWorker.addEventListener('message', event => {
-    if (event.data?.type === 'FORCE_RELOAD') {
-      console.log('🔄 Service worker forcing reload...');
-      window.location.reload();
-    }
-  });
+// Simple Auth Modal Functions
+const authModal = document.getElementById('authModal');
+const loginView = document.getElementById('loginView');
+const signupView = document.getElementById('signupView');
+const authClose = document.getElementById('authClose');
+
+function openAuth() {
+  authModal.classList.add('open');
+}
+function closeAuth() {
+  authModal.classList.remove('open');
 }
 
-async function clearAllCaches() {
-  if ('caches' in window) {
-    const keys = await caches.keys();
-    for (const key of keys) {
-      await caches.delete(key);
-      console.log('🗑️ Deleted cache:', key);
-    }
-    console.log('✅ All caches cleared');
-  }
-}
+document.getElementById('accountBtn')?.addEventListener('click', openAuth);
+authClose?.addEventListener('click', closeAuth);
+authModal?.addEventListener('click', (e) => {
+  if (e.target === authModal) closeAuth();
+});
 
-clearAllCaches();
+document.getElementById('showSignup')?.addEventListener('click', (e) => {
+  e.preventDefault();
+  loginView.style.display = 'none';
+  signupView.style.display = 'block';
+  document.getElementById('authTitle').textContent = 'Signup';
+});
 
-// Auth tab switching
-document.addEventListener('DOMContentLoaded', function() {
-  const switchToRegister = document.getElementById('switchToRegister');
-  const switchToLogin = document.getElementById('switchToLogin');
-  const loginForm = document.getElementById('loginForm');
-  const registerForm = document.getElementById('registerForm');
-  const loginTab = document.querySelector('[data-auth-tab="login"]');
-  const registerTab = document.querySelector('[data-auth-tab="register"]');
+document.getElementById('showLogin')?.addEventListener('click', (e) => {
+  e.preventDefault();
+  loginView.style.display = 'block';
+  signupView.style.display = 'none';
+  document.getElementById('authTitle').textContent = 'Login';
+});
+
+// Simple Login
+document.getElementById('simpleLoginForm')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = document.getElementById('loginEmail').value;
+  const password = document.getElementById('loginPassword').value;
   
-  if (switchToRegister) {
-    switchToRegister.addEventListener('click', function(e) {
-      e.preventDefault();
-      if (loginForm) loginForm.hidden = true;
-      if (registerForm) registerForm.hidden = false;
-      if (loginTab) loginTab.classList.remove('active');
-      if (registerTab) registerTab.classList.add('active');
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ email, password })
     });
-  }
-  
-  if (switchToLogin) {
-    switchToLogin.addEventListener('click', function(e) {
-      e.preventDefault();
-      if (loginForm) loginForm.hidden = false;
-      if (registerForm) registerForm.hidden = true;
-      if (loginTab) loginTab.classList.add('active');
-      if (registerTab) registerTab.classList.remove('active');
-    });
-  }
-  
-  // Forgot password link
-  const forgotLink = document.getElementById('forgotPasswordLink');
-  if (forgotLink) {
-    forgotLink.addEventListener('click', function(e) {
-      e.preventDefault();
-      const email = prompt('Enter your email address to reset your password:');
-      if (email && email.includes('@')) {
-        // This will be handled by app.js forgotPassword function
-        if (typeof forgotPassword === 'function') {
-          forgotPassword(email);
-        } else {
-          alert('Password reset feature is being implemented. Please contact support.');
-        }
-      } else if (email) {
-        alert('Please enter a valid email address');
+    const data = await res.json();
+    if (res.ok) {
+      if (data.user.role === 'admin' || data.user.role === 'staff') {
+        window.location.href = 'management.html';
+      } else {
+        closeAuth();
+        location.reload();
       }
-    });
+    } else {
+      alert(data.error || 'Login failed');
+    }
+  } catch (err) {
+    alert('Login failed: ' + err.message);
   }
 });
 
-// Force show product grid even if empty
-window.addEventListener('load', function() {
-  setTimeout(function() {
-    const productGrid = document.getElementById('productGrid');
-    if (productGrid && productGrid.children.length === 0) {
-      productGrid.innerHTML = `
-        <div class="no-products-message">
-          <div style="font-size: 3rem; margin-bottom: 1rem;">🛍️</div>
-          <h3 style="color: #00e5ff;">Products Coming Soon!</h3>
-          <p style="color: #888;">We're adding exciting new products. Check back later!</p>
-          <button onclick="window.location.href='management.html'" class="btn primary" style="margin-top: 1rem;">Admin: Add Products</button>
-        </div>
-      `;
-    }
-    
-    // Force all sections to be visible
-    const sections = document.querySelectorAll('section');
-    sections.forEach(section => {
-      if (section.id !== 'dashboard') {
-        section.style.display = 'block';
-        section.style.visibility = 'visible';
-      }
+// Simple Signup
+document.getElementById('simpleSignupForm')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const name = document.getElementById('signupName').value;
+  const email = document.getElementById('signupEmail').value;
+  const password = document.getElementById('signupPassword').value;
+  
+  try {
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ name, email, password })
     });
-    
-    console.log('✅ Content visibility enforced');
-  }, 1000);
+    const data = await res.json();
+    if (res.ok) {
+      closeAuth();
+      location.reload();
+    } else {
+      alert(data.error || 'Registration failed');
+    }
+  } catch (err) {
+    alert('Registration failed: ' + err.message);
+  }
 });
+
+// Forgot Password
+document.getElementById('forgotPasswordLink')?.addEventListener('click', async (e) => {
+  e.preventDefault();
+  const email = prompt('Enter your email address to reset your password:');
+  if (email && email.includes('@')) {
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      const data = await res.json();
+      alert(data.message || 'If an account exists, a reset link has been sent');
+    } catch (err) {
+      alert('Password reset request failed');
+    }
+  } else if (email) {
+    alert('Please enter a valid email address');
+  }
+});
+
+// Force show all content
+setTimeout(() => {
+  document.querySelectorAll('section').forEach(section => {
+    if (section.id !== 'dashboard') {
+      section.style.display = 'block';
+      section.style.visibility = 'visible';
+    }
+  });
+  console.log('✅ Homepage content forced visible');
+}, 500);
 </script>
 <script src="shop/app.js" defer></script>
-<script src="shop/pwa.js" defer></script>
 </body>
 </html>
