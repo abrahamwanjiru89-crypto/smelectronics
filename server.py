@@ -22,10 +22,22 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 ROOT = Path(__file__).parent.resolve()
+
+# CRITICAL FIX: Use the uploads folder in the project root (NOT in DATA_DIR)
+UPLOAD_DIR = ROOT / "uploads"
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+# For compatibility, also ensure shop directory exists for default images
+SHOP_DIR = ROOT / "shop"
+SHOP_DIR.mkdir(parents=True, exist_ok=True)
+
 DATA_DIR = Path(os.environ.get("DATA_DIR", str(ROOT)))
 DATA_DIR.mkdir(parents=True, exist_ok=True)
-UPLOAD_DIR = DATA_DIR / "uploads"
-UPLOAD_DIR.mkdir(exist_ok=True)
+
+logger.info(f"ROOT path: {ROOT}")
+logger.info(f"UPLOAD_DIR path: {UPLOAD_DIR}")
+logger.info(f"SHOP_DIR path: {SHOP_DIR}")
+logger.info(f"Upload directory exists: {UPLOAD_DIR.exists()}")
 
 # PostgreSQL connection
 DATABASE_URL = os.environ.get("DATABASE_URL")
@@ -968,6 +980,7 @@ class Handler(BaseHTTPRequestHandler):
             path = "/index.html"
         query = parse_qs(parsed.query)
         
+        # API endpoints
         if path == "/api/spare-parts":
             brand = query.get("brand", [""])[0]
             category = query.get("category", [""])[0]
@@ -1136,24 +1149,70 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"technicians": [row_repair_technician(r) for r in rows]})
             return
         
+        # STATIC FILE SERVING - Handle images from /shop and /uploads folders
         file_path = unquote(path).lstrip("/")
         if ".." in file_path:
             self.send_error(403)
             return
-        target = (ROOT / file_path).resolve()
-        if not str(target).startswith(str(ROOT)):
-            self.send_error(403)
-            return
-        if not target.exists() or target.is_dir():
+        
+        # Define possible source directories for images
+        possible_paths = []
+        
+        # Check in ROOT directory (for HTML, CSS, JS)
+        root_target = (ROOT / file_path).resolve()
+        if str(root_target).startswith(str(ROOT)):
+            possible_paths.append(root_target)
+        
+        # Check in SHOP_DIR for /shop/ images
+        if path.startswith("/shop/"):
+            shop_target = (SHOP_DIR / Path(file_path).name).resolve()
+            if str(shop_target).startswith(str(SHOP_DIR)):
+                possible_paths.append(shop_target)
+        
+        # Check in UPLOAD_DIR for /uploads/ images
+        if path.startswith("/uploads/"):
+            upload_target = (UPLOAD_DIR / Path(file_path).name).resolve()
+            if str(upload_target).startswith(str(UPLOAD_DIR)):
+                possible_paths.append(upload_target)
+        
+        # Find the first existing file
+        target = None
+        for pt in possible_paths:
+            if pt.exists() and not pt.is_dir():
+                target = pt
+                logger.debug(f"Serving file: {pt}")
+                break
+        
+        if not target:
+            logger.warning(f"File not found: {path}")
             self.send_error(404)
             return
+        
+        # Serve the file
         body = target.read_bytes()
         self.send_response(200)
-        if path.endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp', '.ico')):
+        
+        # Set appropriate content type
+        content_type = mimetypes.guess_type(str(target))[0]
+        if not content_type:
+            if path.endswith('.jpg') or path.endswith('.jpeg'):
+                content_type = 'image/jpeg'
+            elif path.endswith('.png'):
+                content_type = 'image/png'
+            elif path.endswith('.gif'):
+                content_type = 'image/gif'
+            elif path.endswith('.webp'):
+                content_type = 'image/webp'
+            else:
+                content_type = 'application/octet-stream'
+        
+        # Set cache headers for images
+        if path.endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp', '.ico', '.svg')):
             self.send_header("Cache-Control", "public, max-age=86400")
         else:
             self.send_header("Cache-Control", "no-cache")
-        self.send_header("Content-Type", mimetypes.guess_type(str(target))[0] or "application/octet-stream")
+        
+        self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
@@ -1263,8 +1322,10 @@ class Handler(BaseHTTPRequestHandler):
                 ext = Path(image["filename"]).suffix.lower() or ".jpg"
                 filename = f"spare_{secrets.token_hex(8)}{ext}"
                 image_path = f"/uploads/{filename}"
-                with (UPLOAD_DIR / filename).open("wb") as f:
+                target = UPLOAD_DIR / filename
+                with target.open("wb") as f:
                     f.write(image["content"])
+                logger.info(f"✅ Saved spare part image: {filename} to {target}")
             spare_id = "sp-" + secrets.token_hex(8)
             with db() as conn:
                 cursor = conn.cursor()
@@ -1299,17 +1360,49 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/admin/products":
             if not self.require({"admin"}):
                 return
+            
+            logger.info("=" * 50)
+            logger.info("📦 Received product submission")
+            
             form, files = self.read_multipart()
+            
+            logger.info(f"📝 Form fields: {list(form.keys())}")
+            logger.info(f"📎 Files found: {list(files.keys())}")
+            
             image = files.get("img") or files.get("image")
             if not image:
-                self.send_json({"error": "Product image is required"}, 400)
+                logger.error("❌ No image found!")
+                self.send_json({"error": "Product image is required. Field name should be 'img'."}, 400)
                 return
-            ext = Path(image["filename"]).suffix.lower() or ".jpg"
-            filename = secrets.token_hex(12) + ext
-            target = UPLOAD_DIR / filename
-            with target.open("wb") as f:
-                f.write(image["content"])
+            
+            logger.info(f"Image filename: {image['filename']}")
+            logger.info(f"Image size: {len(image['content'])} bytes")
+            
+            try:
+                # Ensure upload directory exists
+                UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+                
+                # Generate unique filename
+                ext = Path(image["filename"]).suffix.lower() or ".jpg"
+                filename = secrets.token_hex(12) + ext
+                target = UPLOAD_DIR / filename
+                
+                # Save the file directly to uploads folder
+                with target.open("wb") as f:
+                    f.write(image["content"])
+                
+                logger.info(f"✅ Image saved: {filename}")
+                logger.info(f"   Full path: {target}")
+                logger.info(f"   File size: {target.stat().st_size} bytes")
+                logger.info(f"   File exists: {target.exists()}")
+                
+            except Exception as e:
+                logger.error(f"❌ Failed to save image: {e}")
+                self.send_json({"error": f"Failed to save image: {str(e)}"}, 500)
+                return
+            
             product_id = "p-" + secrets.token_hex(8)
+            
             name = form.get("name", "").strip()
             category = form.get("cat", "phones")
             price = float(form.get("price", "0"))
@@ -1322,17 +1415,28 @@ class Handler(BaseHTTPRequestHandler):
                     was_price = None
             badge_value = form.get("badge", "")
             desc = form.get("desc", "").strip()
+            
             if not name or price <= 0:
                 self.send_json({"error": "Product name and valid price are required"}, 400)
                 return
+            
+            # Use relative path for image from uploads folder
+            image_url = f"/uploads/{filename}"
+            
             with db() as conn:
                 cursor = conn.cursor()
                 if USE_POSTGRES:
-                    cursor.execute("INSERT INTO products (id,name,cat,price,was,rating,reviews,badge,img,\"desc\",in_stock,created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", (product_id, name, category, price, was_price, 4.6, 0, badge_value, f"/uploads/{filename}", desc, 1, datetime.now(timezone.utc).isoformat()))
+                    cursor.execute("INSERT INTO products (id,name,cat,price,was,rating,reviews,badge,img,\"desc\",in_stock,created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", 
+                        (product_id, name, category, price, was_price, 4.6, 0, badge_value, image_url, desc, 1, datetime.now(timezone.utc).isoformat()))
                 else:
-                    cursor.execute("INSERT INTO products (id,name,cat,price,was,rating,reviews,badge,img,desc,in_stock,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", (product_id, name, category, price, was_price, 4.6, 0, badge_value, f"/uploads/{filename}", desc, 1, datetime.now(timezone.utc).isoformat()))
+                    cursor.execute("INSERT INTO products (id,name,cat,price,was,rating,reviews,badge,img,desc,in_stock,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", 
+                        (product_id, name, category, price, was_price, 4.6, 0, badge_value, image_url, desc, 1, datetime.now(timezone.utc).isoformat()))
                 conn.commit()
-            self.send_json({"ok": True, "id": product_id})
+            
+            logger.info(f"✅ Product added: {product_id} - {name}")
+            logger.info(f"   Image URL: {image_url}")
+            
+            self.send_json({"ok": True, "id": product_id, "image_url": image_url})
             return
         
         if path == "/api/management/repair-technicians":
@@ -1504,7 +1608,8 @@ class Handler(BaseHTTPRequestHandler):
                     ext = Path(image["filename"]).suffix.lower() or ".jpg"
                     filename = f"spare_{secrets.token_hex(8)}{ext}"
                     image_path = f"/uploads/{filename}"
-                    with (UPLOAD_DIR / filename).open("wb") as f:
+                    target = UPLOAD_DIR / filename
+                    with target.open("wb") as f:
                         f.write(image["content"])
                 if USE_POSTGRES:
                     cursor.execute("UPDATE spare_parts SET name = %s, brand = %s, category = %s, price = %s, stock = %s, image_path = %s, \"description\" = %s WHERE id = %s", (name, brand, category, price, stock, image_path, description, spare_id))
@@ -1568,6 +1673,7 @@ class Handler(BaseHTTPRequestHandler):
                 return
             product_id = path.split("/")[-1]
             data = self.read_json()
+            logger.info(f"Updating product {product_id} with data: {data}")
             with db() as conn:
                 cursor = conn.cursor()
                 cursor.execute("SELECT * FROM products WHERE id = %s" if USE_POSTGRES else "SELECT * FROM products WHERE id = ?", (product_id,))
@@ -1575,11 +1681,38 @@ class Handler(BaseHTTPRequestHandler):
                 if not existing:
                     self.send_json({"error": "Product not found"}, 404)
                     return
+                
+                # Handle image update if new image is provided
+                img_path = data.get("img", existing["img"])
+                
                 if USE_POSTGRES:
-                    cursor.execute("UPDATE products SET name = %s, price = %s, was = %s, badge = %s, img = %s, rating = %s, reviews = %s, in_stock = %s, cat = %s, \"desc\" = %s WHERE id = %s", (data.get("name", existing["name"]), float(data.get("price", existing["price"])), data.get("was") if data.get("was") else None, data.get("badge", existing.get("badge", "")), data.get("img", existing["img"]), float(data.get("rating", existing.get("rating", 4.6))), int(data.get("reviews", existing.get("reviews", 0))), 1 if data.get("inStock", existing.get("in_stock", 1)) else 0, data.get("cat", existing["cat"]), data.get("desc", existing.get("desc", "")), product_id))
+                    cursor.execute("UPDATE products SET name = %s, price = %s, was = %s, badge = %s, img = %s, rating = %s, reviews = %s, in_stock = %s, cat = %s, \"desc\" = %s WHERE id = %s", 
+                        (data.get("name", existing["name"]), 
+                         float(data.get("price", existing["price"])), 
+                         data.get("was") if data.get("was") else None, 
+                         data.get("badge", existing.get("badge", "")), 
+                         img_path,
+                         float(data.get("rating", existing.get("rating", 4.6))), 
+                         int(data.get("reviews", existing.get("reviews", 0))), 
+                         1 if data.get("inStock", existing.get("in_stock", 1)) else 0, 
+                         data.get("cat", existing["cat"]), 
+                         data.get("desc", existing.get("desc", "")), 
+                         product_id))
                 else:
-                    cursor.execute("UPDATE products SET name = ?, price = ?, was = ?, badge = ?, img = ?, rating = ?, reviews = ?, in_stock = ?, cat = ?, desc = ? WHERE id = ?", (data.get("name", existing["name"]), float(data.get("price", existing["price"])), data.get("was") if data.get("was") else None, data.get("badge", existing.get("badge", "")), data.get("img", existing["img"]), float(data.get("rating", existing.get("rating", 4.6))), int(data.get("reviews", existing.get("reviews", 0))), 1 if data.get("inStock", existing.get("in_stock", 1)) else 0, data.get("cat", existing["cat"]), data.get("desc", existing.get("desc", "")), product_id))
+                    cursor.execute("UPDATE products SET name = ?, price = ?, was = ?, badge = ?, img = ?, rating = ?, reviews = ?, in_stock = ?, cat = ?, desc = ? WHERE id = ?", 
+                        (data.get("name", existing["name"]), 
+                         float(data.get("price", existing["price"])), 
+                         data.get("was") if data.get("was") else None, 
+                         data.get("badge", existing.get("badge", "")), 
+                         img_path,
+                         float(data.get("rating", existing.get("rating", 4.6))), 
+                         int(data.get("reviews", existing.get("reviews", 0))), 
+                         1 if data.get("inStock", existing.get("in_stock", 1)) else 0, 
+                         data.get("cat", existing["cat"]), 
+                         data.get("desc", existing.get("desc", "")), 
+                         product_id))
                 conn.commit()
+                logger.info(f"Product {product_id} updated successfully")
             self.send_json({"ok": True})
             return
         
@@ -1600,6 +1733,7 @@ class Handler(BaseHTTPRequestHandler):
                     target = UPLOAD_DIR / filename
                     if target.exists() and target.is_file():
                         target.unlink()
+                        logger.info(f"Deleted image: {filename}")
             self.send_json({"ok": True})
             return
         
@@ -1618,6 +1752,7 @@ class Handler(BaseHTTPRequestHandler):
                         target = UPLOAD_DIR / filename
                         if target.exists():
                             target.unlink()
+                            logger.info(f"Deleted spare part image: {filename}")
                 cursor.execute("DELETE FROM spare_parts WHERE id = %s" if USE_POSTGRES else "DELETE FROM spare_parts WHERE id = ?", (spare_id,))
                 conn.commit()
             self.send_json({"ok": True})
@@ -1643,6 +1778,7 @@ class Handler(BaseHTTPRequestHandler):
                     # Product has orders - just mark as out of stock instead of deleting
                     cursor.execute("UPDATE products SET in_stock = 0 WHERE id = %s" if USE_POSTGRES else "UPDATE products SET in_stock = 0 WHERE id = ?", (product_id,))
                     conn.commit()
+                    logger.info(f"Product {product_id} has orders - marked as out of stock")
                     self.send_json({"ok": True, "warning": "Product has existing orders. Marked as out of stock instead of deleting."})
                     return
                 
@@ -1652,11 +1788,13 @@ class Handler(BaseHTTPRequestHandler):
                     target = UPLOAD_DIR / filename
                     if target.exists():
                         target.unlink()
+                        logger.info(f"Deleted product image: {filename}")
                 
                 # Delete from order_items (should be empty but just in case)
                 cursor.execute("DELETE FROM order_items WHERE product_id = %s" if USE_POSTGRES else "DELETE FROM order_items WHERE product_id = ?", (product_id,))
                 cursor.execute("DELETE FROM products WHERE id = %s" if USE_POSTGRES else "DELETE FROM products WHERE id = ?", (product_id,))
                 conn.commit()
+                logger.info(f"Product {product_id} deleted completely")
             self.send_json({"ok": True})
             return
         
@@ -1673,6 +1811,7 @@ class Handler(BaseHTTPRequestHandler):
                     target = UPLOAD_DIR / filename
                     if target.exists():
                         target.unlink()
+                        logger.info(f"Deleted repair service image: {filename}")
                 cursor.execute("DELETE FROM repair_services WHERE id = %s" if USE_POSTGRES else "DELETE FROM repair_services WHERE id = ?", (service_id,))
                 conn.commit()
             self.send_json({"ok": True})
@@ -1711,4 +1850,14 @@ if __name__ == "__main__":
         logger.info("Using PostgreSQL database")
     else:
         logger.info("Using SQLite database")
+    
+    # Log existing files in uploads directory
+    if UPLOAD_DIR.exists():
+        files = list(UPLOAD_DIR.glob("*"))
+        logger.info(f"Files in uploads directory: {len(files)}")
+        for f in files[:10]:
+            logger.info(f"  - {f.name}")
+    else:
+        logger.warning(f"Uploads directory does not exist: {UPLOAD_DIR}")
+    
     ThreadingHTTPServer((host, port), Handler).serve_forever()
