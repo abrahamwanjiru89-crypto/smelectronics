@@ -624,8 +624,12 @@ def init_db():
         conn.commit()
         now = datetime.now(timezone.utc).isoformat()
         
-        cursor.execute("SELECT COUNT(*) FROM users")
-        if cursor.fetchone()[0] == 0:
+        # Check users
+        cursor.execute("SELECT COUNT(*) as count FROM users")
+        result = cursor.fetchone()
+        user_count = result["count"] if USE_POSTGRES else result[0]
+        
+        if user_count == 0:
             logger.info("Seeding default users...")
             if USE_POSTGRES:
                 cursor.execute("INSERT INTO users (id,name,email,password_hash,role,created_at) VALUES (%s,%s,%s,%s,%s,%s)", ("u-admin", "Store Admin", "admin@smdynamics.com", hash_password("admin123"), "admin", now))
@@ -635,8 +639,12 @@ def init_db():
                 cursor.execute("INSERT INTO users (id,name,email,password_hash,role,created_at) VALUES (?,?,?,?,?,?)", ("u-staff", "Order Staff", "staff@smdynamics.com", hash_password("staff123"), "staff", now))
             conn.commit()
         
-        cursor.execute("SELECT COUNT(*) FROM products")
-        if cursor.fetchone()[0] == 0:
+        # Check products
+        cursor.execute("SELECT COUNT(*) as count FROM products")
+        result = cursor.fetchone()
+        product_count = result["count"] if USE_POSTGRES else result[0]
+        
+        if product_count == 0:
             logger.info("Seeding default products...")
             if USE_POSTGRES:
                 for p in DEFAULT_PRODUCTS:
@@ -646,8 +654,10 @@ def init_db():
             conn.commit()
             logger.info(f"Seeded {len(DEFAULT_PRODUCTS)} default products")
         
-        cursor.execute("SELECT COUNT(*) FROM repair_categories")
-        if cursor.fetchone()[0] == 0:
+        # Check repair categories
+        cursor.execute("SELECT COUNT(*) as count FROM repair_categories")
+        result = cursor.fetchone()
+        if (result["count"] if USE_POSTGRES else result[0]) == 0:
             logger.info("Seeding repair categories...")
             if USE_POSTGRES:
                 for c in DEFAULT_REPAIR_CATEGORIES:
@@ -656,8 +666,10 @@ def init_db():
                 cursor.executemany("INSERT INTO repair_categories (id,name,slug,created_at) VALUES (?,?,?,?)", [(*c, now) for c in DEFAULT_REPAIR_CATEGORIES])
             conn.commit()
         
-        cursor.execute("SELECT COUNT(*) FROM repair_services")
-        if cursor.fetchone()[0] == 0:
+        # Check repair services
+        cursor.execute("SELECT COUNT(*) as count FROM repair_services")
+        result = cursor.fetchone()
+        if (result["count"] if USE_POSTGRES else result[0]) == 0:
             logger.info("Seeding repair services...")
             if USE_POSTGRES:
                 for s in DEFAULT_REPAIR_SERVICES:
@@ -666,8 +678,10 @@ def init_db():
                 cursor.executemany("INSERT INTO repair_services (id,title,brand,repair_type,price,duration,warranty,image,description,available,category_id,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", [(*s, now) for s in DEFAULT_REPAIR_SERVICES])
             conn.commit()
         
-        cursor.execute("SELECT COUNT(*) FROM repair_statuses")
-        if cursor.fetchone()[0] == 0:
+        # Check repair statuses
+        cursor.execute("SELECT COUNT(*) as count FROM repair_statuses")
+        result = cursor.fetchone()
+        if (result["count"] if USE_POSTGRES else result[0]) == 0:
             logger.info("Seeding repair statuses...")
             if USE_POSTGRES:
                 for status, seq in REPAIR_STATUSES:
@@ -676,8 +690,10 @@ def init_db():
                 cursor.executemany("INSERT INTO repair_statuses (status,sequence) VALUES (?,?)", REPAIR_STATUSES)
             conn.commit()
         
-        cursor.execute("SELECT COUNT(*) FROM device_models")
-        if cursor.fetchone()[0] == 0:
+        # Check device models
+        cursor.execute("SELECT COUNT(*) as count FROM device_models")
+        result = cursor.fetchone()
+        if (result["count"] if USE_POSTGRES else result[0]) == 0:
             logger.info("Seeding device models...")
             rows = []
             for brand, models in DEFAULT_DEVICE_MODELS.items():
@@ -690,8 +706,10 @@ def init_db():
                 cursor.executemany("INSERT INTO device_models (id,brand,model,created_at) VALUES (?,?,?,?)", rows)
             conn.commit()
         
-        cursor.execute("SELECT COUNT(*) FROM spare_parts")
-        if cursor.fetchone()[0] == 0:
+        # Check spare parts
+        cursor.execute("SELECT COUNT(*) as count FROM spare_parts")
+        result = cursor.fetchone()
+        if (result["count"] if USE_POSTGRES else result[0]) == 0:
             logger.info("Seeding default spare parts...")
             if USE_POSTGRES:
                 for p in DEFAULT_SPARE_PARTS:
@@ -701,8 +719,10 @@ def init_db():
             conn.commit()
             logger.info(f"Seeded {len(DEFAULT_SPARE_PARTS)} default spare parts")
         
-        cursor.execute("SELECT COUNT(*) FROM settings")
-        if cursor.fetchone()[0] == 0:
+        # Check settings
+        cursor.execute("SELECT COUNT(*) as count FROM settings")
+        result = cursor.fetchone()
+        if (result["count"] if USE_POSTGRES else result[0]) == 0:
             if USE_POSTGRES:
                 cursor.execute("INSERT INTO settings (key, value) VALUES (%s, %s) ON CONFLICT (key) DO NOTHING", ('delivery_fee', '600'))
             else:
@@ -969,7 +989,19 @@ class Handler(BaseHTTPRequestHandler):
                 q += " ORDER BY brand, category, name"
                 cursor.execute(q, params)
                 rows = cursor.fetchall()
-                result = [{"id": r["id"], "name": r["name"], "brand": r["brand"], "category": r["category"], "price": r["price"], "stock": r["stock"], "image": r["image_path"], "image_path": r["image_path"], "description": r["description"] if "description" in r else r.get("description", "")} for r in rows]
+                result = []
+                for r in rows:
+                    result.append({
+                        "id": r["id"],
+                        "name": r["name"],
+                        "brand": r["brand"],
+                        "category": r["category"],
+                        "price": r["price"],
+                        "stock": r["stock"],
+                        "image": r["image_path"],
+                        "image_path": r["image_path"],
+                        "description": r["description"] if "description" in r else r.get("description", "")
+                    })
                 self.send_json({"spares": result})
             return
         
