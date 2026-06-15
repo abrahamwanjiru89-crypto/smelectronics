@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 ROOT = Path(__file__).parent.resolve()
 
-# CRITICAL FIX: Use the uploads folder in the project root (NOT in DATA_DIR)
+# Use the uploads folder in the project root
 UPLOAD_DIR = ROOT / "uploads"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -1357,6 +1357,9 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"ok": True})
             return
         
+        # ============================================
+        # UPDATED PRODUCT ENDPOINT - Supports both File Upload and Image URL
+        # ============================================
         if path == "/api/admin/products":
             if not self.require({"admin"}):
                 return
@@ -1364,80 +1367,128 @@ class Handler(BaseHTTPRequestHandler):
             logger.info("=" * 50)
             logger.info("📦 Received product submission")
             
-            form, files = self.read_multipart()
+            content_type = self.headers.get("Content-Type", "")
             
-            logger.info(f"📝 Form fields: {list(form.keys())}")
-            logger.info(f"📎 Files found: {list(files.keys())}")
-            
-            image = files.get("img") or files.get("image")
-            if not image:
-                logger.error("❌ No image found!")
-                self.send_json({"error": "Product image is required. Field name should be 'img'."}, 400)
+            # Check if it's JSON (with image URL) or multipart (with file upload)
+            if content_type.startswith("application/json"):
+                # JSON with image URL (Imgur or external URL)
+                data = self.read_json()
+                
+                name = data.get("name", "").strip()
+                category = data.get("cat", "phones")
+                price = float(data.get("price", 0))
+                was_price = data.get("was")
+                if was_price:
+                    try:
+                        was_price = float(was_price)
+                    except:
+                        was_price = None
+                badge_value = data.get("badge", "")
+                desc = data.get("desc", "").strip()
+                image_url = data.get("image_url", "").strip()
+                
+                logger.info(f"📝 Product data from JSON: name={name}, price={price}, image_url={image_url}")
+                
+                if not name or price <= 0:
+                    self.send_json({"error": "Product name and valid price are required"}, 400)
+                    return
+                
+                if not image_url:
+                    self.send_json({"error": "Image URL is required"}, 400)
+                    return
+                
+                product_id = "p-" + secrets.token_hex(8)
+                
+                with db() as conn:
+                    cursor = conn.cursor()
+                    if USE_POSTGRES:
+                        cursor.execute("INSERT INTO products (id,name,cat,price,was,rating,reviews,badge,img,\"desc\",in_stock,created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", 
+                            (product_id, name, category, price, was_price, 4.6, 0, badge_value, image_url, desc, 1, datetime.now(timezone.utc).isoformat()))
+                    else:
+                        cursor.execute("INSERT INTO products (id,name,cat,price,was,rating,reviews,badge,img,desc,in_stock,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", 
+                            (product_id, name, category, price, was_price, 4.6, 0, badge_value, image_url, desc, 1, datetime.now(timezone.utc).isoformat()))
+                    conn.commit()
+                
+                logger.info(f"✅ Product added: {product_id} - {name} with image URL: {image_url}")
+                self.send_json({"ok": True, "id": product_id, "image_url": image_url})
                 return
             
-            logger.info(f"Image filename: {image['filename']}")
-            logger.info(f"Image size: {len(image['content'])} bytes")
-            
-            try:
-                # Ensure upload directory exists
-                UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+            else:
+                # Handle multipart form data (file upload - old way)
+                form, files = self.read_multipart()
                 
-                # Generate unique filename
-                ext = Path(image["filename"]).suffix.lower() or ".jpg"
-                filename = secrets.token_hex(12) + ext
-                target = UPLOAD_DIR / filename
+                logger.info(f"📝 Form fields: {list(form.keys())}")
+                logger.info(f"📎 Files found: {list(files.keys())}")
                 
-                # Save the file directly to uploads folder
-                with target.open("wb") as f:
-                    f.write(image["content"])
+                image = files.get("img") or files.get("image")
+                if not image:
+                    logger.error("❌ No image found!")
+                    self.send_json({"error": "Product image is required. Field name should be 'img'."}, 400)
+                    return
                 
-                logger.info(f"✅ Image saved: {filename}")
-                logger.info(f"   Full path: {target}")
-                logger.info(f"   File size: {target.stat().st_size} bytes")
-                logger.info(f"   File exists: {target.exists()}")
+                logger.info(f"Image filename: {image['filename']}")
+                logger.info(f"Image size: {len(image['content'])} bytes")
                 
-            except Exception as e:
-                logger.error(f"❌ Failed to save image: {e}")
-                self.send_json({"error": f"Failed to save image: {str(e)}"}, 500)
-                return
-            
-            product_id = "p-" + secrets.token_hex(8)
-            
-            name = form.get("name", "").strip()
-            category = form.get("cat", "phones")
-            price = float(form.get("price", "0"))
-            was_price = None
-            was_input = form.get("was", "")
-            if was_input and was_input.strip():
                 try:
-                    was_price = float(was_input)
-                except:
-                    was_price = None
-            badge_value = form.get("badge", "")
-            desc = form.get("desc", "").strip()
-            
-            if not name or price <= 0:
-                self.send_json({"error": "Product name and valid price are required"}, 400)
+                    # Ensure upload directory exists
+                    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+                    
+                    # Generate unique filename
+                    ext = Path(image["filename"]).suffix.lower() or ".jpg"
+                    filename = secrets.token_hex(12) + ext
+                    target = UPLOAD_DIR / filename
+                    
+                    # Save the file directly to uploads folder
+                    with target.open("wb") as f:
+                        f.write(image["content"])
+                    
+                    logger.info(f"✅ Image saved: {filename}")
+                    logger.info(f"   Full path: {target}")
+                    logger.info(f"   File size: {target.stat().st_size} bytes")
+                    logger.info(f"   File exists: {target.exists()}")
+                    
+                except Exception as e:
+                    logger.error(f"❌ Failed to save image: {e}")
+                    self.send_json({"error": f"Failed to save image: {str(e)}"}, 500)
+                    return
+                
+                product_id = "p-" + secrets.token_hex(8)
+                
+                name = form.get("name", "").strip()
+                category = form.get("cat", "phones")
+                price = float(form.get("price", "0"))
+                was_price = None
+                was_input = form.get("was", "")
+                if was_input and was_input.strip():
+                    try:
+                        was_price = float(was_input)
+                    except:
+                        was_price = None
+                badge_value = form.get("badge", "")
+                desc = form.get("desc", "").strip()
+                
+                if not name or price <= 0:
+                    self.send_json({"error": "Product name and valid price are required"}, 400)
+                    return
+                
+                # Use relative path for image from uploads folder
+                image_url = f"/uploads/{filename}"
+                
+                with db() as conn:
+                    cursor = conn.cursor()
+                    if USE_POSTGRES:
+                        cursor.execute("INSERT INTO products (id,name,cat,price,was,rating,reviews,badge,img,\"desc\",in_stock,created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", 
+                            (product_id, name, category, price, was_price, 4.6, 0, badge_value, image_url, desc, 1, datetime.now(timezone.utc).isoformat()))
+                    else:
+                        cursor.execute("INSERT INTO products (id,name,cat,price,was,rating,reviews,badge,img,desc,in_stock,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", 
+                            (product_id, name, category, price, was_price, 4.6, 0, badge_value, image_url, desc, 1, datetime.now(timezone.utc).isoformat()))
+                    conn.commit()
+                
+                logger.info(f"✅ Product added: {product_id} - {name}")
+                logger.info(f"   Image URL: {image_url}")
+                
+                self.send_json({"ok": True, "id": product_id, "image_url": image_url})
                 return
-            
-            # Use relative path for image from uploads folder
-            image_url = f"/uploads/{filename}"
-            
-            with db() as conn:
-                cursor = conn.cursor()
-                if USE_POSTGRES:
-                    cursor.execute("INSERT INTO products (id,name,cat,price,was,rating,reviews,badge,img,\"desc\",in_stock,created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", 
-                        (product_id, name, category, price, was_price, 4.6, 0, badge_value, image_url, desc, 1, datetime.now(timezone.utc).isoformat()))
-                else:
-                    cursor.execute("INSERT INTO products (id,name,cat,price,was,rating,reviews,badge,img,desc,in_stock,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", 
-                        (product_id, name, category, price, was_price, 4.6, 0, badge_value, image_url, desc, 1, datetime.now(timezone.utc).isoformat()))
-                conn.commit()
-            
-            logger.info(f"✅ Product added: {product_id} - {name}")
-            logger.info(f"   Image URL: {image_url}")
-            
-            self.send_json({"ok": True, "id": product_id, "image_url": image_url})
-            return
         
         if path == "/api/management/repair-technicians":
             if not self.require({"admin"}):
