@@ -276,7 +276,7 @@ def init_db():
               reviews INTEGER DEFAULT 0,
               badge TEXT DEFAULT '',
               img TEXT NOT NULL,
-              desc TEXT NOT NULL,
+              "desc" TEXT NOT NULL,
               in_stock INTEGER NOT NULL DEFAULT 1,
               created_at TEXT NOT NULL
             );
@@ -323,7 +323,7 @@ def init_db():
               duration TEXT NOT NULL,
               warranty TEXT NOT NULL,
               image TEXT NOT NULL,
-              description TEXT NOT NULL,
+              "description" TEXT NOT NULL,
               available INTEGER NOT NULL DEFAULT 1,
               category_id TEXT,
               created_at TEXT NOT NULL,
@@ -349,7 +349,7 @@ def init_db():
               model TEXT NOT NULL,
               repair_service_id TEXT,
               repair_type TEXT NOT NULL,
-              description TEXT NOT NULL,
+              "description" TEXT NOT NULL,
               image_path TEXT,
               pickup_dropoff TEXT NOT NULL,
               preferred_at TEXT NOT NULL,
@@ -384,7 +384,7 @@ def init_db():
               price REAL NOT NULL,
               stock INTEGER NOT NULL DEFAULT 1,
               image_path TEXT,
-              description TEXT,
+              "description" TEXT,
               created_at TEXT NOT NULL
             );
             CREATE TABLE IF NOT EXISTS counties (
@@ -626,7 +626,7 @@ def init_db():
         
         cursor.execute("SELECT COUNT(*) FROM users")
         if cursor.fetchone()[0] == 0:
-            logger.info("🌱 Seeding default users...")
+            logger.info("Seeding default users...")
             if USE_POSTGRES:
                 cursor.execute("INSERT INTO users (id,name,email,password_hash,role,created_at) VALUES (%s,%s,%s,%s,%s,%s)", ("u-admin", "Store Admin", "admin@smdynamics.com", hash_password("admin123"), "admin", now))
                 cursor.execute("INSERT INTO users (id,name,email,password_hash,role,created_at) VALUES (%s,%s,%s,%s,%s,%s)", ("u-staff", "Order Staff", "staff@smdynamics.com", hash_password("staff123"), "staff", now))
@@ -637,18 +637,18 @@ def init_db():
         
         cursor.execute("SELECT COUNT(*) FROM products")
         if cursor.fetchone()[0] == 0:
-            logger.info("🌱 Seeding default products...")
+            logger.info("Seeding default products...")
             if USE_POSTGRES:
                 for p in DEFAULT_PRODUCTS:
-                    cursor.execute("INSERT INTO products (id,name,cat,price,was,rating,reviews,badge,img,desc,in_stock,created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", (*p, now))
+                    cursor.execute("INSERT INTO products (id,name,cat,price,was,rating,reviews,badge,img,\"desc\",in_stock,created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", (*p, now))
             else:
                 cursor.executemany("INSERT INTO products (id,name,cat,price,was,rating,reviews,badge,img,desc,in_stock,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", [(*p, now) for p in DEFAULT_PRODUCTS])
             conn.commit()
-            logger.info(f"✅ Seeded {len(DEFAULT_PRODUCTS)} default products")
+            logger.info(f"Seeded {len(DEFAULT_PRODUCTS)} default products")
         
         cursor.execute("SELECT COUNT(*) FROM repair_categories")
         if cursor.fetchone()[0] == 0:
-            logger.info("🌱 Seeding repair categories...")
+            logger.info("Seeding repair categories...")
             if USE_POSTGRES:
                 for c in DEFAULT_REPAIR_CATEGORIES:
                     cursor.execute("INSERT INTO repair_categories (id,name,slug,created_at) VALUES (%s,%s,%s,%s)", (*c, now))
@@ -658,17 +658,17 @@ def init_db():
         
         cursor.execute("SELECT COUNT(*) FROM repair_services")
         if cursor.fetchone()[0] == 0:
-            logger.info("🌱 Seeding repair services...")
+            logger.info("Seeding repair services...")
             if USE_POSTGRES:
                 for s in DEFAULT_REPAIR_SERVICES:
-                    cursor.execute("INSERT INTO repair_services (id,title,brand,repair_type,price,duration,warranty,image,description,available,category_id,created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", (*s, now))
+                    cursor.execute("INSERT INTO repair_services (id,title,brand,repair_type,price,duration,warranty,image,\"description\",available,category_id,created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", (*s, now))
             else:
                 cursor.executemany("INSERT INTO repair_services (id,title,brand,repair_type,price,duration,warranty,image,description,available,category_id,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", [(*s, now) for s in DEFAULT_REPAIR_SERVICES])
             conn.commit()
         
         cursor.execute("SELECT COUNT(*) FROM repair_statuses")
         if cursor.fetchone()[0] == 0:
-            logger.info("🌱 Seeding repair statuses...")
+            logger.info("Seeding repair statuses...")
             if USE_POSTGRES:
                 for status, seq in REPAIR_STATUSES:
                     cursor.execute("INSERT INTO repair_statuses (status,sequence) VALUES (%s,%s) ON CONFLICT (status) DO NOTHING", (status, seq))
@@ -678,7 +678,7 @@ def init_db():
         
         cursor.execute("SELECT COUNT(*) FROM device_models")
         if cursor.fetchone()[0] == 0:
-            logger.info("🌱 Seeding device models...")
+            logger.info("Seeding device models...")
             rows = []
             for brand, models in DEFAULT_DEVICE_MODELS.items():
                 for m in models:
@@ -692,14 +692,14 @@ def init_db():
         
         cursor.execute("SELECT COUNT(*) FROM spare_parts")
         if cursor.fetchone()[0] == 0:
-            logger.info("🌱 Seeding default spare parts...")
+            logger.info("Seeding default spare parts...")
             if USE_POSTGRES:
                 for p in DEFAULT_SPARE_PARTS:
-                    cursor.execute("INSERT INTO spare_parts (id,name,brand,category,price,stock,image_path,description,created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)", (*p, now))
+                    cursor.execute("INSERT INTO spare_parts (id,name,brand,category,price,stock,image_path,\"description\",created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)", (*p, now))
             else:
                 cursor.executemany("INSERT INTO spare_parts (id,name,brand,category,price,stock,image_path,description,created_at) VALUES (?,?,?,?,?,?,?,?,?)", [(*p, now) for p in DEFAULT_SPARE_PARTS])
             conn.commit()
-            logger.info(f"✅ Seeded {len(DEFAULT_SPARE_PARTS)} default spare parts")
+            logger.info(f"Seeded {len(DEFAULT_SPARE_PARTS)} default spare parts")
         
         cursor.execute("SELECT COUNT(*) FROM settings")
         if cursor.fetchone()[0] == 0:
@@ -710,7 +710,7 @@ def init_db():
             conn.commit()
         
         seed_county_locations(conn, now)
-        logger.info("✅ Database initialization complete")
+        logger.info("Database initialization complete")
 
 def row_product(row):
     return {
@@ -723,7 +723,7 @@ def row_product(row):
         "reviews": row["reviews"],
         "badge": row["badge"],
         "img": row["img"],
-        "desc": row["desc"],
+        "desc": row["desc"] if "desc" in row else row.get("desc", ""),
         "inStock": bool(row["in_stock"]),
         "specs": {"Category": row["cat"], "Warranty": "2 years", "Stock": "Available" if row["in_stock"] else "Out of stock"},
     }
@@ -768,7 +768,7 @@ def row_repair_service(row):
         "duration": row["duration"],
         "warranty": row["warranty"],
         "image": row["image"],
-        "description": row["description"],
+        "description": row["description"] if "description" in row else row.get("description", ""),
         "available": bool(row["available"]),
         "categoryId": row.get("category_id"),
         "category": row.get("category_name", ""),
@@ -800,7 +800,7 @@ def row_repair_booking(conn, row):
         "technicianId": row.get("technician_id"),
         "repairServiceTitle": service["title"] if service else "",
         "repairType": row["repair_type"],
-        "description": row["description"],
+        "description": row["description"] if "description" in row else row.get("description", ""),
         "imagePath": row.get("image_path"),
         "pickupDropoff": row["pickup_dropoff"],
         "preferredAt": row["preferred_at"],
@@ -963,13 +963,13 @@ class Handler(BaseHTTPRequestHandler):
                     q += " AND LOWER(category) = LOWER(%s)" if USE_POSTGRES else " AND LOWER(category) = LOWER(?)"
                     params.append(category)
                 if search:
-                    q += " AND (LOWER(name) LIKE %s OR LOWER(description) LIKE %s)" if USE_POSTGRES else " AND (LOWER(name) LIKE ? OR LOWER(description) LIKE ?)"
+                    q += " AND (LOWER(name) LIKE %s OR LOWER(\"description\") LIKE %s)" if USE_POSTGRES else " AND (LOWER(name) LIKE ? OR LOWER(description) LIKE ?)"
                     term = f"%{search}%"
                     params.extend([term, term])
                 q += " ORDER BY brand, category, name"
                 cursor.execute(q, params)
                 rows = cursor.fetchall()
-                result = [{"id": r["id"], "name": r["name"], "brand": r["brand"], "category": r["category"], "price": r["price"], "stock": r["stock"], "image": r["image_path"], "image_path": r["image_path"], "description": r["description"]} for r in rows]
+                result = [{"id": r["id"], "name": r["name"], "brand": r["brand"], "category": r["category"], "price": r["price"], "stock": r["stock"], "image": r["image_path"], "image_path": r["image_path"], "description": r["description"] if "description" in r else r.get("description", "")} for r in rows]
                 self.send_json({"spares": result})
             return
         
@@ -1236,7 +1236,10 @@ class Handler(BaseHTTPRequestHandler):
             spare_id = "sp-" + secrets.token_hex(8)
             with db() as conn:
                 cursor = conn.cursor()
-                cursor.execute("INSERT INTO spare_parts (id,name,brand,category,price,stock,image_path,description,created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)" if USE_POSTGRES else "INSERT INTO spare_parts (id,name,brand,category,price,stock,image_path,description,created_at) VALUES (?,?,?,?,?,?,?,?,?)", (spare_id, name, brand, category, price, stock, image_path, description, datetime.now(timezone.utc).isoformat()))
+                if USE_POSTGRES:
+                    cursor.execute("INSERT INTO spare_parts (id,name,brand,category,price,stock,image_path,\"description\",created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)", (spare_id, name, brand, category, price, stock, image_path, description, datetime.now(timezone.utc).isoformat()))
+                else:
+                    cursor.execute("INSERT INTO spare_parts (id,name,brand,category,price,stock,image_path,description,created_at) VALUES (?,?,?,?,?,?,?,?,?)", (spare_id, name, brand, category, price, stock, image_path, description, datetime.now(timezone.utc).isoformat()))
                 conn.commit()
             self.send_json({"ok": True, "id": spare_id})
             return
@@ -1292,7 +1295,10 @@ class Handler(BaseHTTPRequestHandler):
                 return
             with db() as conn:
                 cursor = conn.cursor()
-                cursor.execute("INSERT INTO products (id,name,cat,price,was,rating,reviews,badge,img,desc,in_stock,created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)" if USE_POSTGRES else "INSERT INTO products (id,name,cat,price,was,rating,reviews,badge,img,desc,in_stock,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", (product_id, name, category, price, was_price, 4.6, 0, badge_value, f"/uploads/{filename}", desc, 1, datetime.now(timezone.utc).isoformat()))
+                if USE_POSTGRES:
+                    cursor.execute("INSERT INTO products (id,name,cat,price,was,rating,reviews,badge,img,\"desc\",in_stock,created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", (product_id, name, category, price, was_price, 4.6, 0, badge_value, f"/uploads/{filename}", desc, 1, datetime.now(timezone.utc).isoformat()))
+                else:
+                    cursor.execute("INSERT INTO products (id,name,cat,price,was,rating,reviews,badge,img,desc,in_stock,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", (product_id, name, category, price, was_price, 4.6, 0, badge_value, f"/uploads/{filename}", desc, 1, datetime.now(timezone.utc).isoformat()))
                 conn.commit()
             self.send_json({"ok": True, "id": product_id})
             return
@@ -1334,7 +1340,10 @@ class Handler(BaseHTTPRequestHandler):
             service_id = "rs-" + secrets.token_hex(8)
             with db() as conn:
                 cursor = conn.cursor()
-                cursor.execute("INSERT INTO repair_services (id,title,brand,repair_type,price,duration,warranty,image,description,available,category_id,created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)" if USE_POSTGRES else "INSERT INTO repair_services (id,title,brand,repair_type,price,duration,warranty,image,description,available,category_id,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", (service_id, form.get("title", "").strip(), form.get("brand", "").strip(), form.get("repairType", "").strip(), float(form.get("price", "0") or 0), form.get("duration", "").strip(), form.get("warranty", "").strip(), f"/uploads/{filename}", form.get("description", "").strip(), 1, form.get("categoryId", None), datetime.now(timezone.utc).isoformat()))
+                if USE_POSTGRES:
+                    cursor.execute("INSERT INTO repair_services (id,title,brand,repair_type,price,duration,warranty,image,\"description\",available,category_id,created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", (service_id, form.get("title", "").strip(), form.get("brand", "").strip(), form.get("repairType", "").strip(), float(form.get("price", "0") or 0), form.get("duration", "").strip(), form.get("warranty", "").strip(), f"/uploads/{filename}", form.get("description", "").strip(), 1, form.get("categoryId", None), datetime.now(timezone.utc).isoformat()))
+                else:
+                    cursor.execute("INSERT INTO repair_services (id,title,brand,repair_type,price,duration,warranty,image,description,available,category_id,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", (service_id, form.get("title", "").strip(), form.get("brand", "").strip(), form.get("repairType", "").strip(), float(form.get("price", "0") or 0), form.get("duration", "").strip(), form.get("warranty", "").strip(), f"/uploads/{filename}", form.get("description", "").strip(), 1, form.get("categoryId", None), datetime.now(timezone.utc).isoformat()))
                 conn.commit()
             self.send_json({"ok": True})
             return
@@ -1344,7 +1353,10 @@ class Handler(BaseHTTPRequestHandler):
             booking_id = "bk-" + secrets.token_hex(8)
             with db() as conn:
                 cursor = conn.cursor()
-                cursor.execute("INSERT INTO repair_bookings (id, name, email, phone, brand, model, repair_service_id, repair_type, description, pickup_dropoff, preferred_at, status, created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)" if USE_POSTGRES else "INSERT INTO repair_bookings (id, name, email, phone, brand, model, repair_service_id, repair_type, description, pickup_dropoff, preferred_at, status, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", (booking_id, data.get("name"), data.get("email"), data.get("phone"), data.get("brand"), data.get("model"), data.get("repairServiceId"), data.get("repairType"), data.get("description"), data.get("pickupDropoff") or "Dropoff", data.get("preferredAt") or datetime.now(timezone.utc).isoformat(), "Pending", datetime.now(timezone.utc).isoformat()))
+                if USE_POSTGRES:
+                    cursor.execute("INSERT INTO repair_bookings (id, name, email, phone, brand, model, repair_service_id, repair_type, \"description\", pickup_dropoff, preferred_at, status, created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", (booking_id, data.get("name"), data.get("email"), data.get("phone"), data.get("brand"), data.get("model"), data.get("repairServiceId"), data.get("repairType"), data.get("description"), data.get("pickupDropoff") or "Dropoff", data.get("preferredAt") or datetime.now(timezone.utc).isoformat(), "Pending", datetime.now(timezone.utc).isoformat()))
+                else:
+                    cursor.execute("INSERT INTO repair_bookings (id, name, email, phone, brand, model, repair_service_id, repair_type, description, pickup_dropoff, preferred_at, status, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", (booking_id, data.get("name"), data.get("email"), data.get("phone"), data.get("brand"), data.get("model"), data.get("repairServiceId"), data.get("repairType"), data.get("description"), data.get("pickupDropoff") or "Dropoff", data.get("preferredAt") or datetime.now(timezone.utc).isoformat(), "Pending", datetime.now(timezone.utc).isoformat()))
                 conn.commit()
             self.send_json({"ok": True, "id": booking_id})
             return
@@ -1462,7 +1474,10 @@ class Handler(BaseHTTPRequestHandler):
                     image_path = f"/uploads/{filename}"
                     with (UPLOAD_DIR / filename).open("wb") as f:
                         f.write(image["content"])
-                cursor.execute("UPDATE spare_parts SET name = %s, brand = %s, category = %s, price = %s, stock = %s, image_path = %s, description = %s WHERE id = %s" if USE_POSTGRES else "UPDATE spare_parts SET name = ?, brand = ?, category = ?, price = ?, stock = ?, image_path = ?, description = ? WHERE id = ?", (name, brand, category, price, stock, image_path, description, spare_id))
+                if USE_POSTGRES:
+                    cursor.execute("UPDATE spare_parts SET name = %s, brand = %s, category = %s, price = %s, stock = %s, image_path = %s, \"description\" = %s WHERE id = %s", (name, brand, category, price, stock, image_path, description, spare_id))
+                else:
+                    cursor.execute("UPDATE spare_parts SET name = ?, brand = ?, category = ?, price = ?, stock = ?, image_path = ?, description = ? WHERE id = ?", (name, brand, category, price, stock, image_path, description, spare_id))
                 conn.commit()
             self.send_json({"ok": True})
             return
@@ -1474,7 +1489,10 @@ class Handler(BaseHTTPRequestHandler):
             data = self.read_json()
             with db() as conn:
                 cursor = conn.cursor()
-                cursor.execute("UPDATE repair_services SET title = %s, brand = %s, repair_type = %s, price = %s, duration = %s, warranty = %s, description = %s, available = %s WHERE id = %s" if USE_POSTGRES else "UPDATE repair_services SET title = ?, brand = ?, repair_type = ?, price = ?, duration = ?, warranty = ?, description = ?, available = ? WHERE id = ?", (data.get("title"), data.get("brand"), data.get("repairType"), data.get("price"), data.get("duration"), data.get("warranty"), data.get("description"), 1 if data.get("available") else 0, service_id))
+                if USE_POSTGRES:
+                    cursor.execute("UPDATE repair_services SET title = %s, brand = %s, repair_type = %s, price = %s, duration = %s, warranty = %s, \"description\" = %s, available = %s WHERE id = %s", (data.get("title"), data.get("brand"), data.get("repairType"), data.get("price"), data.get("duration"), data.get("warranty"), data.get("description"), 1 if data.get("available") else 0, service_id))
+                else:
+                    cursor.execute("UPDATE repair_services SET title = ?, brand = ?, repair_type = ?, price = ?, duration = ?, warranty = ?, description = ?, available = ? WHERE id = ?", (data.get("title"), data.get("brand"), data.get("repairType"), data.get("price"), data.get("duration"), data.get("warranty"), data.get("description"), 1 if data.get("available") else 0, service_id))
                 conn.commit()
             self.send_json({"ok": True})
             return
@@ -1525,7 +1543,10 @@ class Handler(BaseHTTPRequestHandler):
                 if not existing:
                     self.send_json({"error": "Product not found"}, 404)
                     return
-                cursor.execute("UPDATE products SET name = %s, price = %s, was = %s, badge = %s, img = %s, rating = %s, reviews = %s, in_stock = %s, cat = %s, desc = %s WHERE id = %s" if USE_POSTGRES else "UPDATE products SET name = ?, price = ?, was = ?, badge = ?, img = ?, rating = ?, reviews = ?, in_stock = ?, cat = ?, desc = ? WHERE id = ?", (data.get("name", existing["name"]), float(data.get("price", existing["price"])), data.get("was") if data.get("was") else None, data.get("badge", existing.get("badge", "")), data.get("img", existing["img"]), float(data.get("rating", existing.get("rating", 4.6))), int(data.get("reviews", existing.get("reviews", 0))), 1 if data.get("inStock", existing.get("in_stock", 1)) else 0, data.get("cat", existing["cat"]), data.get("desc", existing.get("desc", "")), product_id))
+                if USE_POSTGRES:
+                    cursor.execute("UPDATE products SET name = %s, price = %s, was = %s, badge = %s, img = %s, rating = %s, reviews = %s, in_stock = %s, cat = %s, \"desc\" = %s WHERE id = %s", (data.get("name", existing["name"]), float(data.get("price", existing["price"])), data.get("was") if data.get("was") else None, data.get("badge", existing.get("badge", "")), data.get("img", existing["img"]), float(data.get("rating", existing.get("rating", 4.6))), int(data.get("reviews", existing.get("reviews", 0))), 1 if data.get("inStock", existing.get("in_stock", 1)) else 0, data.get("cat", existing["cat"]), data.get("desc", existing.get("desc", "")), product_id))
+                else:
+                    cursor.execute("UPDATE products SET name = ?, price = ?, was = ?, badge = ?, img = ?, rating = ?, reviews = ?, in_stock = ?, cat = ?, desc = ? WHERE id = ?", (data.get("name", existing["name"]), float(data.get("price", existing["price"])), data.get("was") if data.get("was") else None, data.get("badge", existing.get("badge", "")), data.get("img", existing["img"]), float(data.get("rating", existing.get("rating", 4.6))), int(data.get("reviews", existing.get("reviews", 0))), 1 if data.get("inStock", existing.get("in_stock", 1)) else 0, data.get("cat", existing["cat"]), data.get("desc", existing.get("desc", "")), product_id))
                 conn.commit()
             self.send_json({"ok": True})
             return
