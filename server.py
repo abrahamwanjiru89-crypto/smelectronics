@@ -477,6 +477,7 @@ def init_db():
             ("orders", "constituency",     "TEXT"),
             ("orders", "street",           "TEXT"),
             ("orders", "deposit_mpesa",    "TEXT"),
+            ("orders", "delivery_fee_set", "INTEGER DEFAULT 0"),
         ]
         existing_cols = {}
         for table, col, col_def in migrations:
@@ -512,6 +513,10 @@ def row_order(conn, row):
     items = conn.execute("SELECT * FROM order_items WHERE order_id = ?", (row["id"],)).fetchall()
     user = conn.execute("SELECT name,email FROM users WHERE id = ?", (row["user_id"],)).fetchone()
     keys = row.keys()
+    notifications = conn.execute(
+        "SELECT message, is_read, created_at FROM order_notifications WHERE order_id = ? ORDER BY created_at DESC",
+        (row["id"],)
+    ).fetchall()
     return {
         "id": row["id"],
         "userId": row["user_id"],
@@ -519,6 +524,7 @@ def row_order(conn, row):
         "email": user["email"] if user else "Unknown",
         "total": row["total"],
         "deliveryFee": row["delivery_fee"] if "delivery_fee" in keys else 0,
+        "deliveryFeeSet": bool(row["delivery_fee"] > 0) if "delivery_fee" in keys else False,
         "depositAmount": row["deposit_amount"] if "deposit_amount" in keys else 0,
         "remainingAmount": row["remaining_amount"] if "remaining_amount" in keys else 0,
         "paymentStatus": row["payment_status"] if "payment_status" in keys else "Pending",
@@ -530,7 +536,8 @@ def row_order(conn, row):
             "constituency": row["constituency"] if "constituency" in keys else "",
             "street": row["street"] if "street" in keys else ""
         },
-        "depositMpesa": row["deposit_mpesa"] if "deposit_mpesa" in keys else None
+        "depositMpesa": row["deposit_mpesa"] if "deposit_mpesa" in keys else None,
+        "notifications": [{"message": n["message"], "isRead": bool(n["is_read"]), "createdAt": n["created_at"]} for n in notifications],
     }
 
 
@@ -1254,10 +1261,8 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"error": "Cart is empty"}, 400)
                 return
             with db() as conn:
-                delivery_fee_setting = conn.execute("SELECT value FROM settings WHERE key = 'delivery_fee'").fetchone()
-                delivery_fee = int(delivery_fee_setting['value']) if delivery_fee_setting else 600
                 order_id = "ORD-" + secrets.token_hex(4).upper()
-                total = 0
+                product_total = 0
                 rows = []
                 for item in cart:
                     pid = str(item.get("id"))
@@ -1268,20 +1273,31 @@ class Handler(BaseHTTPRequestHandler):
                     if not product or not product["in_stock"] or qty < 1:
                         self.send_json({"error": f"Product {pid} is unavailable"}, 400)
                         return
-                    total += product["price"] * qty
+                    product_total += product["price"] * qty
                     rows.append((order_id, product["id"], product["name"], product["price"], qty, product["img"]))
-                deposit_amount = delivery_fee
-                remaining_amount = total
+                # Store product total only; delivery fee is set later by admin
                 conn.execute(
                     """INSERT INTO orders 
                     (id, user_id, total, delivery_fee, deposit_amount, remaining_amount, payment_status, 
                      county, constituency, street, deposit_mpesa, status, created_at) 
                     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-                    (order_id, user["id"], total, delivery_fee, deposit_amount, remaining_amount, "Deposit Paid",
-                     data.get("county"), data.get("constituency"), data.get("street"), 
+                    (order_id, user["id"], product_total,
+                     0,               # delivery_fee — not charged upfront
+                     product_total,   # deposit_amount = full product total paid via M-Pesa
+                     0,               # remaining_amount — nothing pending upfront
+                     "Paid",
+                     data.get("county"), data.get("constituency"), data.get("street"),
                      data.get("depositMpesa"), "Placed", datetime.now(timezone.utc).isoformat())
                 )
                 conn.executemany("INSERT INTO order_items (order_id,product_id,name,price,qty,img) VALUES (?,?,?,?,?,?)", rows)
+                # Create an order notification for the customer
+                notif_id = "n-" + secrets.token_hex(8)
+                conn.execute(
+                    "INSERT INTO order_notifications (id,order_id,message,is_read,created_at) VALUES (?,?,?,?,?)",
+                    (notif_id, order_id,
+                     f"Your order {order_id} has been placed! We will contact you shortly with delivery fee details.",
+                     0, datetime.now(timezone.utc).isoformat())
+                )
                 order = conn.execute("SELECT * FROM orders WHERE id = ?", (order_id,)).fetchone()
                 self.send_json({"order": row_order(conn, order)})
             return
@@ -1389,6 +1405,54 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json({"ok": True})
             return
         
+        # ============================================
+        # SET DELIVERY FEE PER ORDER — admin only
+        # PUT /api/admin/orders/<id>/delivery-fee
+        # Body: { "deliveryFee": 350 }
+        # ============================================
+        import re as _re
+        _df_match = _re.match(r"^/api/admin/orders/([^/]+)/delivery-fee$", path)
+        if _df_match:
+            admin = self.require({"admin"})
+            if not admin:
+                return
+            order_id = _df_match.group(1)
+            data = self.read_json()
+            fee = data.get("deliveryFee")
+            if fee is None or float(fee) < 0:
+                self.send_json({"error": "Invalid delivery fee"}, 400)
+                return
+            fee = float(fee)
+            now = datetime.now(timezone.utc).isoformat()
+            with db() as conn:
+                order = conn.execute("SELECT * FROM orders WHERE id = ?", (order_id,)).fetchone()
+                if not order:
+                    self.send_json({"error": "Order not found"}, 404)
+                    return
+                conn.execute(
+                    "UPDATE orders SET delivery_fee = ?, remaining_amount = ?, payment_status = ? WHERE id = ?",
+                    (fee, fee, "Delivery Fee Pending", order_id)
+                )
+                # Notify the customer via order_notifications
+                notif_id = "n-" + secrets.token_hex(8)
+                product_total = order["total"]
+                user = conn.execute("SELECT name, email FROM users WHERE id = ?", (order["user_id"],)).fetchone()
+                customer_name = user["name"] if user else "Customer"
+                msg = (
+                    f"Hi {customer_name}! Your delivery fee for order {order_id} has been set to "
+                    f"KES {int(fee):,}. Please pay via M-Pesa to complete your delivery. "
+                    f"Your product total of KES {int(product_total):,} has already been received. "
+                    f"Contact us if you have any questions."
+                )
+                conn.execute(
+                    "INSERT INTO order_notifications (id,order_id,message,is_read,created_at) VALUES (?,?,?,?,?)",
+                    (notif_id, order_id, msg, 0, now)
+                )
+                updated = conn.execute("SELECT * FROM orders WHERE id = ?", (order_id,)).fetchone()
+            print(f"✅ Delivery fee set for order {order_id}: KES {fee}")
+            self.send_json({"ok": True, "order": row_order(conn, updated), "customerNotified": True})
+            return
+
         if path.startswith("/api/admin/products/"):
             if not self.require({"admin"}):
                 return
