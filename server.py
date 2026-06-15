@@ -307,6 +307,7 @@ def init_db():
               status TEXT NOT NULL DEFAULT 'Placed',
               created_at TEXT NOT NULL,
               delivery_fee_set INTEGER DEFAULT 0,
+              delivery_date TEXT,
               FOREIGN KEY(user_id) REFERENCES users(id)
             );
             CREATE TABLE IF NOT EXISTS order_items (
@@ -491,6 +492,8 @@ def init_db():
               deposit_mpesa TEXT,
               status TEXT NOT NULL DEFAULT 'Placed',
               created_at TEXT NOT NULL,
+              delivery_fee_set INTEGER DEFAULT 0,
+              delivery_date TEXT,
               FOREIGN KEY(user_id) REFERENCES users(id)
             );
             CREATE TABLE IF NOT EXISTS order_items (
@@ -741,6 +744,25 @@ def init_db():
                 cursor.execute("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)", ('delivery_fee', '600'))
             conn.commit()
         
+        # Add delivery_date column if not exists (for existing databases)
+        if USE_POSTGRES:
+            cursor.execute("""
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name='orders' AND column_name='delivery_date'
+            """)
+            if not cursor.fetchone():
+                cursor.execute("ALTER TABLE orders ADD COLUMN delivery_date TEXT")
+                conn.commit()
+                logger.info("Added delivery_date column to orders table")
+        else:
+            cursor.execute("PRAGMA table_info(orders)")
+            columns = [col[1] for col in cursor.fetchall()]
+            if 'delivery_date' not in columns:
+                cursor.execute("ALTER TABLE orders ADD COLUMN delivery_date TEXT")
+                conn.commit()
+                logger.info("Added delivery_date column to orders table")
+        
         seed_county_locations(conn, now)
         logger.info("Database initialization complete")
 
@@ -784,6 +806,7 @@ def row_order(conn, row):
         "paymentStatus": row.get("payment_status", "Pending"),
         "status": row["status"],
         "createdAt": row["created_at"],
+        "deliveryDate": row.get("delivery_date"),
         "items": [{"id": i["product_id"], "name": i["name"], "price": i["price"], "qty": i["qty"], "img": i["img"]} for i in items],
         "location": {"county": row.get("county", ""), "constituency": row.get("constituency", ""), "street": row.get("street", "")},
         "depositMpesa": row.get("deposit_mpesa"),
@@ -1149,50 +1172,41 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"technicians": [row_repair_technician(r) for r in rows]})
             return
         
-        # STATIC FILE SERVING - Handle images from /shop and /uploads folders
+        # STATIC FILE SERVING
         file_path = unquote(path).lstrip("/")
         if ".." in file_path:
             self.send_error(403)
             return
         
-        # Define possible source directories for images
         possible_paths = []
         
-        # Check in ROOT directory (for HTML, CSS, JS)
         root_target = (ROOT / file_path).resolve()
         if str(root_target).startswith(str(ROOT)):
             possible_paths.append(root_target)
         
-        # Check in SHOP_DIR for /shop/ images
         if path.startswith("/shop/"):
             shop_target = (SHOP_DIR / Path(file_path).name).resolve()
             if str(shop_target).startswith(str(SHOP_DIR)):
                 possible_paths.append(shop_target)
         
-        # Check in UPLOAD_DIR for /uploads/ images
         if path.startswith("/uploads/"):
             upload_target = (UPLOAD_DIR / Path(file_path).name).resolve()
             if str(upload_target).startswith(str(UPLOAD_DIR)):
                 possible_paths.append(upload_target)
         
-        # Find the first existing file
         target = None
         for pt in possible_paths:
             if pt.exists() and not pt.is_dir():
                 target = pt
-                logger.debug(f"Serving file: {pt}")
                 break
         
         if not target:
-            logger.warning(f"File not found: {path}")
             self.send_error(404)
             return
         
-        # Serve the file
         body = target.read_bytes()
         self.send_response(200)
         
-        # Set appropriate content type
         content_type = mimetypes.guess_type(str(target))[0]
         if not content_type:
             if path.endswith('.jpg') or path.endswith('.jpeg'):
@@ -1206,7 +1220,6 @@ class Handler(BaseHTTPRequestHandler):
             else:
                 content_type = 'application/octet-stream'
         
-        # Set cache headers for images
         if path.endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp', '.ico', '.svg')):
             self.send_header("Cache-Control", "public, max-age=86400")
         else:
@@ -1306,36 +1319,83 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/admin/spare-parts":
             if not self.require({"admin"}):
                 return
-            form, files = self.read_multipart()
-            name = (form.get("name") or "").strip()
-            brand = (form.get("brand") or "").strip()
-            category = (form.get("category") or "").strip()
-            price = float(form.get("price", "0"))
-            stock = int(form.get("stock", "1"))
-            description = (form.get("description") or "").strip()
-            if not name or not brand or not category or price <= 0:
-                self.send_json({"error": "Invalid spare part details"}, 400)
+            
+            content_type = self.headers.get("Content-Type", "")
+            
+            if content_type.startswith("application/json"):
+                # JSON with image URL
+                data = self.read_json()
+                
+                name = data.get("name", "").strip()
+                brand = data.get("brand", "").strip()
+                category = data.get("category", "").strip()
+                price = float(data.get("price", 0))
+                stock = int(data.get("stock", 1))
+                description = data.get("description", "").strip()
+                image_url = data.get("image_url", "").strip()
+                
+                if not name or not brand or not category or price <= 0:
+                    self.send_json({"error": "Invalid spare part details"}, 400)
+                    return
+                
+                if not image_url:
+                    self.send_json({"error": "Image URL is required"}, 400)
+                    return
+                
+                spare_id = "sp-" + secrets.token_hex(8)
+                
+                with db() as conn:
+                    cursor = conn.cursor()
+                    if USE_POSTGRES:
+                        cursor.execute("INSERT INTO spare_parts (id,name,brand,category,price,stock,image_path,\"description\",created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)", 
+                            (spare_id, name, brand, category, price, stock, image_url, description, datetime.now(timezone.utc).isoformat()))
+                    else:
+                        cursor.execute("INSERT INTO spare_parts (id,name,brand,category,price,stock,image_path,description,created_at) VALUES (?,?,?,?,?,?,?,?,?)", 
+                            (spare_id, name, brand, category, price, stock, image_url, description, datetime.now(timezone.utc).isoformat()))
+                    conn.commit()
+                
+                self.send_json({"ok": True, "id": spare_id})
                 return
-            image_path = None
-            image = files.get("image")
-            if image:
-                ext = Path(image["filename"]).suffix.lower() or ".jpg"
-                filename = f"spare_{secrets.token_hex(8)}{ext}"
-                image_path = f"/uploads/{filename}"
-                target = UPLOAD_DIR / filename
-                with target.open("wb") as f:
-                    f.write(image["content"])
-                logger.info(f"✅ Saved spare part image: {filename} to {target}")
-            spare_id = "sp-" + secrets.token_hex(8)
-            with db() as conn:
-                cursor = conn.cursor()
-                if USE_POSTGRES:
-                    cursor.execute("INSERT INTO spare_parts (id,name,brand,category,price,stock,image_path,\"description\",created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)", (spare_id, name, brand, category, price, stock, image_path, description, datetime.now(timezone.utc).isoformat()))
-                else:
-                    cursor.execute("INSERT INTO spare_parts (id,name,brand,category,price,stock,image_path,description,created_at) VALUES (?,?,?,?,?,?,?,?,?)", (spare_id, name, brand, category, price, stock, image_path, description, datetime.now(timezone.utc).isoformat()))
-                conn.commit()
-            self.send_json({"ok": True, "id": spare_id})
-            return
+            
+            else:
+                # Multipart form data with file upload
+                form, files = self.read_multipart()
+                name = (form.get("name") or "").strip()
+                brand = (form.get("brand") or "").strip()
+                category = (form.get("category") or "").strip()
+                price = float(form.get("price", "0"))
+                stock = int(form.get("stock", "1"))
+                description = (form.get("description") or "").strip()
+                
+                if not name or not brand or not category or price <= 0:
+                    self.send_json({"error": "Invalid spare part details"}, 400)
+                    return
+                
+                image_path = None
+                image = files.get("image")
+                if image:
+                    ext = Path(image["filename"]).suffix.lower() or ".jpg"
+                    filename = f"spare_{secrets.token_hex(8)}{ext}"
+                    image_path = f"/uploads/{filename}"
+                    target = UPLOAD_DIR / filename
+                    with target.open("wb") as f:
+                        f.write(image["content"])
+                    logger.info(f"✅ Saved spare part image: {filename}")
+                
+                spare_id = "sp-" + secrets.token_hex(8)
+                
+                with db() as conn:
+                    cursor = conn.cursor()
+                    if USE_POSTGRES:
+                        cursor.execute("INSERT INTO spare_parts (id,name,brand,category,price,stock,image_path,\"description\",created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)", 
+                            (spare_id, name, brand, category, price, stock, image_path, description, datetime.now(timezone.utc).isoformat()))
+                    else:
+                        cursor.execute("INSERT INTO spare_parts (id,name,brand,category,price,stock,image_path,description,created_at) VALUES (?,?,?,?,?,?,?,?,?)", 
+                            (spare_id, name, brand, category, price, stock, image_path, description, datetime.now(timezone.utc).isoformat()))
+                    conn.commit()
+                
+                self.send_json({"ok": True, "id": spare_id})
+                return
         
         if path == "/api/admin/staff":
             if not self.require({"admin"}):
@@ -1358,7 +1418,7 @@ class Handler(BaseHTTPRequestHandler):
             return
         
         # ============================================
-        # UPDATED PRODUCT ENDPOINT - Supports both File Upload and Image URL
+        # PRODUCT ENDPOINT - Supports both File Upload and Image URL
         # ============================================
         if path == "/api/admin/products":
             if not self.require({"admin"}):
@@ -1414,7 +1474,7 @@ class Handler(BaseHTTPRequestHandler):
                 return
             
             else:
-                # Handle multipart form data (file upload - old way)
+                # Handle multipart form data (file upload)
                 form, files = self.read_multipart()
                 
                 logger.info(f"📝 Form fields: {list(form.keys())}")
@@ -1430,22 +1490,17 @@ class Handler(BaseHTTPRequestHandler):
                 logger.info(f"Image size: {len(image['content'])} bytes")
                 
                 try:
-                    # Ensure upload directory exists
                     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
                     
-                    # Generate unique filename
                     ext = Path(image["filename"]).suffix.lower() or ".jpg"
                     filename = secrets.token_hex(12) + ext
                     target = UPLOAD_DIR / filename
                     
-                    # Save the file directly to uploads folder
                     with target.open("wb") as f:
                         f.write(image["content"])
                     
                     logger.info(f"✅ Image saved: {filename}")
                     logger.info(f"   Full path: {target}")
-                    logger.info(f"   File size: {target.stat().st_size} bytes")
-                    logger.info(f"   File exists: {target.exists()}")
                     
                 except Exception as e:
                     logger.error(f"❌ Failed to save image: {e}")
@@ -1471,7 +1526,6 @@ class Handler(BaseHTTPRequestHandler):
                     self.send_json({"error": "Product name and valid price are required"}, 400)
                     return
                 
-                # Use relative path for image from uploads folder
                 image_url = f"/uploads/{filename}"
                 
                 with db() as conn:
@@ -1528,9 +1582,17 @@ class Handler(BaseHTTPRequestHandler):
             with db() as conn:
                 cursor = conn.cursor()
                 if USE_POSTGRES:
-                    cursor.execute("INSERT INTO repair_services (id,title,brand,repair_type,price,duration,warranty,image,\"description\",available,category_id,created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", (service_id, form.get("title", "").strip(), form.get("brand", "").strip(), form.get("repairType", "").strip(), float(form.get("price", "0") or 0), form.get("duration", "").strip(), form.get("warranty", "").strip(), f"/uploads/{filename}", form.get("description", "").strip(), 1, form.get("categoryId", None), datetime.now(timezone.utc).isoformat()))
+                    cursor.execute("INSERT INTO repair_services (id,title,brand,repair_type,price,duration,warranty,image,\"description\",available,category_id,created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", 
+                        (service_id, form.get("title", "").strip(), form.get("brand", "").strip(), form.get("repairType", "").strip(), 
+                         float(form.get("price", "0") or 0), form.get("duration", "").strip(), form.get("warranty", "").strip(), 
+                         f"/uploads/{filename}", form.get("description", "").strip(), 1, form.get("categoryId", None), 
+                         datetime.now(timezone.utc).isoformat()))
                 else:
-                    cursor.execute("INSERT INTO repair_services (id,title,brand,repair_type,price,duration,warranty,image,description,available,category_id,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", (service_id, form.get("title", "").strip(), form.get("brand", "").strip(), form.get("repairType", "").strip(), float(form.get("price", "0") or 0), form.get("duration", "").strip(), form.get("warranty", "").strip(), f"/uploads/{filename}", form.get("description", "").strip(), 1, form.get("categoryId", None), datetime.now(timezone.utc).isoformat()))
+                    cursor.execute("INSERT INTO repair_services (id,title,brand,repair_type,price,duration,warranty,image,description,available,category_id,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", 
+                        (service_id, form.get("title", "").strip(), form.get("brand", "").strip(), form.get("repairType", "").strip(), 
+                         float(form.get("price", "0") or 0), form.get("duration", "").strip(), form.get("warranty", "").strip(), 
+                         f"/uploads/{filename}", form.get("description", "").strip(), 1, form.get("categoryId", None), 
+                         datetime.now(timezone.utc).isoformat()))
                 conn.commit()
             self.send_json({"ok": True})
             return
@@ -1541,9 +1603,15 @@ class Handler(BaseHTTPRequestHandler):
             with db() as conn:
                 cursor = conn.cursor()
                 if USE_POSTGRES:
-                    cursor.execute("INSERT INTO repair_bookings (id, name, email, phone, brand, model, repair_service_id, repair_type, \"description\", pickup_dropoff, preferred_at, status, created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", (booking_id, data.get("name"), data.get("email"), data.get("phone"), data.get("brand"), data.get("model"), data.get("repairServiceId"), data.get("repairType"), data.get("description"), data.get("pickupDropoff") or "Dropoff", data.get("preferredAt") or datetime.now(timezone.utc).isoformat(), "Pending", datetime.now(timezone.utc).isoformat()))
+                    cursor.execute("INSERT INTO repair_bookings (id, name, email, phone, brand, model, repair_service_id, repair_type, \"description\", pickup_dropoff, preferred_at, status, created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", 
+                        (booking_id, data.get("name"), data.get("email"), data.get("phone"), data.get("brand"), data.get("model"), 
+                         data.get("repairServiceId"), data.get("repairType"), data.get("description"), data.get("pickupDropoff") or "Dropoff", 
+                         data.get("preferredAt") or datetime.now(timezone.utc).isoformat(), "Pending", datetime.now(timezone.utc).isoformat()))
                 else:
-                    cursor.execute("INSERT INTO repair_bookings (id, name, email, phone, brand, model, repair_service_id, repair_type, description, pickup_dropoff, preferred_at, status, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", (booking_id, data.get("name"), data.get("email"), data.get("phone"), data.get("brand"), data.get("model"), data.get("repairServiceId"), data.get("repairType"), data.get("description"), data.get("pickupDropoff") or "Dropoff", data.get("preferredAt") or datetime.now(timezone.utc).isoformat(), "Pending", datetime.now(timezone.utc).isoformat()))
+                    cursor.execute("INSERT INTO repair_bookings (id, name, email, phone, brand, model, repair_service_id, repair_type, description, pickup_dropoff, preferred_at, status, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", 
+                        (booking_id, data.get("name"), data.get("email"), data.get("phone"), data.get("brand"), data.get("model"), 
+                         data.get("repairServiceId"), data.get("repairType"), data.get("description"), data.get("pickupDropoff") or "Dropoff", 
+                         data.get("preferredAt") or datetime.now(timezone.utc).isoformat(), "Pending", datetime.now(timezone.utc).isoformat()))
                 conn.commit()
             self.send_json({"ok": True, "id": booking_id})
             return
@@ -1593,11 +1661,17 @@ class Handler(BaseHTTPRequestHandler):
                         return
                     product_total += product["price"] * qty
                     rows.append((order_id, product["id"], product["name"], product["price"], qty, product["img"]))
-                cursor.execute("INSERT INTO orders (id, user_id, total, delivery_fee, deposit_amount, remaining_amount, payment_status, county, constituency, street, deposit_mpesa, status, created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)" if USE_POSTGRES else "INSERT INTO orders (id, user_id, total, delivery_fee, deposit_amount, remaining_amount, payment_status, county, constituency, street, deposit_mpesa, status, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", (order_id, user["id"], product_total, 0, product_total, 0, "Paid", data.get("county"), data.get("constituency"), data.get("street"), data.get("depositMpesa"), "Placed", datetime.now(timezone.utc).isoformat()))
+                
+                cursor.execute("INSERT INTO orders (id, user_id, total, delivery_fee, deposit_amount, remaining_amount, payment_status, county, constituency, street, deposit_mpesa, status, created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)" if USE_POSTGRES else "INSERT INTO orders (id, user_id, total, delivery_fee, deposit_amount, remaining_amount, payment_status, county, constituency, street, deposit_mpesa, status, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", 
+                    (order_id, user["id"], product_total, 0, product_total, 0, "Paid", data.get("county"), data.get("constituency"), data.get("street"), data.get("depositMpesa"), "Placed", datetime.now(timezone.utc).isoformat()))
+                
                 for row in rows:
                     cursor.execute("INSERT INTO order_items (order_id,product_id,name,price,qty,img) VALUES (%s,%s,%s,%s,%s,%s)" if USE_POSTGRES else "INSERT INTO order_items (order_id,product_id,name,price,qty,img) VALUES (?,?,?,?,?,?)", row)
+                
                 notif_id = "n-" + secrets.token_hex(8)
-                cursor.execute("INSERT INTO order_notifications (id,order_id,message,is_read,created_at) VALUES (%s,%s,%s,%s,%s)" if USE_POSTGRES else "INSERT INTO order_notifications (id,order_id,message,is_read,created_at) VALUES (?,?,?,?,?)", (notif_id, order_id, f"Your order {order_id} has been placed! We will contact you shortly with delivery fee details.", 0, datetime.now(timezone.utc).isoformat()))
+                cursor.execute("INSERT INTO order_notifications (id,order_id,message,is_read,created_at) VALUES (%s,%s,%s,%s,%s)" if USE_POSTGRES else "INSERT INTO order_notifications (id,order_id,message,is_read,created_at) VALUES (?,?,?,?,?)", 
+                    (notif_id, order_id, f"Your order {order_id} has been placed! We will contact you shortly with delivery fee details.", 0, datetime.now(timezone.utc).isoformat()))
+                
                 cursor.execute("SELECT * FROM orders WHERE id = %s" if USE_POSTGRES else "SELECT * FROM orders WHERE id = ?", (order_id,))
                 order = cursor.fetchone()
                 conn.commit()
@@ -1663,9 +1737,11 @@ class Handler(BaseHTTPRequestHandler):
                     with target.open("wb") as f:
                         f.write(image["content"])
                 if USE_POSTGRES:
-                    cursor.execute("UPDATE spare_parts SET name = %s, brand = %s, category = %s, price = %s, stock = %s, image_path = %s, \"description\" = %s WHERE id = %s", (name, brand, category, price, stock, image_path, description, spare_id))
+                    cursor.execute("UPDATE spare_parts SET name = %s, brand = %s, category = %s, price = %s, stock = %s, image_path = %s, \"description\" = %s WHERE id = %s", 
+                        (name, brand, category, price, stock, image_path, description, spare_id))
                 else:
-                    cursor.execute("UPDATE spare_parts SET name = ?, brand = ?, category = ?, price = ?, stock = ?, image_path = ?, description = ? WHERE id = ?", (name, brand, category, price, stock, image_path, description, spare_id))
+                    cursor.execute("UPDATE spare_parts SET name = ?, brand = ?, category = ?, price = ?, stock = ?, image_path = ?, description = ? WHERE id = ?", 
+                        (name, brand, category, price, stock, image_path, description, spare_id))
                 conn.commit()
             self.send_json({"ok": True})
             return
@@ -1678,9 +1754,11 @@ class Handler(BaseHTTPRequestHandler):
             with db() as conn:
                 cursor = conn.cursor()
                 if USE_POSTGRES:
-                    cursor.execute("UPDATE repair_services SET title = %s, brand = %s, repair_type = %s, price = %s, duration = %s, warranty = %s, \"description\" = %s, available = %s WHERE id = %s", (data.get("title"), data.get("brand"), data.get("repairType"), data.get("price"), data.get("duration"), data.get("warranty"), data.get("description"), 1 if data.get("available") else 0, service_id))
+                    cursor.execute("UPDATE repair_services SET title = %s, brand = %s, repair_type = %s, price = %s, duration = %s, warranty = %s, \"description\" = %s, available = %s WHERE id = %s", 
+                        (data.get("title"), data.get("brand"), data.get("repairType"), data.get("price"), data.get("duration"), data.get("warranty"), data.get("description"), 1 if data.get("available") else 0, service_id))
                 else:
-                    cursor.execute("UPDATE repair_services SET title = ?, brand = ?, repair_type = ?, price = ?, duration = ?, warranty = ?, description = ?, available = ? WHERE id = ?", (data.get("title"), data.get("brand"), data.get("repairType"), data.get("price"), data.get("duration"), data.get("warranty"), data.get("description"), 1 if data.get("available") else 0, service_id))
+                    cursor.execute("UPDATE repair_services SET title = ?, brand = ?, repair_type = ?, price = ?, duration = ?, warranty = ?, description = ?, available = ? WHERE id = ?", 
+                        (data.get("title"), data.get("brand"), data.get("repairType"), data.get("price"), data.get("duration"), data.get("warranty"), data.get("description"), 1 if data.get("available") else 0, service_id))
                 conn.commit()
             self.send_json({"ok": True})
             return
@@ -1705,18 +1783,57 @@ class Handler(BaseHTTPRequestHandler):
                 if not order:
                     self.send_json({"error": "Order not found"}, 404)
                     return
-                cursor.execute("UPDATE orders SET delivery_fee = %s, remaining_amount = %s, payment_status = %s WHERE id = %s" if USE_POSTGRES else "UPDATE orders SET delivery_fee = ?, remaining_amount = ?, payment_status = ? WHERE id = ?", (fee, fee, "Delivery Fee Pending", order_id))
+                cursor.execute("UPDATE orders SET delivery_fee = %s, remaining_amount = %s, payment_status = %s, delivery_fee_set = 1 WHERE id = %s" if USE_POSTGRES else "UPDATE orders SET delivery_fee = ?, remaining_amount = ?, payment_status = ?, delivery_fee_set = 1 WHERE id = ?", 
+                    (fee, fee, "Delivery Fee Pending", order_id))
                 notif_id = "n-" + secrets.token_hex(8)
                 product_total = order["total"]
                 cursor.execute("SELECT name, email FROM users WHERE id = %s" if USE_POSTGRES else "SELECT name, email FROM users WHERE id = ?", (order["user_id"],))
                 user = cursor.fetchone()
                 customer_name = user["name"] if user else "Customer"
                 msg = f"Hi {customer_name}! Your delivery fee for order {order_id} has been set to KES {int(fee):,}. Please pay via M-Pesa to complete your delivery."
-                cursor.execute("INSERT INTO order_notifications (id,order_id,message,is_read,created_at) VALUES (%s,%s,%s,%s,%s)" if USE_POSTGRES else "INSERT INTO order_notifications (id,order_id,message,is_read,created_at) VALUES (?,?,?,?,?)", (notif_id, order_id, msg, 0, datetime.now(timezone.utc).isoformat()))
+                cursor.execute("INSERT INTO order_notifications (id,order_id,message,is_read,created_at) VALUES (%s,%s,%s,%s,%s)" if USE_POSTGRES else "INSERT INTO order_notifications (id,order_id,message,is_read,created_at) VALUES (?,?,?,?,?)", 
+                    (notif_id, order_id, msg, 0, datetime.now(timezone.utc).isoformat()))
                 cursor.execute("SELECT * FROM orders WHERE id = %s" if USE_POSTGRES else "SELECT * FROM orders WHERE id = ?", (order_id,))
                 updated = cursor.fetchone()
                 conn.commit()
             self.send_json({"ok": True, "order": row_order(conn, updated), "customerNotified": True})
+            return
+
+        # ============================================
+        # DELIVERY DATE ENDPOINT
+        # ============================================
+        _dd_match = _re.match(r"^/api/admin/orders/([^/]+)/delivery-date$", path)
+        if _dd_match:
+            admin = self.require({"admin"})
+            if not admin:
+                return
+            order_id = _dd_match.group(1)
+            data = self.read_json()
+            delivery_date = data.get("deliveryDate")
+            
+            if not delivery_date:
+                self.send_json({"error": "Delivery date is required"}, 400)
+                return
+            
+            with db() as conn:
+                cursor = conn.cursor()
+                
+                # Ensure delivery_date column exists (already added in init_db)
+                cursor.execute("UPDATE orders SET delivery_date = %s WHERE id = %s" if USE_POSTGRES else "UPDATE orders SET delivery_date = ? WHERE id = ?", (delivery_date, order_id))
+                
+                # Notify customer
+                notif_id = "n-" + secrets.token_hex(8)
+                cursor.execute("SELECT user_id FROM orders WHERE id = %s" if USE_POSTGRES else "SELECT user_id FROM orders WHERE id = ?", (order_id,))
+                order = cursor.fetchone()
+                if order:
+                    formatted_date = datetime.strptime(delivery_date, "%Y-%m-%d").strftime("%B %d, %Y")
+                    msg = f"🎉 Great news! Your order {order_id} is scheduled for delivery on {formatted_date}. Our team will contact you with more details."
+                    cursor.execute("INSERT INTO order_notifications (id,order_id,message,is_read,created_at) VALUES (%s,%s,%s,%s,%s)" if USE_POSTGRES else "INSERT INTO order_notifications (id,order_id,message,is_read,created_at) VALUES (?,?,?,?,?)", 
+                        (notif_id, order_id, msg, 0, datetime.now(timezone.utc).isoformat()))
+                
+                conn.commit()
+            
+            self.send_json({"ok": True})
             return
 
         if path.startswith("/api/admin/products/"):
@@ -1733,7 +1850,6 @@ class Handler(BaseHTTPRequestHandler):
                     self.send_json({"error": "Product not found"}, 404)
                     return
                 
-                # Handle image update if new image is provided
                 img_path = data.get("img", existing["img"])
                 
                 if USE_POSTGRES:
@@ -1902,7 +2018,6 @@ if __name__ == "__main__":
     else:
         logger.info("Using SQLite database")
     
-    # Log existing files in uploads directory
     if UPLOAD_DIR.exists():
         files = list(UPLOAD_DIR.glob("*"))
         logger.info(f"Files in uploads directory: {len(files)}")
