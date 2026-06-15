@@ -185,6 +185,60 @@
   .fee-info i {
     color: #00e5ff;
   }
+  
+  /* Image URL input styling */
+  .image-url-section {
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: rgba(124,77,255,0.05);
+    border-radius: 0.75rem;
+    border: 1px solid rgba(124,77,255,0.2);
+  }
+  .image-url-section label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #7c4dff;
+    font-weight: 600;
+  }
+  .image-url-section input {
+    width: 100%;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: #0f0f1a;
+    color: white;
+    margin-bottom: 0.5rem;
+  }
+  .image-url-section small {
+    color: #888;
+    font-size: 0.75rem;
+  }
+  
+  .file-upload-section {
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: rgba(0,229,255,0.05);
+    border-radius: 0.75rem;
+    border: 1px solid rgba(0,229,255,0.2);
+  }
+  .file-upload-section label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #00e5ff;
+    font-weight: 600;
+  }
+  .file-upload-section input {
+    width: 100%;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: #0f0f1a;
+    color: white;
+  }
+  .file-upload-section small {
+    color: #888;
+    font-size: 0.75rem;
+  }
 </style>
 </head>
 <body class="management-body">
@@ -243,9 +297,7 @@
           <div class="metrics" id="metrics"></div>
         </section>
 
-        <!-- ============================================ -->
-        <!-- DELIVERY FEE CONTROL (ADMIN ONLY) -->
-        <!-- ============================================ -->
+        <!-- Delivery Fee Control -->
         <section class="dash-panel reveal delivery-fee-card">
           <h3>🚚 Delivery Fee Control</h3>
           <p style="margin-bottom: 1rem; color: #888;">Set the delivery fee that customers will pay upfront when placing orders.</p>
@@ -277,10 +329,10 @@
           <div class="product-admin" id="productAdmin"></div>
         </section>
 
-        <!-- Add Product - UPDATED with Badge and Original Price fields -->
+        <!-- Add Product - Supports both File Upload and Image URL -->
         <section class="dash-panel wide reveal">
           <h3>➕ Add Product</h3>
-          <form class="dash-form product-add" id="productForm" enctype="multipart/form-data">
+          <form class="dash-form product-add" id="productForm">
             <input name="name" placeholder="Product name" required>
             <select name="cat" required>
               <option value="phones">Phones</option>
@@ -289,23 +341,35 @@
               <option value="wearables">Wearables</option>
               <option value="gaming">Gaming</option>
               <option value="home">Smart Home</option>
-               <option value="repair">Mobile Accessories</option>
-               <option value="repair">General/Cables & Adapters</option>
-               <option value="repair">TV & Home Theater Accessories</option>
-               <option value="repair">Power & Charging Accessories</option>
-               
-              
+              <option value="accessories">Mobile Accessories</option>
+              <option value="cables">General/Cables & Adapters</option>
+              <option value="tv">TV & Home Theater Accessories</option>
+              <option value="power">Power & Charging Accessories</option>
             </select>
-            <input name="price" type="number" min="0" placeholder="Sale Price (Kshs)" required>
-            <input name="was" type="number" min="0" placeholder="Original Price (Kshs) - for Flash Sale">
+            <input name="price" type="number" min="0" step="0.01" placeholder="Sale Price (Kshs)" required>
+            <input name="was" type="number" min="0" step="0.01" placeholder="Original Price (Kshs) - for Flash Sale">
             <select name="badge">
               <option value="">No Badge</option>
               <option value="sale">🔥 Flash Sale</option>
               <option value="hot">⚡ Hot</option>
               <option value="new">✨ New</option>
             </select>
-            <input name="img" type="file" accept="image/*" required>
-            <textarea name="desc" placeholder="Description" required></textarea>
+            
+            <!-- Option 1: Upload Image File -->
+            <div class="file-upload-section">
+              <label>📁 Option 1: Upload Image File</label>
+              <input type="file" id="productImage" accept="image/*">
+              <small>Upload an image from your computer</small>
+            </div>
+            
+            <!-- Option 2: Paste Image URL (Imgur, Cloudinary, etc.) -->
+            <div class="image-url-section">
+              <label>🔗 Option 2: Paste Image URL</label>
+              <input type="url" id="productImageUrl" placeholder="https://i.imgur.com/your-image.jpg">
+              <small>Paste a direct image URL from Imgur, Cloudinary, or any image hosting service</small>
+            </div>
+            
+            <textarea name="desc" placeholder="Description" rows="4" required></textarea>
             <button class="btn primary block" type="submit">Add Product</button>
           </form>
         </section>
@@ -316,16 +380,30 @@
           <div class="product-admin" id="sparePartAdmin"></div>
         </section>
 
-        <!-- Add Spare Part -->
+        <!-- Add Spare Part - Supports both File Upload and Image URL -->
         <section class="dash-panel wide reveal">
           <h3>➕ Add Spare Part</h3>
-          <form class="dash-form" id="sparePartForm" enctype="multipart/form-data">
+          <form class="dash-form" id="sparePartForm">
             <input name="name" placeholder="Part name (e.g. iPhone 14 LCD)" required>
             <input name="brand" placeholder="Brand (e.g. Apple)" required>
             <input name="category" placeholder="Category (e.g. Screen)" required>
-            <input name="price" type="number" min="0" placeholder="Price" required>
+            <input name="price" type="number" min="0" step="0.01" placeholder="Price (Kshs)" required>
             <input name="stock" type="number" min="0" placeholder="Stock quantity" required>
-            <input name="image" type="file" accept="image/*" required>
+            
+            <!-- Option 1: Upload Image File for Spare Part -->
+            <div class="file-upload-section">
+              <label>📁 Option 1: Upload Image File</label>
+              <input type="file" id="sparePartImage" accept="image/*">
+              <small>Upload an image from your computer</small>
+            </div>
+            
+            <!-- Option 2: Paste Image URL for Spare Part -->
+            <div class="image-url-section">
+              <label>🔗 Option 2: Paste Image URL</label>
+              <input type="url" id="sparePartImageUrl" placeholder="https://i.imgur.com/your-image.jpg">
+              <small>Paste a direct image URL from Imgur, Cloudinary, or any image hosting service</small>
+            </div>
+            
             <textarea name="description" placeholder="Part description" rows="3" required></textarea>
             <button class="btn primary block" type="submit">Add Spare Part</button>
           </form>
@@ -351,16 +429,13 @@
               <option value="1">Available</option>
               <option value="0">Unavailable</option>
             </select>
-            <input name="image" type="file" accept="image/*">
+            <div class="file-upload-section">
+              <label>📁 Upload Image (Optional)</label>
+              <input name="image" type="file" accept="image/*">
+            </div>
             <textarea name="description" placeholder="Service description" rows="3" required></textarea>
             <button class="btn primary block" type="submit">Add Repair Service</button>
           </form>
-        </section>
-
-        <!-- Repair Categories (for reference) -->
-        <section class="dash-panel reveal" hidden>
-          <h3>📁 Repair Categories</h3>
-          <select id="repairCategorySelect"></select>
         </section>
 
         <!-- Technicians Management -->
@@ -438,7 +513,6 @@
       }
     }
     
-    // Simple toast function for this page
     function toast(msg, type) {
       const container = document.getElementById('toasts');
       if (!container) return;
@@ -449,14 +523,12 @@
       setTimeout(() => el.remove(), 3000);
     }
     
-    // Attach event listener when DOM is ready
     document.addEventListener('DOMContentLoaded', () => {
       const updateBtn = document.getElementById('updateDeliveryFeeBtn');
       if (updateBtn) {
         updateBtn.addEventListener('click', updateDeliveryFee);
       }
       
-      // Allow Enter key to submit
       const feeInput = document.getElementById('newDeliveryFee');
       if (feeInput) {
         feeInput.addEventListener('keypress', (e) => {
@@ -474,7 +546,6 @@ if ('serviceWorker' in navigator) {
     registration.update();
   });
   
-  // Listen for reload messages from service worker
   navigator.serviceWorker.addEventListener('message', event => {
     if (event.data?.type === 'FORCE_RELOAD') {
       console.log('🔄 Service worker forcing reload...');
@@ -483,7 +554,6 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-// Clear all caches on page load (temporary - remove after fix)
 async function clearAllCaches() {
   if ('caches' in window) {
     const keys = await caches.keys();
@@ -495,7 +565,6 @@ async function clearAllCaches() {
   }
 }
 
-// Run this once to clear old cache
 clearAllCaches();
 </script>
   
