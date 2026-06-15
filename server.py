@@ -54,9 +54,11 @@ CACHE_TTL = 3600
 
 # ============================================
 # NO DEFAULT PRODUCTS - Empty list
-# Products will only come from management panel
 # ============================================
 DEFAULT_PRODUCTS = []  # Empty - no default products
+
+# NO DEFAULT REPAIR SERVICES - Empty list
+DEFAULT_REPAIR_SERVICES = []  # Empty - no default repair services
 
 DEFAULT_REPAIR_CATEGORIES = [
     ("cat-screen", "Screen replacement", "screen-replacement"),
@@ -69,19 +71,6 @@ DEFAULT_REPAIR_CATEGORIES = [
     ("cat-water", "Water damage repair", "water-damage-repair"),
     ("cat-motherboard", "Motherboard repair", "motherboard-repair"),
     ("cat-backglass", "Back glass replacement", "back-glass-replacement"),
-]
-
-DEFAULT_REPAIR_SERVICES = [
-    ("r1", "Galaxy Screen Refresh", "Samsung", "Screen replacement", 12999, "45 minutes", "6 months", "/shop/hero-phone.jpg", "Fast Samsung screen replacement with premium glass.", 1, "cat-screen"),
-    ("r2", "iPhone Battery Upgrade", "Apple", "Battery replacement", 7999, "30 minutes", "6 months", "/shop/hero-phone.jpg", "Genuine Apple battery replacement and performance tune-up.", 1, "cat-battery"),
-    ("r3", "Xiaomi Charging Port Fix", "Xiaomi", "Charging port repair", 3499, "30 minutes", "3 months", "/shop/hero-phone.jpg", "Charging and USB port repair for Xiaomi models.", 1, "cat-port"),
-    ("r4", "Oppo Camera Calibration", "Oppo", "Camera repair", 4999, "1 hour", "3 months", "/shop/camera.jpg", "Front and rear camera repair with calibration.", 1, "cat-camera"),
-    ("r5", "Huawei Speaker Tune-Up", "Huawei", "Speaker repair", 2999, "30 minutes", "3 months", "/shop/speaker.jpg", "Audio and speaker repair for clear call quality.", 1, "cat-speaker"),
-    ("r6", "Tecno Mic Recovery", "Tecno", "Microphone repair", 2799, "30 minutes", "3 months", "/shop/headphones.jpg", "Microphone repair for voice and call clarity.", 1, "cat-microphone"),
-    ("r7", "Infinix Software Restore", "Infinix", "Software / OS issues", 2499, "1 hour", "1 month", "/shop/hero-phone.jpg", "Software recovery, OS update and malware cleanup.", 1, "cat-software"),
-    ("r8", "Water Damage Rescue", "All brands", "Water damage repair", 7499, "2 days", "6 months", "/shop/hero-phone.jpg", "Water damage diagnostics and repair for wet devices.", 1, "cat-water"),
-    ("r9", "Motherboard Repair", "All brands", "Motherboard repair", 15999, "3 days", "6 months", "/shop/console.jpg", "Full motherboard repair and component replacement.", 1, "cat-motherboard"),
-    ("r10", "Back Glass Replacement", "All brands", "Back glass replacement", 4999, "1 hour", "3 months", "/shop/hero-phone.jpg", "Premium back glass replacement with safe finish.", 1, "cat-backglass"),
 ]
 
 DEFAULT_DEVICE_MODELS = {
@@ -130,24 +119,7 @@ KENYA_COUNTY_AREAS = {
     },
 }
 
-DEFAULT_SPARE_PARTS = [
-    ("sp1", "LCD Screen", "Samsung", "Screen", 4999, 15, "/uploads/screen-samsung.jpg", "Original LCD replacement for Samsung Galaxy series"),
-    ("sp2", "AMOLED Display", "Samsung", "Screen", 8999, 10, "/uploads/amoled-samsung.jpg", "Premium AMOLED screen for Galaxy flagships"),
-    ("sp3", "Battery 5000mAh", "Samsung", "Battery", 2999, 25, "/uploads/battery-samsung.jpg", "High capacity replacement battery for Galaxy devices"),
-    ("sp4", "Charging Port", "Samsung", "Charging Port", 1799, 30, "/uploads/charging-port.jpg", "USB-C charging port assembly"),
-    ("sp5", "LCD Screen", "Apple", "Screen", 6999, 15, "/uploads/screen-apple.jpg", "Retina LCD screen for iPhone"),
-    ("sp6", "Battery 3000mAh", "Apple", "Battery", 3499, 20, "/uploads/battery-apple.jpg", "Original Apple battery replacement"),
-    ("sp7", "Charging Port", "Apple", "Charging Port", 2199, 25, "/uploads/lightning-port.jpg", "Lightning connector port assembly"),
-    ("sp8", "LCD Screen", "Tecno", "Screen", 2999, 20, "/uploads/screen-tecno.jpg", "LCD replacement for Tecno Spark/Camon"),
-    ("sp9", "Battery 5000mAh", "Tecno", "Battery", 1999, 30, "/uploads/battery-tecno.jpg", "Large capacity battery for Tecno devices"),
-    ("sp10", "Charging Port", "Tecno", "Charging Port", 999, 30, "/uploads/charging-tecno.jpg", "USB port for Tecno devices"),
-    ("sp11", "LCD Screen", "Infinix", "Screen", 2499, 25, "/uploads/screen-infinix.jpg", "LCD display for Infinix Hot/Note"),
-    ("sp12", "Battery 4000mAh", "Infinix", "Battery", 1899, 30, "/uploads/battery-infinix.jpg", "Infinix Note/Hot series battery"),
-    ("sp13", "Charging Port", "Infinix", "Charging Port", 899, 35, "/uploads/charging-infinix.jpg", "Micro USB charging port"),
-    ("sp14", "LCD Screen", "Xiaomi", "Screen", 3499, 18, "/uploads/screen-xiaomi.jpg", "LCD for Xiaomi Redmi/Poco"),
-    ("sp15", "Battery 5000mAh", "Xiaomi", "Battery", 2499, 25, "/uploads/battery-xiaomi.jpg", "Xiaomi Redmi battery replacement"),
-    ("sp16", "Charging Port", "Xiaomi", "Charging Port", 1299, 28, "/uploads/charging-xiaomi.jpg", "USB-C charging port"),
-]
+DEFAULT_SPARE_PARTS = []  # Empty - no default spare parts
 
 REPAIR_STATUSES = [
     ("Pending", 10),
@@ -157,6 +129,9 @@ REPAIR_STATUSES = [
     ("Completed", 50),
     ("Ready for pickup", 60),
 ]
+
+# Transparent 1x1 GIF placeholder
+TRANSPARENT_GIF = b'GIF89a\x01\x00\x01\x00\x80\x00\x00\xff\xff\xff\x00\x00\x00!\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;'
 
 @contextmanager
 def db():
@@ -651,7 +626,6 @@ def init_db():
         
         if product_count == 0:
             logger.info("No products found. Products must be added via management panel.")
-            # DO NOT seed default products - DEFAULT_PRODUCTS is empty
         else:
             logger.info(f"Products table has {product_count} existing products")
         
@@ -667,17 +641,11 @@ def init_db():
                 cursor.executemany("INSERT INTO repair_categories (id,name,slug,created_at) VALUES (?,?,?,?)", [(*c, now) for c in DEFAULT_REPAIR_CATEGORIES])
             conn.commit()
         
-        # Check repair services
+        # Check repair services - NO DEFAULT REPAIR SERVICES SEEDING
         cursor.execute("SELECT COUNT(*) as count FROM repair_services")
         result = cursor.fetchone()
         if (result["count"] if USE_POSTGRES else result[0]) == 0:
-            logger.info("Seeding repair services...")
-            if USE_POSTGRES:
-                for s in DEFAULT_REPAIR_SERVICES:
-                    cursor.execute("INSERT INTO repair_services (id,title,brand,repair_type,price,duration,warranty,image,\"description\",available,category_id,created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", (*s, now))
-            else:
-                cursor.executemany("INSERT INTO repair_services (id,title,brand,repair_type,price,duration,warranty,image,description,available,category_id,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", [(*s, now) for s in DEFAULT_REPAIR_SERVICES])
-            conn.commit()
+            logger.info("No repair services found. Services must be added via management panel.")
         
         # Check repair statuses
         cursor.execute("SELECT COUNT(*) as count FROM repair_statuses")
@@ -707,18 +675,11 @@ def init_db():
                 cursor.executemany("INSERT INTO device_models (id,brand,model,created_at) VALUES (?,?,?,?)", rows)
             conn.commit()
         
-        # Check spare parts
+        # Check spare parts - NO DEFAULT SPARE PARTS SEEDING
         cursor.execute("SELECT COUNT(*) as count FROM spare_parts")
         result = cursor.fetchone()
         if (result["count"] if USE_POSTGRES else result[0]) == 0:
-            logger.info("Seeding default spare parts...")
-            if USE_POSTGRES:
-                for p in DEFAULT_SPARE_PARTS:
-                    cursor.execute("INSERT INTO spare_parts (id,name,brand,category,price,stock,image_path,\"description\",created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)", (*p, now))
-            else:
-                cursor.executemany("INSERT INTO spare_parts (id,name,brand,category,price,stock,image_path,description,created_at) VALUES (?,?,?,?,?,?,?,?,?)", [(*p, now) for p in DEFAULT_SPARE_PARTS])
-            conn.commit()
-            logger.info(f"Seeded {len(DEFAULT_SPARE_PARTS)} default spare parts")
+            logger.info("No spare parts found. Spare parts must be added via management panel.")
         
         # Check settings
         cursor.execute("SELECT COUNT(*) as count FROM settings")
@@ -730,7 +691,7 @@ def init_db():
                 cursor.execute("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)", ('delivery_fee', '600'))
             conn.commit()
         
-        # Add delivery_date column if not exists (for existing databases)
+        # Add delivery_date column if not exists
         if USE_POSTGRES:
             cursor.execute("""
                 SELECT column_name 
@@ -989,6 +950,33 @@ class Handler(BaseHTTPRequestHandler):
             path = "/index.html"
         query = parse_qs(parsed.query)
         
+        # Handle image requests with placeholder to stop infinite loop
+        if path.startswith("/shop/") and path.endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp')):
+            filename = Path(path).name
+            target = SHOP_DIR / filename
+            
+            if not target.exists():
+                # Return transparent placeholder
+                self.send_response(200)
+                self.send_header("Content-Type", "image/gif")
+                self.send_header("Content-Length", str(len(TRANSPARENT_GIF)))
+                self.end_headers()
+                self.wfile.write(TRANSPARENT_GIF)
+                return
+
+        if path.startswith("/uploads/") and path.endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp')):
+            filename = Path(path).name
+            target = UPLOAD_DIR / filename
+            
+            if not target.exists():
+                # Return transparent placeholder
+                self.send_response(200)
+                self.send_header("Content-Type", "image/gif")
+                self.send_header("Content-Length", str(len(TRANSPARENT_GIF)))
+                self.end_headers()
+                self.wfile.write(TRANSPARENT_GIF)
+                return
+        
         # API endpoints
         if path == "/api/spare-parts":
             brand = query.get("brand", [""])[0]
@@ -1158,6 +1146,20 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"technicians": [row_repair_technician(r) for r in rows]})
             return
         
+        # ============================================
+        # ORDERS MY ENDPOINT - FIXED
+        # ============================================
+        if path == "/api/orders/my":
+            user = self.require({"customer"})
+            if not user:
+                return
+            with db() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT * FROM orders WHERE user_id = %s ORDER BY created_at DESC" if USE_POSTGRES else "SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC", (user["id"],))
+                rows = cursor.fetchall()
+                self.send_json({"orders": [row_order(conn, r) for r in rows]})
+            return
+        
         # STATIC FILE SERVING
         file_path = unquote(path).lstrip("/")
         if ".." in file_path:
@@ -1309,7 +1311,6 @@ class Handler(BaseHTTPRequestHandler):
             content_type = self.headers.get("Content-Type", "")
             
             if content_type.startswith("application/json"):
-                # JSON with image URL
                 data = self.read_json()
                 
                 name = data.get("name", "").strip()
@@ -1344,7 +1345,6 @@ class Handler(BaseHTTPRequestHandler):
                 return
             
             else:
-                # Multipart form data with file upload
                 form, files = self.read_multipart()
                 name = (form.get("name") or "").strip()
                 brand = (form.get("brand") or "").strip()
@@ -1404,7 +1404,7 @@ class Handler(BaseHTTPRequestHandler):
             return
         
         # ============================================
-        # PRODUCT ENDPOINT - Supports both File Upload and Image URL
+        # PRODUCT ENDPOINT
         # ============================================
         if path == "/api/admin/products":
             if not self.require({"admin"}):
@@ -1415,9 +1415,7 @@ class Handler(BaseHTTPRequestHandler):
             
             content_type = self.headers.get("Content-Type", "")
             
-            # Check if it's JSON (with image URL) or multipart (with file upload)
             if content_type.startswith("application/json"):
-                # JSON with image URL (Imgur or external URL)
                 data = self.read_json()
                 
                 name = data.get("name", "").strip()
@@ -1455,12 +1453,11 @@ class Handler(BaseHTTPRequestHandler):
                             (product_id, name, category, price, was_price, 4.6, 0, badge_value, image_url, desc, 1, datetime.now(timezone.utc).isoformat()))
                     conn.commit()
                 
-                logger.info(f"✅ Product added: {product_id} - {name} with image URL: {image_url}")
+                logger.info(f"✅ Product added: {product_id} - {name}")
                 self.send_json({"ok": True, "id": product_id, "image_url": image_url})
                 return
             
             else:
-                # Handle multipart form data (file upload)
                 form, files = self.read_multipart()
                 
                 logger.info(f"📝 Form fields: {list(form.keys())}")
@@ -1486,7 +1483,6 @@ class Handler(BaseHTTPRequestHandler):
                         f.write(image["content"])
                     
                     logger.info(f"✅ Image saved: {filename}")
-                    logger.info(f"   Full path: {target}")
                     
                 except Exception as e:
                     logger.error(f"❌ Failed to save image: {e}")
@@ -1525,8 +1521,6 @@ class Handler(BaseHTTPRequestHandler):
                     conn.commit()
                 
                 logger.info(f"✅ Product added: {product_id} - {name}")
-                logger.info(f"   Image URL: {image_url}")
-                
                 self.send_json({"ok": True, "id": product_id, "image_url": image_url})
                 return
         
@@ -1600,17 +1594,6 @@ class Handler(BaseHTTPRequestHandler):
                          data.get("preferredAt") or datetime.now(timezone.utc).isoformat(), "Pending", datetime.now(timezone.utc).isoformat()))
                 conn.commit()
             self.send_json({"ok": True, "id": booking_id})
-            return
-        
-        if path == "/api/orders/my":
-            user = self.require({"customer"})
-            if not user:
-                return
-            with db() as conn:
-                cursor = conn.cursor()
-                cursor.execute("SELECT * FROM orders WHERE user_id = %s ORDER BY created_at DESC" if USE_POSTGRES else "SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC", (user["id"],))
-                rows = cursor.fetchall()
-                self.send_json({"orders": [row_order(conn, r) for r in rows]})
             return
         
         if path == "/api/orders":
@@ -1785,9 +1768,6 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json({"ok": True, "order": row_order(conn, updated), "customerNotified": True})
             return
 
-        # ============================================
-        # DELIVERY DATE ENDPOINT
-        # ============================================
         _dd_match = _re.match(r"^/api/admin/orders/([^/]+)/delivery-date$", path)
         if _dd_match:
             admin = self.require({"admin"})
@@ -1803,11 +1783,7 @@ class Handler(BaseHTTPRequestHandler):
             
             with db() as conn:
                 cursor = conn.cursor()
-                
-                # Ensure delivery_date column exists (already added in init_db)
                 cursor.execute("UPDATE orders SET delivery_date = %s WHERE id = %s" if USE_POSTGRES else "UPDATE orders SET delivery_date = ? WHERE id = ?", (delivery_date, order_id))
-                
-                # Notify customer
                 notif_id = "n-" + secrets.token_hex(8)
                 cursor.execute("SELECT user_id FROM orders WHERE id = %s" if USE_POSTGRES else "SELECT user_id FROM orders WHERE id = ?", (order_id,))
                 order = cursor.fetchone()
@@ -1816,9 +1792,7 @@ class Handler(BaseHTTPRequestHandler):
                     msg = f"🎉 Great news! Your order {order_id} is scheduled for delivery on {formatted_date}. Our team will contact you with more details."
                     cursor.execute("INSERT INTO order_notifications (id,order_id,message,is_read,created_at) VALUES (%s,%s,%s,%s,%s)" if USE_POSTGRES else "INSERT INTO order_notifications (id,order_id,message,is_read,created_at) VALUES (?,?,?,?,?)", 
                         (notif_id, order_id, msg, 0, datetime.now(timezone.utc).isoformat()))
-                
                 conn.commit()
-            
             self.send_json({"ok": True})
             return
 
@@ -1827,7 +1801,7 @@ class Handler(BaseHTTPRequestHandler):
                 return
             product_id = path.split("/")[-1]
             data = self.read_json()
-            logger.info(f"Updating product {product_id} with data: {data}")
+            logger.info(f"Updating product {product_id}")
             with db() as conn:
                 cursor = conn.cursor()
                 cursor.execute("SELECT * FROM products WHERE id = %s" if USE_POSTGRES else "SELECT * FROM products WHERE id = ?", (product_id,))
@@ -1917,25 +1891,19 @@ class Handler(BaseHTTPRequestHandler):
             product_id = path.split("/")[-1]
             with db() as conn:
                 cursor = conn.cursor()
-                
-                # Check if product exists in any orders
                 cursor.execute("SELECT COUNT(*) as count FROM order_items WHERE product_id = %s" if USE_POSTGRES else "SELECT COUNT(*) as count FROM order_items WHERE product_id = ?", (product_id,))
                 result = cursor.fetchone()
                 order_count = result["count"] if USE_POSTGRES else result[0]
-                
-                # Get product image before deletion
                 cursor.execute("SELECT img FROM products WHERE id = %s" if USE_POSTGRES else "SELECT img FROM products WHERE id = ?", (product_id,))
                 product = cursor.fetchone()
                 
                 if order_count > 0:
-                    # Product has orders - just mark as out of stock instead of deleting
                     cursor.execute("UPDATE products SET in_stock = 0 WHERE id = %s" if USE_POSTGRES else "UPDATE products SET in_stock = 0 WHERE id = ?", (product_id,))
                     conn.commit()
                     logger.info(f"Product {product_id} has orders - marked as out of stock")
                     self.send_json({"ok": True, "warning": "Product has existing orders. Marked as out of stock instead of deleting."})
                     return
                 
-                # No orders - safe to delete completely
                 if product and product["img"] and not product["img"].startswith('/shop/'):
                     filename = product["img"].split('/')[-1]
                     target = UPLOAD_DIR / filename
@@ -1943,7 +1911,6 @@ class Handler(BaseHTTPRequestHandler):
                         target.unlink()
                         logger.info(f"Deleted product image: {filename}")
                 
-                # Delete from order_items (should be empty but just in case)
                 cursor.execute("DELETE FROM order_items WHERE product_id = %s" if USE_POSTGRES else "DELETE FROM order_items WHERE product_id = ?", (product_id,))
                 cursor.execute("DELETE FROM products WHERE id = %s" if USE_POSTGRES else "DELETE FROM products WHERE id = ?", (product_id,))
                 conn.commit()
