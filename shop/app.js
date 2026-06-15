@@ -3,6 +3,7 @@
    FIXED: Orders persistence after logout
    FIXED: Simplified location entry (manual input)
    ADDED: Delivery date display on customer dashboard
+   REMOVED: Default products - only server products
 ========================================================= */
 
 // ----- Helper function for images -----
@@ -18,23 +19,8 @@ function getImageUrl(imgPath) {
 }
 
 // ----- PRODUCT DATA -----
-const DEFAULT_PRODUCTS = [
-  { id:'p1', name:'S.M Dynamics Phone 16 Pro', cat:'phones', price:1299, was:1499, rating:4.9, reviews:1283, badge:'hot', img:'/shop/hero-phone.jpg', desc:'A flagship redefined. Titanium frame, 6.7" OLED 120Hz display and the new A18X bionic chip.', specs:{ Display:'6.7" OLED 120Hz', Chip:'A18X Bionic', Storage:'256GB', Camera:'Triple 48MP', Battery:'4800mAh' } },
-  { id:'p2', name:'Aura Studio Pro', cat:'audio', price:449, was:549, rating:4.8, reviews:842, badge:'sale', img:'/shop/headphones.jpg', desc:'Reference-grade over-ear with adaptive noise cancellation and 60h battery.', specs:{ Driver:'40mm planar', ANC:'Adaptive', Battery:'60h', Codec:'LDAC/aptX', Weight:'248g' } },
-  { id:'p3', name:'S.M Dynamics Book X1', cat:'laptops', price:2199, rating:4.9, reviews:512, badge:'new', img:'/shop/Sm%20dynamic.jpg', desc:'Carbon-fiber chassis, 14" mini-LED, 32GB RAM and 18-hour battery.', specs:{ CPU:'M4 Pro', RAM:'32GB', Storage:'1TB SSD', Display:'14" mini-LED', Battery:'18h' } },
-  { id:'p4', name:'Orbit Watch Ultra', cat:'wearables', price:599, was:699, rating:4.7, reviews:301, badge:'sale', img:'/shop/watch.jpg', desc:'Sapphire crystal, dual-frequency GPS and 7-day battery in titanium.', specs:{ Display:'AMOLED 1.9"', GPS:'Dual-band', Battery:'7 days', Water:'10 ATM', Material:'Titanium' } },
-  { id:'p5', name:'Vision Lens VR', cat:'gaming', price:899, rating:4.6, reviews:178, badge:'new', img:'/shop/vr.jpg', desc:'4K-per-eye micro-OLED with 120Hz tracking. The future of immersion.', specs:{ Display:'4K per eye', Refresh:'120Hz', Audio:'Spatial', Tracking:'Inside-out', Weight:'420g' } },
-  { id:'p6', name:'Echo Buds 3', cat:'audio', price:179, was:229, rating:4.7, reviews:921, badge:'sale', img:'/shop/earbuds.jpg', desc:'Hi-Res certified earbuds with hybrid ANC and 32h total battery.', specs:{ Driver:'11mm dynamic', ANC:'Hybrid', Battery:'32h', Codec:'LHDC', Case:'Wireless charging' } },
-  { id:'p7', name:'Lumen R7 Camera', cat:'wearables', price:1499, rating:4.8, reviews:215, img:'/shop/camera.jpg', desc:'45MP full-frame mirrorless with 8K video and AI subject tracking.', specs:{ Sensor:'45MP FF', Video:'8K 60p', ISO:'100-51200', AF:'AI subject', Stabilization:'8-stop IBIS' } },
-  { id:'p8', name:'Apex Pad Ultra', cat:'gaming', price:79, rating:4.6, reviews:1502, badge:'hot', img:'/shop/console.jpg', desc:'Pro-grade wireless controller with haptic triggers and RGB.', specs:{ Connectivity:'BT 5.3', Battery:'40h', Triggers:'Hall-effect', RGB:'16M colors', Weight:'280g' } },
-  { id:'p9', name:'Glide Tab 12', cat:'laptops', price:899, rating:4.5, reviews:402, img:'/shop/tablet.jpg', desc:'12.4" 2K tablet with pressure-sensitive stylus, perfect for creators.', specs:{ Display:'12.4" 2K 120Hz', Storage:'256GB', Stylus:'Included', Battery:'14h', Speakers:'Quad' } },
-  { id:'p10', name:'Pulse Sound 360', cat:'home', price:249, was:299, rating:4.7, reviews:687, badge:'sale', img:'/shop/speaker.jpg', desc:'360° smart speaker with built-in voice assistant and room calibration.', specs:{ Drivers:'5x', Power:'120W', Voice:'Built-in AI', Bass:'Adaptive', Battery:'20h' } },
-  { id:'p11', name:'Falcon Drone 4K', cat:'gaming', price:1199, rating:4.8, reviews:243, badge:'new', img:'/shop/drone.jpg', desc:'4K stabilized drone with 40-minute flight time and obstacle avoidance.', specs:{ Camera:'4K 60p', Range:'12km', Flight:'40 min', Obstacle:'6-direction', Weight:'595g' } },
-  { id:'p12', name:'Nest Hub Mini', cat:'home', price:129, rating:4.5, reviews:1109, img:'/shop/hub.jpg', desc:'Smart home command center with ambient display and voice control.', specs:{ Display:'7" touch', Voice:'Built-in', Hub:'Matter/Thread', Audio:'Stereo', Camera:'1080p' } },
-  { id:'p13', name:'Forge Keyboard RGB', cat:'gaming', price:189, was:229, rating:4.7, reviews:534, badge:'sale', img:'/shop/keyboard.jpg', desc:'Mechanical RGB keyboard with hot-swap switches and aluminum frame.', specs:{ Switches:'Hot-swap', Layout:'87-key TKL', RGB:'Per-key', Connect:'USB-C / BT', Build:'Aluminum' } },
-];
-
-let PRODUCTS = DEFAULT_PRODUCTS.slice();
+// Products are loaded from server API. No hardcoded defaults.
+let PRODUCTS = [];
 
 // ----- STATE -----
 const state = {
@@ -368,17 +354,19 @@ async function refreshProducts() {
       console.log('✅ Loaded', PRODUCTS.length, 'products from server');
       localStorage.setItem('management_products', JSON.stringify(PRODUCTS));
     } else {
-      const stored = localStorage.getItem('management_products');
-      if (stored && JSON.parse(stored).length > 0) {
-        PRODUCTS = JSON.parse(stored);
-        console.log('📦 Loaded', PRODUCTS.length, 'products from localStorage fallback');
-      }
+      PRODUCTS = [];
+      console.log('📦 No products found on server');
+      localStorage.removeItem('management_products');
     }
   } catch (err) {
     console.error('❌ Failed to refresh products from server:', err);
     const stored = localStorage.getItem('management_products');
     if (stored && JSON.parse(stored).length > 0) {
       PRODUCTS = JSON.parse(stored);
+      console.log('📦 Using localStorage products (server offline)');
+    } else {
+      PRODUCTS = [];
+      console.log('📦 No products available - please add products in management panel');
     }
   }
   
@@ -472,21 +460,48 @@ function renderProducts() {
   if (state.sort === 'low') list.sort((a,b) => a.price - b.price);
   if (state.sort === 'high') list.sort((a,b) => b.price - a.price);
   if (state.sort === 'rating') list.sort((a,b) => b.rating - a.rating);
+  
+  if (list.length === 0) {
+    $('#productGrid').innerHTML = `
+      <div class="no-products-message" style="text-align: center; padding: 3rem; grid-column: 1 / -1;">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">🛍️</div>
+        <h3 style="color: #00e5ff;">No Products Yet</h3>
+        <p style="color: #888;">Products will appear here once added by the admin.</p>
+        <a href="management.html" class="btn primary" style="margin-top: 1rem; display: inline-block;">Go to Management Panel</a>
+      </div>
+    `;
+    return;
+  }
+  
   $('#productGrid').innerHTML = list.map(p => card(p)).join('');
   bindCards($('#productGrid'));
 }
+
 function renderFlash() {
   const items = PRODUCTS.filter(p => p.was).slice(0, 4);
+  if (items.length === 0) {
+    $('#flashGrid').innerHTML = `
+      <div class="no-products-message" style="text-align: center; padding: 2rem; grid-column: 1 / -1;">
+        <p style="color: #888;">No flash sale items at the moment.</p>
+      </div>
+    `;
+    return;
+  }
   $('#flashGrid').innerHTML = items.map(p => card(p, { stock: Math.floor(Math.random() * 60 + 20) })).join('');
   bindCards($('#flashGrid'));
 }
+
 function renderRecent() {
   const list = state.recent.map(id => PRODUCTS.find(p => p.id === id)).filter(Boolean);
-  if (!list.length) return;
+  if (!list.length) {
+    $('#recentSection').hidden = true;
+    return;
+  }
   $('#recentSection').hidden = false;
   $('#recentGrid').innerHTML = list.map(p => card(p)).join('');
   bindCards($('#recentGrid'));
 }
+
 function bindCards(root) {
   $$('.card', root).forEach(c => {
     const id = c.dataset.id;
@@ -792,9 +807,11 @@ $('#sortBy').addEventListener('change', e => { state.sort = e.target.value; rend
 // Live purchase
 const FAKE = ['Alex from NYC','Mei from Shanghai','Liam from London','Sara from Paris','Carlos from Madrid','Yuki from Tokyo'];
 function liveNotif() {
+  if (PRODUCTS.length === 0) return;
   const p = PRODUCTS[Math.floor(Math.random() * PRODUCTS.length)];
   const who = FAKE[Math.floor(Math.random() * FAKE.length)];
   const el = $('#liveNotif');
+  if (!el) return;
   el.innerHTML = `<img src="${getImageUrl(p.img)}" alt="" onerror="this.src='/shop/hero-phone.jpg'"><div><b>${who}</b><small>just bought ${p.name}</small></div>`;
   el.classList.add('show');
   setTimeout(() => el.classList.remove('show'), 4500);
@@ -818,6 +835,38 @@ window.addEventListener('storage', (e) => {
   }
 });
 window.addEventListener('products-updated', () => refreshProducts());
+
+// ============================================
+// FORCE HOMEPAGE CONTENT VISIBILITY FIX
+// ============================================
+(function ensureContentVisible() {
+    window.addEventListener('load', function() {
+        setTimeout(function() {
+            const containers = ['hero', 'flash-sale', 'products-section', 'testimonials', 'featured-products', 'recent-section', 'productGrid', 'flashGrid', 'recentGrid'];
+            containers.forEach(function(id) {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.style.display = 'block';
+                    el.style.visibility = 'visible';
+                    el.style.opacity = '1';
+                }
+            });
+            const grids = document.querySelectorAll('#productGrid, #flashGrid, #recentGrid');
+            grids.forEach(function(grid) {
+                if (grid) {
+                    grid.style.display = 'grid';
+                    grid.style.visibility = 'visible';
+                }
+            });
+            const sections = document.querySelectorAll('main > section, .container > section');
+            sections.forEach(function(section) {
+                if (section.classList.contains('hidden')) section.classList.remove('hidden');
+                if (section.hasAttribute('hidden')) section.removeAttribute('hidden');
+            });
+            console.log('✅ Homepage content visibility enforced');
+        }, 500);
+    });
+})();
 
 // Initialize
 (async function initApp() {
@@ -849,50 +898,3 @@ function toast(msg, type='info') {
   setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateX(50%)'; t.style.transition = 'all .4s'; }, 2800);
   setTimeout(() => t.remove(), 3300);
 }
-// ============================================
-// FORCE HOMEPAGE CONTENT VISIBILITY FIX
-// ============================================
-(function ensureContentVisible() {
-    // Wait for page to fully load
-    window.addEventListener('load', function() {
-        setTimeout(function() {
-            // Force all major containers to be visible
-            const containers = [
-                'hero', 'flash-sale', 'products-section', 
-                'testimonials', 'featured-products', 'recent-section',
-                'productGrid', 'flashGrid', 'recentGrid'
-            ];
-            
-            containers.forEach(function(id) {
-                const el = document.getElementById(id);
-                if (el) {
-                    el.style.display = 'block';
-                    el.style.visibility = 'visible';
-                    el.style.opacity = '1';
-                }
-            });
-            
-            // Force all product grids to show
-            const grids = document.querySelectorAll('#productGrid, #flashGrid, #recentGrid');
-            grids.forEach(function(grid) {
-                if (grid) {
-                    grid.style.display = 'grid';
-                    grid.style.visibility = 'visible';
-                }
-            });
-            
-            // Remove any hidden class from main sections
-            const sections = document.querySelectorAll('main > section, .container > section');
-            sections.forEach(function(section) {
-                if (section.classList.contains('hidden')) {
-                    section.classList.remove('hidden');
-                }
-                if (section.hasAttribute('hidden')) {
-                    section.removeAttribute('hidden');
-                }
-            });
-            
-            console.log('✅ Homepage content visibility enforced');
-        }, 500);
-    });
-})();
