@@ -202,16 +202,16 @@
     <div class="filters reveal">
       <div class="chips" id="filterChips">
         <button class="chip active" data-cat="all">All</button>
-         <button class="chip" data-cat="phones">Tv & Home Theatre Accessories</button>
-         <button class="chip" data-cat="phones">Power & Charging Accessories</button>
-         <button class="chip" data-cat="phones">General/Cables & Adapters</button>
-        <button class="chip" data-cat="audio">Mobile Accessories</button>
         <button class="chip" data-cat="phones">Phones</button>
         <button class="chip" data-cat="audio">Audio</button>
         <button class="chip" data-cat="laptops">Computer & Laptop Accessories</button>
         <button class="chip" data-cat="wearables">Wearables</button>
         <button class="chip" data-cat="gaming">Gaming</button>
         <button class="chip" data-cat="home">Smart Home</button>
+        <button class="chip" data-cat="accessories">Mobile Accessories</button>
+        <button class="chip" data-cat="cables">General/Cables & Adapters</button>
+        <button class="chip" data-cat="tv">TV & Home Theatre Accessories</button>
+        <button class="chip" data-cat="power">Power & Charging Accessories</button>
       </div>
       <div class="sort">
         <label for="sortBy" class="sr">Sort</label>
@@ -348,29 +348,29 @@
 
     <!-- LOGIN PANEL -->
     <div class="auth-panel-wrap" id="panelLogin">
-      <h2 class="auth-title">LOGIN</h2>
+      <h2 class="auth-title">Login</h2>
       <form id="loginForm" class="auth-form-new">
         <div class="auth-input-wrap">
           <span class="auth-icon">👤</span>
-          <input name="email" type="email" placeholder="Email" autocomplete="email" required>
+          <input name="email" type="email" placeholder="Email address" autocomplete="email" required>
         </div>
         <div class="auth-input-wrap">
           <span class="auth-icon">🔑</span>
           <input name="password" type="password" placeholder="Password" autocomplete="current-password" required>
         </div>
-        <button class="auth-submit-btn" type="submit">LOGIN</button>
+        <button class="auth-submit-btn" type="submit">Login</button>
         <p class="auth-switch-link">
           <a href="#" id="toForgot">Forgot Password?</a>
         </p>
         <p class="auth-switch-link">
-          Don't have an account? <a href="#" id="toRegister">Register</a>
+          No account yet? <a href="#" id="toRegister">Register</a>
         </p>
       </form>
     </div>
 
     <!-- REGISTER PANEL -->
     <div class="auth-panel-wrap" id="panelRegister" hidden>
-      <h2 class="auth-title">REGISTER</h2>
+      <h2 class="auth-title">Register</h2>
       <form id="registerForm" class="auth-form-new">
         <div class="auth-input-wrap">
           <span class="auth-icon">👤</span>
@@ -378,13 +378,13 @@
         </div>
         <div class="auth-input-wrap">
           <span class="auth-icon">✉️</span>
-          <input name="email" type="email" placeholder="Email" autocomplete="email" required>
+          <input name="email" type="email" placeholder="Email address" autocomplete="email" required>
         </div>
         <div class="auth-input-wrap">
           <span class="auth-icon">🔑</span>
           <input name="password" type="password" placeholder="Password" autocomplete="new-password" minlength="4" required>
         </div>
-        <button class="auth-submit-btn" type="submit">CREATE ACCOUNT</button>
+        <button class="auth-submit-btn" type="submit">Create Account</button>
         <p class="auth-switch-link">
           Already have an account? <a href="#" id="toLogin">Login</a>
         </p>
@@ -393,14 +393,14 @@
 
     <!-- FORGOT PASSWORD PANEL -->
     <div class="auth-panel-wrap" id="panelForgot" hidden>
-      <h2 class="auth-title">FORGOT PASSWORD</h2>
-      <p class="auth-forgot-desc">Enter your email address and we'll send you a link to reset your password.</p>
+      <h2 class="auth-title">Reset Password</h2>
+      <p class="auth-forgot-desc">Enter your email and we'll send you a link to reset your password.</p>
       <form id="forgotForm" class="auth-form-new">
         <div class="auth-input-wrap">
           <span class="auth-icon">✉️</span>
-          <input name="email" type="email" placeholder="Email Address" autocomplete="email" required>
+          <input name="email" type="email" placeholder="Email address" autocomplete="email" required>
         </div>
-        <button class="auth-submit-btn" type="submit">SEND RESET LINK</button>
+        <button class="auth-submit-btn" type="submit">Send Reset Link</button>
         <p class="auth-switch-link">
           <a href="#" id="backToLogin">← Back to Login</a>
         </p>
@@ -411,123 +411,352 @@
 </div>
 
 <style>
-/* ── Auth Modal Redesign ── */
-.auth-card {
-  background: linear-gradient(135deg, #0d2b6e 0%, #0a1f5c 40%, #0d3b7a 100%) !important;
-  border: none !important;
-  border-radius: 1rem !important;
+/* ═══════════════════════════════════════════════════
+   AUTH MODAL — S.M Dynamics Holographic Theme
+   Matches the site's futuristic design system
+════════════════════════════════════════════════════ */
+
+/* Kill old conflicting layout */
+.auth-grid { display: none !important; }
+
+/* ── Modal card base ── */
+#authModal .modal-card.auth-card {
+  background:
+    linear-gradient(135deg,
+      rgba(0, 220, 255, 0.06) 0%,
+      rgba(107, 47, 255, 0.10) 40%,
+      rgba(255, 29, 206, 0.07) 100%),
+    rgba(2, 4, 8, 0.88) !important;
+  border: 1px solid rgba(0, 220, 255, 0.2) !important;
+  border-radius: 20px !important;
   max-width: 440px !important;
   width: 90vw !important;
   padding: 2.5rem 2rem 2rem !important;
   position: relative;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.6) !important;
+  backdrop-filter: blur(40px) saturate(160%);
+  -webkit-backdrop-filter: blur(40px) saturate(160%);
+  box-shadow:
+    0 0 0 1px rgba(0, 220, 255, .06),
+    0 8px 32px -8px rgba(0, 220, 255, .4),
+    0 32px 64px -16px rgba(107, 47, 255, .35),
+    inset 0 1px 0 rgba(255, 255, 255, .06),
+    inset 0 -1px 0 rgba(0, 0, 0, .5) !important;
+  overflow: hidden;
 }
+
+/* Top neon gradient bar */
+#authModal .modal-card.auth-card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 15%; right: 15%; height: 1px;
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(0, 220, 255, .85),
+    rgba(107, 47, 255, .85),
+    rgba(255, 29, 206, .6),
+    transparent);
+  border-radius: 1px;
+  z-index: 1;
+}
+
+/* Scanline texture overlay */
+#authModal .modal-card.auth-card::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent, transparent 2px,
+    rgba(0, 0, 0, .04) 2px, rgba(0, 0, 0, .04) 4px
+  );
+  pointer-events: none;
+  border-radius: 20px;
+  z-index: 0;
+}
+
+/* ── Close button ── */
+#authModal .modal-close {
+  position: absolute;
+  top: .85rem; right: 1rem;
+  background: none; border: none;
+  color: rgba(0, 220, 255, .4);
+  font-size: 1.4rem;
+  cursor: pointer; line-height: 1; z-index: 10;
+  transition: color .2s, text-shadow .2s;
+  font-weight: 300;
+}
+#authModal .modal-close:hover {
+  color: #00dcff;
+  text-shadow: 0 0 14px rgba(0, 220, 255, .8);
+}
+
+/* ── Panel wrapper ── */
 .auth-panel-wrap {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0;
+  position: relative;
+  z-index: 2;
 }
+
+/* ── Title with gradient + underline accent ── */
 .auth-title {
-  color: #ffffff;
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 1.6rem;
-  font-weight: 700;
-  letter-spacing: 0.15em;
+  font-family: 'Orbitron', 'Space Grotesk', sans-serif;
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: .18em;
+  text-transform: uppercase;
   text-align: center;
-  margin-bottom: 1.6rem;
+  margin-bottom: 0;
+  background: linear-gradient(135deg, #00dcff 0%, #6b2fff 50%, #ff1dce 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 16px rgba(0, 220, 255, .45));
+  width: 100%;
 }
+.auth-title::after {
+  content: "";
+  display: block;
+  width: 56px; height: 2px;
+  margin: .45rem auto 1.5rem;
+  background: linear-gradient(90deg, #00dcff, #6b2fff, #ff1dce);
+  border-radius: 1px;
+  box-shadow: 0 0 10px rgba(0, 220, 255, .55);
+}
+
+/* ── Form ── */
 .auth-form-new {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: .85rem;
   width: 100%;
 }
+
+/* ── Input rows ── */
 .auth-input-wrap {
   display: flex;
   align-items: center;
-  background: rgba(255,255,255,0.97);
-  border-radius: 0.35rem;
-  padding: 0 0.9rem;
-  gap: 0.6rem;
+  gap: .65rem;
+  background: rgba(0, 220, 255, 0.04);
+  border: 1px solid rgba(0, 220, 255, 0.18);
+  border-radius: 12px;
+  padding: 0 .95rem;
   height: 48px;
+  transition: border-color .25s, box-shadow .25s, background .25s;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .04),
+    inset 0 -1px 0 rgba(0, 0, 0, .35);
 }
+.auth-input-wrap:focus-within {
+  border-color: rgba(0, 220, 255, .5);
+  background: rgba(0, 220, 255, 0.07);
+  box-shadow:
+    0 0 0 3px rgba(0, 220, 255, .1),
+    0 0 20px rgba(0, 220, 255, .12),
+    inset 0 1px 0 rgba(255, 255, 255, .06);
+}
+
 .auth-icon {
-  font-size: 1rem;
-  opacity: 0.65;
+  font-size: .95rem;
+  opacity: .5;
   flex-shrink: 0;
   line-height: 1;
 }
+
 .auth-input-wrap input {
   background: transparent !important;
   border: none !important;
   outline: none !important;
-  color: #1a1a2e !important;
-  font-size: 0.95rem !important;
+  color: #e8f4ff !important;
+  font-size: .9rem !important;
+  font-family: 'Inter', system-ui, sans-serif !important;
   width: 100%;
   height: 100%;
   padding: 0 !important;
   box-shadow: none !important;
+  letter-spacing: .02em;
 }
 .auth-input-wrap input::placeholder {
-  color: #888 !important;
+  color: rgba(100, 160, 200, .42) !important;
+  font-size: .88rem !important;
 }
+
+/* ── Submit button ── */
 .auth-submit-btn {
-  background: linear-gradient(90deg, #00bcd4, #0097a7);
-  color: #fff;
-  border: none;
-  border-radius: 0.35rem;
-  height: 48px;
-  font-size: 0.95rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  cursor: pointer;
   width: 100%;
-  margin-top: 0.4rem;
-  transition: opacity 0.2s, transform 0.15s;
+  height: 48px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-family: 'Orbitron', 'Space Grotesk', sans-serif;
+  font-size: .74rem;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: #000;
+  background: linear-gradient(135deg, #00dcff 0%, #6b2fff 55%, #ff1dce 100%);
+  box-shadow:
+    0 0 0 1px rgba(0, 220, 255, .15),
+    0 4px 20px rgba(0, 220, 255, .35),
+    0 8px 32px rgba(107, 47, 255, .25),
+    inset 0 1px 0 rgba(255, 255, 255, .2);
+  margin-top: .25rem;
+  position: relative;
+  overflow: hidden;
+  transition: opacity .2s, transform .15s, box-shadow .2s;
+}
+/* Sheen overlay */
+.auth-submit-btn::before {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,.18), transparent 55%);
+  pointer-events: none;
+  border-radius: 12px;
 }
 .auth-submit-btn:hover {
-  opacity: 0.92;
-  transform: translateY(-1px);
+  opacity: .92;
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 0 1px rgba(0, 220, 255, .25),
+    0 8px 28px rgba(0, 220, 255, .5),
+    0 14px 40px rgba(107, 47, 255, .35),
+    inset 0 1px 0 rgba(255, 255, 255, .22);
 }
+.auth-submit-btn:active {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* ── Switch / link lines ── */
 .auth-switch-link {
   text-align: center;
-  color: rgba(255,255,255,0.75);
-  font-size: 0.88rem;
-  margin: 0.2rem 0 0;
+  color: rgba(100, 140, 180, .62);
+  font-size: .83rem;
+  margin: .1rem 0 0;
+  letter-spacing: .02em;
 }
 .auth-switch-link a {
-  color: #7dd3e8;
+  color: #00dcff;
   text-decoration: none;
   font-weight: 600;
+  text-shadow: 0 0 8px rgba(0, 220, 255, .3);
+  transition: color .2s, text-shadow .2s;
 }
 .auth-switch-link a:hover {
   color: #fff;
-  text-decoration: underline;
+  text-shadow: 0 0 16px rgba(0, 220, 255, .7);
 }
+/* Divider before the last switch link */
+.auth-switch-link:last-child {
+  padding-top: .6rem;
+  border-top: 1px solid rgba(0, 220, 255, .08);
+  margin-top: .4rem;
+}
+
+/* ── Forgot password description ── */
 .auth-forgot-desc {
-  color: rgba(255,255,255,0.8);
-  font-size: 0.88rem;
+  color: rgba(100, 160, 200, .58);
+  font-size: .85rem;
   text-align: center;
-  margin-bottom: 0.5rem;
-  line-height: 1.5;
+  margin-bottom: .5rem;
+  line-height: 1.55;
+  width: 100%;
 }
-/* Override old auth-grid if it exists */
-.auth-grid { display: none !important; }
-#authModal .modal-close {
-  position: absolute;
-  top: 0.85rem;
-  right: 1rem;
-  background: none;
-  border: none;
-  color: rgba(255,255,255,0.75);
-  font-size: 1.4rem;
-  cursor: pointer;
-  line-height: 1;
-  z-index: 2;
-  transition: color 0.2s;
+
+/* ═══════════════════════════════════════════════════
+   LIGHT THEME OVERRIDES
+════════════════════════════════════════════════════ */
+html[data-theme="light"] #authModal .modal-card.auth-card {
+  background:
+    linear-gradient(135deg,
+      rgba(26, 111, 255, 0.06) 0%,
+      rgba(91, 33, 182, 0.09) 40%,
+      rgba(219, 39, 119, 0.05) 100%),
+    rgba(255, 255, 255, 0.94) !important;
+  border-color: rgba(26, 111, 255, 0.2) !important;
+  box-shadow:
+    0 0 0 1px rgba(26, 111, 255, .08),
+    0 8px 32px -8px rgba(26, 111, 255, .2),
+    0 32px 64px -16px rgba(91, 33, 182, .14),
+    inset 0 1px 0 rgba(255, 255, 255, .95),
+    inset 0 -1px 0 rgba(0, 0, 0, .04) !important;
 }
-#authModal .modal-close:hover { color: #fff; }
+html[data-theme="light"] #authModal .modal-card.auth-card::before {
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(26, 111, 255, .6),
+    rgba(91, 33, 182, .5),
+    rgba(219, 39, 119, .4),
+    transparent);
+}
+html[data-theme="light"] #authModal .modal-card.auth-card::after {
+  display: none;
+}
+html[data-theme="light"] .auth-title {
+  background: linear-gradient(135deg, #1a6fff 0%, #5b21b6 50%, #db2777 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: none;
+}
+html[data-theme="light"] .auth-title::after {
+  background: linear-gradient(90deg, #1a6fff, #5b21b6, #db2777);
+  box-shadow: 0 0 8px rgba(26, 111, 255, .25);
+}
+html[data-theme="light"] .auth-input-wrap {
+  background: rgba(26, 111, 255, 0.03);
+  border-color: rgba(26, 111, 255, 0.2);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, .05);
+}
+html[data-theme="light"] .auth-input-wrap:focus-within {
+  border-color: rgba(26, 111, 255, .5);
+  background: rgba(26, 111, 255, 0.05);
+  box-shadow: 0 0 0 3px rgba(26, 111, 255, .1);
+}
+html[data-theme="light"] .auth-input-wrap input {
+  color: #0d1117 !important;
+}
+html[data-theme="light"] .auth-input-wrap input::placeholder {
+  color: rgba(80, 90, 115, .45) !important;
+}
+html[data-theme="light"] .auth-submit-btn {
+  background: linear-gradient(135deg, #1a6fff 0%, #5b21b6 55%, #db2777 100%);
+  color: #fff;
+  box-shadow:
+    0 4px 16px rgba(26, 111, 255, .3),
+    0 8px 28px rgba(91, 33, 182, .2),
+    inset 0 1px 0 rgba(255, 255, 255, .25);
+}
+html[data-theme="light"] .auth-submit-btn:hover {
+  box-shadow:
+    0 6px 22px rgba(26, 111, 255, .4),
+    0 12px 36px rgba(91, 33, 182, .28),
+    inset 0 1px 0 rgba(255, 255, 255, .25);
+}
+html[data-theme="light"] .auth-switch-link {
+  color: rgba(60, 72, 95, .6);
+}
+html[data-theme="light"] .auth-switch-link a {
+  color: #1a6fff;
+  text-shadow: none;
+}
+html[data-theme="light"] .auth-switch-link a:hover {
+  color: #5b21b6;
+  text-shadow: none;
+}
+html[data-theme="light"] .auth-switch-link:last-child {
+  border-top-color: rgba(26, 111, 255, .1);
+}
+html[data-theme="light"] .auth-forgot-desc {
+  color: rgba(60, 72, 95, .6);
+}
+html[data-theme="light"] #authModal .modal-close {
+  color: rgba(26, 111, 255, .4);
+}
+html[data-theme="light"] #authModal .modal-close:hover {
+  color: #1a6fff;
+  text-shadow: none;
+}
 </style>
 
 <!-- CUSTOMER DASHBOARD -->
@@ -575,38 +804,28 @@
 <button class="to-top" id="toTop" aria-label="Back to top">↑</button>
 
 <script>
-  // Hide the loader automatically if app scripts fail or take too long.
   setTimeout(() => document.getElementById('loader')?.classList.add('hide'), 5000);
 </script>
-  <script>
-// Force service worker update and clear cache
+<script>
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.ready.then(registration => {
     registration.update();
   });
-  
-  // Listen for reload messages from service worker
   navigator.serviceWorker.addEventListener('message', event => {
     if (event.data?.type === 'FORCE_RELOAD') {
-      console.log('🔄 Service worker forcing reload...');
       window.location.reload();
     }
   });
 }
 
-// Clear all caches on page load (temporary - remove after fix)
 async function clearAllCaches() {
   if ('caches' in window) {
     const keys = await caches.keys();
     for (const key of keys) {
       await caches.delete(key);
-      console.log('🗑️ Deleted cache:', key);
     }
-    console.log('✅ All caches cleared');
   }
 }
-
-// Run this once to clear old cache
 clearAllCaches();
 </script>
 <script src="shop/app.js" defer></script>
