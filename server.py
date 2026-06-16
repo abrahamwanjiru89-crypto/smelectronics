@@ -1889,7 +1889,7 @@ class Handler(BaseHTTPRequestHandler):
             data = self.read_json()
             image_path = data.get("imagePath")
             if image_path:
-                default_images = ['hero-phone.jpg', 'headphones.jpg', 'laptop.jpg', 'watch.jpg', 'vr.jpg', 'earbuds.jpg', 'camera.jpg', 'console.jpg', 'tablet.jpg', 'speaker.jpg', 'drone.jpg', 'hub.jpg', 'keyboard.jpg', 'brand logo.png']
+                default_images = ['hero-phone.jpg', 'headphones.jpg', 'laptop.jpg', 'watch.jpg', 'vr.jpg', 'earbuds.jpg', 'camera.jpg', 'console.jpg', 'tablet.jpg', 'speaker.jpg', 'drone.jpg', 'hub.jpg', 'keyboard.jpg', 'brand-logo.png']
                 filename = image_path.split('/')[-1]
                 if filename not in default_images:
                     target = UPLOAD_DIR / filename
@@ -1909,7 +1909,7 @@ class Handler(BaseHTTPRequestHandler):
                 part = cursor.fetchone()
                 if part and part["image_path"]:
                     filename = part["image_path"].split('/')[-1]
-                    default_images = ['hero-phone.jpg', 'headphones.jpg', 'laptop.jpg', 'watch.jpg', 'vr.jpg', 'earbuds.jpg', 'camera.jpg', 'console.jpg', 'tablet.jpg', 'speaker.jpg', 'drone.jpg', 'hub.jpg', 'keyboard.jpg', 'brand logo.png']
+                    default_images = ['hero-phone.jpg', 'headphones.jpg', 'laptop.jpg', 'watch.jpg', 'vr.jpg', 'earbuds.jpg', 'camera.jpg', 'console.jpg', 'tablet.jpg', 'speaker.jpg', 'drone.jpg', 'hub.jpg', 'keyboard.jpg', 'brand-logo.png']
                     if filename not in default_images:
                         target = UPLOAD_DIR / filename
                         if target.exists():
