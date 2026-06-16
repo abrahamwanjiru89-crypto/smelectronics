@@ -111,6 +111,131 @@ function toast(msg, type='info') {
   setTimeout(() => t.remove(), 3300);
 }
 
+// ============================================
+// NEW ORDER NOTIFICATIONS
+// ============================================
+
+let _lastKnownOrderIds = new Set();
+let _notifPanelOpen = false;
+let _newOrderNotifs = [];
+
+function initOrderNotifications() {
+  // Inject bell icon + notification panel into the page
+  const header = $('#managerOrders') || document.body;
+  
+  // Create notification bell button
+  const bellBtn = document.createElement('div');
+  bellBtn.id = 'orderNotifBell';
+  bellBtn.innerHTML = `
+    <button id="notifBellBtn" title="New Orders" style="
+      position:fixed; top:1.1rem; right:1.2rem; z-index:9999;
+      background:#1a1a2e; border:1.5px solid rgba(0,229,255,0.3);
+      border-radius:50%; width:46px; height:46px; cursor:pointer;
+      display:flex; align-items:center; justify-content:center; font-size:1.3rem;
+      box-shadow:0 2px 12px rgba(0,0,0,0.4);">
+      🔔
+      <span id="notifBadge" style="
+        display:none; position:absolute; top:4px; right:4px;
+        background:#ff3b30; color:#fff; border-radius:50%;
+        width:18px; height:18px; font-size:0.65rem; font-weight:700;
+        align-items:center; justify-content:center; line-height:1;">0</span>
+    </button>
+    <div id="notifPanel" style="
+      display:none; position:fixed; top:3.8rem; right:1.2rem; z-index:9998;
+      background:#141428; border:1px solid rgba(0,229,255,0.2); border-radius:1rem;
+      width:320px; max-height:420px; overflow-y:auto;
+      box-shadow:0 8px 32px rgba(0,0,0,0.5); padding:1rem;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+        <b style="color:#00e5ff;">🔔 New Orders</b>
+        <button id="clearNotifsBtn" style="background:transparent; border:none; color:#888; cursor:pointer; font-size:0.8rem;">Clear all</button>
+      </div>
+      <div id="notifList"><p style="color:#888; font-size:0.85rem; text-align:center;">No new orders</p></div>
+    </div>
+  `;
+  document.body.appendChild(bellBtn);
+
+  document.getElementById('notifBellBtn').addEventListener('click', () => {
+    _notifPanelOpen = !_notifPanelOpen;
+    document.getElementById('notifPanel').style.display = _notifPanelOpen ? 'block' : 'none';
+    if (_notifPanelOpen) {
+      // Mark as seen — clear badge
+      document.getElementById('notifBadge').style.display = 'none';
+      document.getElementById('notifBadge').textContent = '0';
+    }
+  });
+
+  document.getElementById('clearNotifsBtn').addEventListener('click', () => {
+    _newOrderNotifs = [];
+    renderNotifPanel();
+  });
+
+  // Close panel when clicking outside
+  document.addEventListener('click', (e) => {
+    if (_notifPanelOpen && !document.getElementById('orderNotifBell').contains(e.target)) {
+      _notifPanelOpen = false;
+      document.getElementById('notifPanel').style.display = 'none';
+    }
+  });
+}
+
+function renderNotifPanel() {
+  const list = document.getElementById('notifList');
+  if (!list) return;
+  if (!_newOrderNotifs.length) {
+    list.innerHTML = '<p style="color:#888; font-size:0.85rem; text-align:center;">No new orders</p>';
+    return;
+  }
+  list.innerHTML = _newOrderNotifs.map(n => `
+    <div style="padding:0.6rem; border-radius:0.6rem; background:rgba(0,229,255,0.06); margin-bottom:0.5rem; border-left:3px solid #00e5ff;">
+      <div style="font-size:0.82rem; font-weight:600; color:#00e5ff;">${esc(n.id)}</div>
+      <div style="font-size:0.78rem; color:#ccc;">${esc(n.customer)} — ${fmt(n.total)}</div>
+      <div style="font-size:0.72rem; color:#888;">${new Date(n.createdAt).toLocaleString()}</div>
+    </div>
+  `).join('');
+}
+
+async function pollNewOrders() {
+  if (!manager) return;
+  try {
+    const data = await api('/api/management/orders/placed');
+    const fresh = data.orders || [];
+
+    if (_lastKnownOrderIds.size === 0) {
+      // First load — seed known IDs, don't notify
+      fresh.forEach(o => _lastKnownOrderIds.add(o.id));
+      return;
+    }
+
+    const brandNew = fresh.filter(o => !_lastKnownOrderIds.has(o.id));
+    if (brandNew.length > 0) {
+      brandNew.forEach(o => {
+        _lastKnownOrderIds.add(o.id);
+        _newOrderNotifs.unshift(o);
+      });
+      // Keep max 50 notifications
+      _newOrderNotifs = _newOrderNotifs.slice(0, 50);
+
+      // Update badge
+      const badge = document.getElementById('notifBadge');
+      if (badge) {
+        const currentCount = parseInt(badge.textContent) || 0;
+        const newCount = currentCount + brandNew.length;
+        badge.textContent = newCount > 99 ? '99+' : newCount;
+        badge.style.display = 'flex';
+      }
+
+      renderNotifPanel();
+      toast(`🔔 ${brandNew.length} new order${brandNew.length > 1 ? 's' : ''} received!`, 'success');
+      
+      // Refresh orders list
+      orders = fresh;
+      renderPlacedOrders();
+    }
+  } catch (_) {
+    // Silent fail — server may be temporarily unavailable
+  }
+}
+
 function notifySparePartsUpdated() {
   window.dispatchEvent(new StorageEvent('storage', {
     key: 'spare_parts_updated',
@@ -746,6 +871,7 @@ function renderPlacedOrders() {
         <b>${fmt(order.total)}</b>
         <span class="status ${esc(order.status?.toLowerCase() || 'pending')}">${esc(order.status || 'Pending')}</span>
         ${setFeeBtn}
+        ${(order.status?.toLowerCase() === 'delivered') ? `<button class="btn-delete-order" data-id="${esc(order.id)}" style="background:#ff3b30; color:#fff; border:none; padding:0.45rem 0.9rem; border-radius:0.5rem; cursor:pointer; font-weight:600; font-size:0.8rem;">🗑️ Delete Order</button>` : ''}
       </div>
       <div class="delivery-date-control" style="margin-top: 0.75rem; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.1); display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
         <input type="date" id="deliveryDate_${order.id}" class="delivery-date-input" value="${order.deliveryDate || ''}" style="padding: 0.4rem 0.8rem; border-radius: 0.5rem; border: 1px solid rgba(255,255,255,0.2); background: #0f0f1a; color: white; font-size: 0.85rem;">
@@ -757,6 +883,25 @@ function renderPlacedOrders() {
   el.querySelectorAll('.btn-set-delivery-fee, .btn-update-delivery-fee').forEach(btn => {
     btn.addEventListener('click', () => setOrderDeliveryFee(btn.dataset.id, btn.dataset.location, btn.dataset.current));
   });
+
+  el.querySelectorAll('.btn-delete-order').forEach(btn => {
+    btn.addEventListener('click', () => deleteDeliveredOrder(btn.dataset.id));
+  });
+}
+
+async function deleteDeliveredOrder(orderId) {
+  if (!confirm(`🗑️ Delete order ${orderId}?\n\nThis order has been delivered. Deleting will remove it from the dashboard permanently.`)) return;
+  try {
+    await api(`/api/admin/orders/${encodeURIComponent(orderId)}`, { method: 'DELETE' });
+    orders = orders.filter(o => o.id !== orderId);
+    renderPlacedOrders();
+    toast(`✅ Order ${orderId} deleted successfully.`, 'success');
+  } catch (err) {
+    // If server doesn't support DELETE yet, remove locally
+    orders = orders.filter(o => o.id !== orderId);
+    renderPlacedOrders();
+    toast(`Order ${orderId} removed from view. (Server: ${err.message})`, 'warning');
+  }
 }
 
 async function setOrderDeliveryFee(orderId, locationStr, currentFee) {
@@ -993,6 +1138,17 @@ async function updateView() {
   if ($('#adminSections')) $('#adminSections').hidden = !isAdmin;
   if ($('#placedOrders')) $('#placedOrders').innerHTML = LOADING.orders;
   if ($('#repairBookings')) $('#repairBookings').innerHTML = LOADING.bookings;
+
+  // Start notification bell & polling (only init once)
+  if (!document.getElementById('orderNotifBell')) {
+    initOrderNotifications();
+    // Seed known IDs on first load, then poll every 30 seconds
+    setTimeout(async () => {
+      await pollNewOrders(); // seeds IDs
+      setInterval(pollNewOrders, 30000);
+    }, 1500);
+  }
+
   return Promise.allSettled([
     loadOrders().catch(e => console.error("Orders fail:", e)),
     loadRepairBookings().catch(e => console.error("Bookings fail:", e)),
