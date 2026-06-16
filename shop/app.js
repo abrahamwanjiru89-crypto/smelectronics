@@ -1,4 +1,18 @@
+/* =========================================================
+   S.M Dynamics Electronics — Premium electronics storefront (vanilla JS)
+   UPDATED: Partial Payment System - Pay delivery fee only upfront
+   UPDATED: Spare parts integration from repair page
+   FIXED: Cache busting and persistence
+   FIXED: Orders persist after login/logout
+========================================================= */
 
+// ----- PRODUCT DATA -----
+// No default products — all products are loaded from the server/admin management page
+let PRODUCTS = [];
+
+// ============================================
+// SPARE PARTS INTEGRATION - For repair page cart items
+// ============================================
 
 function getProductWithSpares(productId) {
     // First check regular products
@@ -446,7 +460,8 @@ async function refreshProducts() {
       console.log('📦 Using localStorage products (server offline)');
     } else {
       console.warn('⚠️ No products available - using defaults');
-      PRODUCTS = DEFAULT_PRODUCTS.slice();
+      PRODUCTS = [];
+      console.warn('⚠️ No products available — server offline and no cache. Add products via the admin panel.');
     }
   }
   
@@ -1065,8 +1080,16 @@ function liveNotif() {
   el.classList.add('show');
   setTimeout(() => el.classList.remove('show'), 4500);
 }
-setTimeout(liveNotif, 4000);
-setInterval(liveNotif, 16000);
+// Delay live-notif timers until PRODUCTS is loaded
+function startLiveNotif() {
+  if (PRODUCTS.length === 0) {
+    setTimeout(startLiveNotif, 500);
+    return;
+  }
+  setTimeout(liveNotif, 4000);
+  setInterval(liveNotif, 16000);
+}
+startLiveNotif();
 
 // ----- BACK TO TOP -----
 $('#toTop').addEventListener('click', () => scrollTo({ top: 0, behavior: 'smooth' }));
@@ -1141,10 +1164,9 @@ window.forceRefresh = async function() {
 (async function initApp() {
   console.log('🚀 Initializing app...');
   
-  renderProducts();
-  renderFlash();
+  // NOTE: renderProducts/renderFlash/renderRecent moved after refreshProducts()
+  // to avoid "PRODUCTS is not defined" errors on empty array access before load.
   renderCart();
-  renderRecent();
   $('#wishCount').textContent = state.wish.length;
   loadCounties();
   
