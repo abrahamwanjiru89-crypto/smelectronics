@@ -1,24 +1,23 @@
 {
-  "name": "SM Dynamics Electronics",
+  "name": "S.M Dynamics Electronics",
   "short_name": "SM Dynamics",
-  "description": "Premium electronics storefront and repair services with offline support.",
+  "description": "Premium electronics storefront",
   "start_url": "/",
-  "scope": "/",
   "display": "standalone",
-  "background_color": "#0b1120",
-  "theme_color": "#0b1120",
-  "orientation": "portrait-primary",
+  "background_color": "#ffffff",
+  "theme_color": "#0f172a",
   "icons": [
     {
-      "src": "shop/brand logo.png",
+      "src": "/shop/brand-logo.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "shop/brand logo.png",
+      "src": "/shop/brand-logo.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
