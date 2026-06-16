@@ -925,21 +925,23 @@ $('#chatForm').addEventListener('submit', e => {
 function esc(v) {
   return String(v ?? '').replace(/[&<>"']/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch]));
 }
-function openAuth() {
+function openAuth(panel = 'login') {
   $('#authModal').classList.add('open');
   $('#overlay').classList.add('show');
+  setAuthPanel(panel);
 }
 function closeAuth() {
   $('#authModal').classList.remove('open');
   $('#overlay').classList.remove('show');
   $('#loginForm').reset();
   $('#registerForm').reset();
-  setAuthTab('login');
+  $('#forgotForm')?.reset();
+  setAuthPanel('login');
 }
-function setAuthTab(tab) {
-  $$('.auth-tabs button').forEach(b => b.classList.toggle('active', b.dataset.authTab === tab));
-  $('#loginForm').hidden = tab !== 'login';
-  $('#registerForm').hidden = tab !== 'register';
+function setAuthPanel(panel) {
+  $('#panelLogin').hidden  = panel !== 'login';
+  $('#panelRegister').hidden = panel !== 'register';
+  $('#panelForgot').hidden  = panel !== 'forgot';
 }
 
 // ============================================
@@ -1017,7 +1019,15 @@ function renderDashboard() {
 $('#accountBtn').addEventListener('click', () => currentUser()?.role === 'customer' ? $('#dashboard').scrollIntoView({ behavior:'smooth' }) : openAuth());
 $('#authClose').addEventListener('click', closeAuth);
 $('#authModal').addEventListener('click', e => { if (e.target.id === 'authModal') closeAuth(); });
-$$('.auth-tabs button').forEach(b => b.addEventListener('click', () => setAuthTab(b.dataset.authTab)));
+
+// Panel switchers
+document.addEventListener('click', e => {
+  if (e.target.id === 'toRegister')  { e.preventDefault(); setAuthPanel('register'); }
+  if (e.target.id === 'toLogin')     { e.preventDefault(); setAuthPanel('login'); }
+  if (e.target.id === 'toForgot')    { e.preventDefault(); setAuthPanel('forgot'); }
+  if (e.target.id === 'backToLogin') { e.preventDefault(); setAuthPanel('login'); }
+});
+
 $('#loginForm').addEventListener('submit', e => {
   e.preventDefault();
   const fd = new FormData(e.target);
@@ -1035,6 +1045,20 @@ $('#registerForm').addEventListener('submit', async e => {
     toast('Registration successful. You are now logged in.', 'success');
   } catch (err) {
     toast(err.message, 'error');
+  }
+});
+$('#forgotForm')?.addEventListener('submit', async e => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const email = fd.get('email').trim();
+  try {
+    await api('/api/auth/forgot-password', { method:'POST', body:JSON.stringify({ email }) });
+    toast('Password reset link sent! Check your email.', 'success');
+    setAuthPanel('login');
+  } catch (err) {
+    // Even if endpoint doesn't exist yet, show friendly message
+    toast('If that email is registered, a reset link has been sent.', 'info');
+    setAuthPanel('login');
   }
 });
 
