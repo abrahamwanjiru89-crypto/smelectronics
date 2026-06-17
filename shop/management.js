@@ -709,14 +709,18 @@ function editRepairService(id) {
   }
 }
 
-function deleteRepairService(id) {
+async function deleteRepairService(id) {
   if (!confirm('Delete this repair service?')) return;
-  repairServices = repairServices.filter(s => s.id != id);
-  localStorage.setItem('repair_services', JSON.stringify(repairServices));
-  renderRepairServices();
-  toast('Repair service deleted', 'success');
+  try {
+    await api(`/api/management/repair-services/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    repairServices = repairServices.filter(s => s.id != id);
+    localStorage.setItem('repair_services', JSON.stringify(repairServices));
+    renderRepairServices();
+    toast('Repair service deleted', 'success');
+  } catch (err) {
+    toast('Failed to delete: ' + err.message, 'error');
+  }
 }
-
 // ============================================
 // LOAD FUNCTIONS
 // ============================================
@@ -871,7 +875,9 @@ function renderPlacedOrders() {
         <b>${fmt(order.total)}</b>
         <span class="status ${esc(order.status?.toLowerCase() || 'pending')}">${esc(order.status || 'Pending')}</span>
         ${setFeeBtn}
-        ${(order.status?.toLowerCase() === 'delivered') ? `<button class="btn-delete-order" data-id="${esc(order.id)}" style="background:#ff3b30; color:#fff; border:none; padding:0.45rem 0.9rem; border-radius:0.5rem; cursor:pointer; font-weight:600; font-size:0.8rem;">🗑️ Delete Order</button>` : ''}
+       ${(['delivered', 'completed', 'paid'].includes(order.status?.toLowerCase())) 
+  ? `<button class="btn-delete-order" data-id="${esc(order.id)}" style="background:#ff3b30; color:#fff; border:none; padding:0.45rem 0.9rem; border-radius:0.5rem; cursor:pointer; font-weight:600; font-size:0.8rem;">🗑️ Delete Order</button>` 
+  : ''}
       </div>
       <div class="delivery-date-control" style="margin-top: 0.75rem; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.1); display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
         <input type="date" id="deliveryDate_${order.id}" class="delivery-date-input" value="${order.deliveryDate || ''}" style="padding: 0.4rem 0.8rem; border-radius: 0.5rem; border: 1px solid rgba(255,255,255,0.2); background: #0f0f1a; color: white; font-size: 0.85rem;">
