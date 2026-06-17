@@ -675,7 +675,7 @@ html[data-theme="light"] #themeBtn .i-moon { display: none; }
 
 /* 3D Hero Slider */
 .hero-slider {
-  position: relative; aspect-ratio: 4/5; max-height: 620px;
+  position: relative; aspect-ratio: 3/4; max-height: 640px;
   border-radius: 24px; overflow: hidden;
   border: 1px solid rgba(0,220,255,.2);
   background: var(--surface);
@@ -693,11 +693,14 @@ html[data-theme="light"] #themeBtn .i-moon { display: none; }
 
 .hero-slide {
   position: absolute; inset: 0;
-  background: var(--bg, none) center/cover no-repeat;
+  background: var(--bg, none) center/contain no-repeat;
+  background-color: rgba(2,4,8,.85);
   opacity: 0; transition: opacity .8s ease, transform 6s ease;
   transform: scale(1);
+  padding: 1.5rem;
+  box-sizing: border-box;
 }
-.hero-slide.active { opacity: 1; transform: scale(1.06); }
+.hero-slide.active { opacity: 1; transform: scale(1); }
 .hero-slide::after {
   content: ""; position: absolute; inset: 0;
   background: linear-gradient(to top, rgba(2,4,8,.9) 0%, rgba(2,4,8,.2) 50%, transparent 70%);
