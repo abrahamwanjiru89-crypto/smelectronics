@@ -692,7 +692,7 @@ function renderRepairServices() {
   $$('.delete-service').forEach(btn => btn.addEventListener('click', () => deleteRepairService(btn.dataset.id)));
 }
 
-function editRepairService(id) {
+async function editRepairService(id) {
   const service = repairServices.find(s => s.id == id);
   if (!service) { toast('Service not found', 'error'); return; }
   
@@ -702,9 +702,25 @@ function editRepairService(id) {
     if (newPrice) {
       service.title = newTitle.trim();
       service.price = parseFloat(newPrice);
-      localStorage.setItem('repair_services', JSON.stringify(repairServices));
-      renderRepairServices();
-      toast('Repair service updated', 'success');
+      try {
+        await api(`/api/management/repair-services/${encodeURIComponent(id)}`, {
+          method: 'PUT',
+          body: JSON.stringify({
+            title: service.title,
+            brand: service.brand,
+            repairType: service.repairType,
+            price: service.price,
+            duration: service.duration,
+            warranty: service.warranty,
+            description: service.description,
+            available: service.available
+          })
+        });
+        await loadRepairServices();
+        toast('Repair service updated', 'success');
+      } catch (err) {
+        toast('Failed to update service: ' + err.message, 'error');
+      }
     }
   }
 }
@@ -718,9 +734,10 @@ async function deleteRepairService(id) {
     renderRepairServices();
     toast('Repair service deleted', 'success');
   } catch (err) {
-    toast('Failed to delete: ' + err.message, 'error');
+    toast('Failed to delete service: ' + err.message, 'error');
   }
 }
+
 // ============================================
 // LOAD FUNCTIONS
 // ============================================
@@ -875,9 +892,7 @@ function renderPlacedOrders() {
         <b>${fmt(order.total)}</b>
         <span class="status ${esc(order.status?.toLowerCase() || 'pending')}">${esc(order.status || 'Pending')}</span>
         ${setFeeBtn}
-       ${(['delivered', 'completed', 'paid'].includes(order.status?.toLowerCase())) 
-  ? `<button class="btn-delete-order" data-id="${esc(order.id)}" style="background:#ff3b30; color:#fff; border:none; padding:0.45rem 0.9rem; border-radius:0.5rem; cursor:pointer; font-weight:600; font-size:0.8rem;">🗑️ Delete Order</button>` 
-  : ''}
+        ${(order.status?.toLowerCase() === 'delivered') ? `<button class="btn-delete-order" data-id="${esc(order.id)}" style="background:#ff3b30; color:#fff; border:none; padding:0.45rem 0.9rem; border-radius:0.5rem; cursor:pointer; font-weight:600; font-size:0.8rem;">🗑️ Delete Order</button>` : ''}
       </div>
       <div class="delivery-date-control" style="margin-top: 0.75rem; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.1); display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
         <input type="date" id="deliveryDate_${order.id}" class="delivery-date-input" value="${order.deliveryDate || ''}" style="padding: 0.4rem 0.8rem; border-radius: 0.5rem; border: 1px solid rgba(255,255,255,0.2); background: #0f0f1a; color: white; font-size: 0.85rem;">
