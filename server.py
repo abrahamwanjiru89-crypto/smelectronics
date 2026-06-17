@@ -1993,6 +1993,31 @@ class Handler(BaseHTTPRequestHandler):
                 conn.commit()
             self.send_json({"ok": True})
             return
+
+        import re as _re2
+        _order_del_match = _re2.match(r"^/api/admin/orders/([^/]+)$", path)
+        if _order_del_match:
+            if not self.require({"admin"}):
+                return
+            order_id = _order_del_match.group(1)
+            with db() as conn:
+                cursor = conn.cursor()
+                # Only allow deleting delivered orders
+                cursor.execute("SELECT status FROM orders WHERE id = %s" if USE_POSTGRES else "SELECT status FROM orders WHERE id = ?", (order_id,))
+                order = cursor.fetchone()
+                if not order:
+                    self.send_json({"error": "Order not found"}, 404)
+                    return
+                if (order["status"] or "").lower() != "delivered":
+                    self.send_json({"error": "Only delivered orders can be deleted"}, 400)
+                    return
+                cursor.execute("DELETE FROM order_notifications WHERE order_id = %s" if USE_POSTGRES else "DELETE FROM order_notifications WHERE order_id = ?", (order_id,))
+                cursor.execute("DELETE FROM order_items WHERE order_id = %s" if USE_POSTGRES else "DELETE FROM order_items WHERE order_id = ?", (order_id,))
+                cursor.execute("DELETE FROM orders WHERE id = %s" if USE_POSTGRES else "DELETE FROM orders WHERE id = ?", (order_id,))
+                conn.commit()
+                logger.info(f"Delivered order {order_id} deleted by admin")
+            self.send_json({"ok": True})
+            return
         
         self.send_json({"error": "Not found"}, 404)
 
