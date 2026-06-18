@@ -892,7 +892,8 @@ function renderPlacedOrders() {
         <b>${fmt(order.total)}</b>
         <span class="status ${esc(order.status?.toLowerCase() || 'pending')}">${esc(order.status || 'Pending')}</span>
         ${setFeeBtn}
-        ${(order.status?.toLowerCase() === 'delivered') ? `<button class="btn-delete-order" data-id="${esc(order.id)}" style="background:#ff3b30; color:#fff; border:none; padding:0.45rem 0.9rem; border-radius:0.5rem; cursor:pointer; font-weight:600; font-size:0.8rem;">🗑️ Delete Order</button>` : ''}
+        ${order.status?.toLowerCase() !== 'cancelled' && order.status?.toLowerCase() !== 'delivered' ? `<button class="btn-cancel-order" data-id="${esc(order.id)}" data-customer="${esc(order.customer)}" style="background:#ff9800; color:#000; border:none; padding:0.45rem 0.9rem; border-radius:0.5rem; cursor:pointer; font-weight:600; font-size:0.8rem; white-space:nowrap;">🚫 Cancel Order</button>` : ''}
+        <button class="btn-delete-order" data-id="${esc(order.id)}" style="background:#ff3b30; color:#fff; border:none; padding:0.45rem 0.9rem; border-radius:0.5rem; cursor:pointer; font-weight:600; font-size:0.8rem; white-space:nowrap;">🗑️ Delete Order</button>
       </div>
       <div class="delivery-date-control" style="margin-top: 0.75rem; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.1); display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
         <input type="date" id="deliveryDate_${order.id}" class="delivery-date-input" value="${order.deliveryDate || ''}" style="padding: 0.4rem 0.8rem; border-radius: 0.5rem; border: 1px solid rgba(255,255,255,0.2); background: #0f0f1a; color: white; font-size: 0.85rem;">
@@ -905,13 +906,19 @@ function renderPlacedOrders() {
     btn.addEventListener('click', () => setOrderDeliveryFee(btn.dataset.id, btn.dataset.location, btn.dataset.current));
   });
 
+  el.querySelectorAll('.btn-cancel-order').forEach(btn => {
+    btn.addEventListener('click', () => cancelOrder(btn.dataset.id, btn.dataset.customer));
+  });
+
   el.querySelectorAll('.btn-delete-order').forEach(btn => {
     btn.addEventListener('click', () => deleteDeliveredOrder(btn.dataset.id));
   });
 }
 
 async function deleteDeliveredOrder(orderId) {
-  if (!confirm(`🗑️ Delete order ${orderId}?\n\nThis order has been delivered. Deleting will remove it from the dashboard permanently.`)) return;
+  const order = orders.find(o => o.id === orderId);
+  const statusLabel = order?.status ? ` (${order.status})` : '';
+  if (!confirm(`🗑️ Delete order ${orderId}${statusLabel}?\n\nThis will permanently remove this order from the dashboard. This action cannot be undone.`)) return;
   try {
     await api(`/api/admin/orders/${encodeURIComponent(orderId)}`, { method: 'DELETE' });
     orders = orders.filter(o => o.id !== orderId);
@@ -922,6 +929,24 @@ async function deleteDeliveredOrder(orderId) {
     orders = orders.filter(o => o.id !== orderId);
     renderPlacedOrders();
     toast(`Order ${orderId} removed from view. (Server: ${err.message})`, 'warning');
+  }
+}
+
+async function cancelOrder(orderId, customerName) {
+  if (!confirm(`🚫 Cancel order ${orderId} for ${customerName || 'this customer'}?\n\nThis will mark the order as Cancelled. You can delete it afterwards if needed.`)) return;
+  try {
+    await api(`/api/admin/orders/${encodeURIComponent(orderId)}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status: 'Cancelled' })
+    });
+    await loadOrders();
+    toast(`🚫 Order ${orderId} cancelled.`, 'success');
+  } catch (err) {
+    // Optimistic local update if server endpoint not yet available
+    const order = orders.find(o => o.id === orderId);
+    if (order) order.status = 'Cancelled';
+    renderPlacedOrders();
+    toast(`Order marked cancelled locally. (Server: ${err.message})`, 'warning');
   }
 }
 
@@ -975,23 +1000,67 @@ function formatDate(value) {
 function renderRepairBookings() {
   const el = $('#repairBookings');
   if (!el) return;
-  el.innerHTML = (repairBookings && repairBookings.length) ? repairBookings.map(booking => `
-    <article class="order-row manager-order" style="margin-bottom:1rem; padding:1rem; background:rgba(255,255,255,0.02); border-radius:0.75rem;">
-      <div>
-        <b>${esc(booking.id)}</b>
-        <span style="margin-left:0.5rem;">${formatDate(booking.createdAt)}</span>
-        <div><small>${esc(booking.customer || booking.name)} · ${esc(booking.email)}</small></div>
+  el.innerHTML = (repairBookings && repairBookings.length) ? repairBookings.map(booking => {
+    const isCancelled = (booking.status || '').toLowerCase() === 'cancelled';
+    const isCompleted = (booking.status || '').toLowerCase() === 'completed';
+    const statusColor = isCancelled ? '#ff3b30' : isCompleted ? '#00c853' : '#ffb300';
+    return `
+    <article class="order-row manager-order" style="margin-bottom:1rem; padding:1rem; background:rgba(255,255,255,0.02); border-radius:0.75rem; border-left:3px solid ${statusColor};">
+      <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:0.5rem;">
+        <div>
+          <b>${esc(booking.id)}</b>
+          <span class="status" style="margin-left:0.5rem; background:${statusColor}22; color:${statusColor}; padding:2px 8px; border-radius:10px; font-size:0.75rem;">${esc(booking.status || 'Pending')}</span>
+          <span style="margin-left:0.5rem; color:#888; font-size:0.82rem;">${formatDate(booking.createdAt)}</span>
+          <div><small>${esc(booking.customer || booking.name)} · ${esc(booking.email)}</small></div>
+        </div>
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:flex-start;">
+          ${!isCancelled && !isCompleted ? `<button class="btn ghost js-update-booking" type="button" data-id="${esc(booking.id)}" style="background:#00e5ff; color:#000; padding:0.3rem 0.8rem; border-radius:0.5rem; font-size:0.8rem; white-space:nowrap;">✏️ Update</button>` : ''}
+          ${!isCancelled ? `<button class="js-cancel-booking" type="button" data-id="${esc(booking.id)}" data-name="${esc(booking.customer || booking.name)}" style="background:#ff9800; color:#000; border:none; padding:0.3rem 0.8rem; border-radius:0.5rem; cursor:pointer; font-size:0.8rem; font-weight:600; white-space:nowrap;">🚫 Cancel</button>` : ''}
+          <button class="js-delete-booking" type="button" data-id="${esc(booking.id)}" data-name="${esc(booking.customer || booking.name)}" style="background:#ff3b30; color:#fff; border:none; padding:0.3rem 0.8rem; border-radius:0.5rem; cursor:pointer; font-size:0.8rem; font-weight:600; white-space:nowrap;">🗑️ Delete</button>
+        </div>
       </div>
       <div style="margin:0.5rem 0;">
         <small>${esc(booking.brand)} ${esc(booking.model)} · ${esc(booking.repairType)}</small><br>
-        <small>${esc(booking.pickupDropoff)} · ${esc(booking.status)}</small><br>
-        <small>${esc(booking.repairServiceTitle || 'Custom repair')}</small>
-      </div>
-      <div>
-        <button class="btn ghost js-update-booking" type="button" data-id="${esc(booking.id)}" style="background:#00e5ff; color:#000; padding:0.3rem 0.8rem; border-radius:0.5rem;">Update</button>
+        <small>${esc(booking.pickupDropoff)} · <b>${esc(booking.repairServiceTitle || 'Custom repair')}</b></small>
       </div>
     </article>
-  `).join('') : '<div class="dash-empty">No repair bookings found.</div>';
+  `}).join('') : '<div class="dash-empty">No repair bookings found.</div>';
+
+  el.querySelectorAll('.js-cancel-booking').forEach(btn => btn.addEventListener('click', () => cancelRepairBooking(btn.dataset.id, btn.dataset.name)));
+  el.querySelectorAll('.js-delete-booking').forEach(btn => btn.addEventListener('click', () => deleteRepairBooking(btn.dataset.id, btn.dataset.name)));
+}
+
+async function cancelRepairBooking(bookingId, customerName) {
+  if (!confirm(`🚫 Cancel booking ${bookingId} for ${customerName}?\n\nThis will mark the booking as Cancelled. The customer will need to rebook if they wish to proceed.`)) return;
+  try {
+    await api(`/api/management/repair-bookings/${encodeURIComponent(bookingId)}`, {
+      method: 'PUT',
+      body: JSON.stringify({ status: 'Cancelled' })
+    });
+    await loadRepairBookings();
+    toast(`🚫 Booking ${bookingId} cancelled.`, 'success');
+  } catch (err) {
+    // Optimistic local update if server fails
+    const booking = repairBookings.find(b => b.id === bookingId);
+    if (booking) booking.status = 'Cancelled';
+    renderRepairBookings();
+    toast(`Booking cancelled locally. (Server: ${err.message})`, 'warning');
+  }
+}
+
+async function deleteRepairBooking(bookingId, customerName) {
+  if (!confirm(`🗑️ Delete booking ${bookingId} for ${customerName}?\n\nThis will permanently remove this booking. This action cannot be undone.`)) return;
+  try {
+    await api(`/api/management/repair-bookings/${encodeURIComponent(bookingId)}`, { method: 'DELETE' });
+    repairBookings = repairBookings.filter(b => b.id !== bookingId);
+    renderRepairBookings();
+    toast(`✅ Booking ${bookingId} deleted.`, 'success');
+  } catch (err) {
+    // Remove locally even if server fails
+    repairBookings = repairBookings.filter(b => b.id !== bookingId);
+    renderRepairBookings();
+    toast(`Booking removed from view. (Server: ${err.message})`, 'warning');
+  }
 }
 
 function renderTechnicians() {
