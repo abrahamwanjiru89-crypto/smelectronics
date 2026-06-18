@@ -352,25 +352,23 @@
       <form id="loginForm" class="auth-form-new">
         <div class="auth-input-wrap">
           <span class="auth-icon">👤</span>
-          <input name="email" type="email" placeholder="Email address" autocomplete="email" required>
+          <input name="email" type="email" placeholder="Email or username" autocomplete="email" required>
         </div>
         <div class="auth-input-wrap">
           <span class="auth-icon">🔑</span>
           <input name="password" type="password" placeholder="Password" autocomplete="current-password" required>
         </div>
+        <p class="auth-forgot-inline"><a href="#" id="toForgot">Forgot password?</a></p>
         <button class="auth-submit-btn" type="submit">Login</button>
         <p class="auth-switch-link">
-          <a href="#" id="toForgot">Forgot Password?</a>
-        </p>
-        <p class="auth-switch-link">
-          No account yet? <a href="#" id="toRegister">Register</a>
+          Don't have an account? <a href="#" id="toRegister">Sign up</a>
         </p>
       </form>
     </div>
 
     <!-- REGISTER PANEL -->
     <div class="auth-panel-wrap" id="panelRegister" hidden>
-      <h2 class="auth-title">Register</h2>
+      <h2 class="auth-title">Sign Up</h2>
       <form id="registerForm" class="auth-form-new">
         <div class="auth-input-wrap">
           <span class="auth-icon">👤</span>
@@ -384,7 +382,7 @@
           <span class="auth-icon">🔑</span>
           <input name="password" type="password" placeholder="Password" autocomplete="new-password" minlength="4" required>
         </div>
-        <button class="auth-submit-btn" type="submit">Create Account</button>
+        <button class="auth-submit-btn" type="submit">Sign Up</button>
         <p class="auth-switch-link">
           Already have an account? <a href="#" id="toLogin">Login</a>
         </p>
@@ -627,6 +625,22 @@
   opacity: 1;
 }
 
+/* ── Forgot password (small, secondary, right-aligned) ── */
+.auth-forgot-inline {
+  text-align: right;
+  margin: -.35rem 0 0;
+}
+.auth-forgot-inline a {
+  color: rgba(140, 180, 210, .65);
+  font-size: .76rem;
+  text-decoration: none;
+  letter-spacing: .01em;
+  transition: color .2s;
+}
+.auth-forgot-inline a:hover {
+  color: #00dcff;
+}
+
 /* ── Switch / link lines ── */
 .auth-switch-link {
   text-align: center;
@@ -732,6 +746,12 @@ html[data-theme="light"] .auth-submit-btn:hover {
     0 6px 22px rgba(26, 111, 255, .4),
     0 12px 36px rgba(91, 33, 182, .28),
     inset 0 1px 0 rgba(255, 255, 255, .25);
+}
+html[data-theme="light"] .auth-forgot-inline a {
+  color: rgba(60, 72, 95, .55);
+}
+html[data-theme="light"] .auth-forgot-inline a:hover {
+  color: #1a6fff;
 }
 html[data-theme="light"] .auth-switch-link {
   color: rgba(60, 72, 95, .6);
