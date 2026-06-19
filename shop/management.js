@@ -892,8 +892,8 @@ function renderPlacedOrders() {
         <b>${fmt(order.total)}</b>
         <span class="status ${esc(order.status?.toLowerCase() || 'pending')}">${esc(order.status || 'Pending')}</span>
         ${setFeeBtn}
-        ${order.status?.toLowerCase() !== 'cancelled' && order.status?.toLowerCase() !== 'delivered' ? `<button class="btn-cancel-order" data-id="${esc(order.id)}" data-customer="${esc(order.customer)}" style="background:#ff9800; color:#000; border:none; padding:0.45rem 0.9rem; border-radius:0.5rem; cursor:pointer; font-weight:600; font-size:0.8rem; white-space:nowrap;">🚫 Cancel Order</button>` : ''}
-        <button class="btn-delete-order" data-id="${esc(order.id)}" style="background:#ff3b30; color:#fff; border:none; padding:0.45rem 0.9rem; border-radius:0.5rem; cursor:pointer; font-weight:600; font-size:0.8rem; white-space:nowrap;">🗑️ Delete Order</button>
+        ${order.status?.toLowerCase() !== 'cancelled' && order.status?.toLowerCase() !== 'delivered' ? `<button class="btn-cancel-order" data-id="${esc(order.id)}" data-customer="${esc(order.customer)}" style="background:#ff9800; color:#000; border:none; padding:0.65rem 1rem; min-height:44px; border-radius:0.5rem; cursor:pointer; font-weight:600; font-size:0.85rem; white-space:nowrap;">🚫 Cancel Order</button>` : ''}
+        <button class="btn-delete-order" data-id="${esc(order.id)}" style="background:#ff3b30; color:#fff; border:none; padding:0.65rem 1rem; min-height:44px; border-radius:0.5rem; cursor:pointer; font-weight:600; font-size:0.85rem; white-space:nowrap; margin-left:0.25rem;">🗑️ Delete Order</button>
       </div>
       <div class="delivery-date-control" style="margin-top: 0.75rem; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.1); display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
         <input type="date" id="deliveryDate_${order.id}" class="delivery-date-input" value="${order.deliveryDate || ''}" style="padding: 0.4rem 0.8rem; border-radius: 0.5rem; border: 1px solid rgba(255,255,255,0.2); background: #0f0f1a; color: white; font-size: 0.85rem;">
@@ -1014,9 +1014,9 @@ function renderRepairBookings() {
           <div><small>${esc(booking.customer || booking.name)} · ${esc(booking.email)}</small></div>
         </div>
         <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:flex-start;">
-          ${!isCancelled && !isCompleted ? `<button class="btn ghost js-update-booking" type="button" data-id="${esc(booking.id)}" style="background:#00e5ff; color:#000; padding:0.3rem 0.8rem; border-radius:0.5rem; font-size:0.8rem; white-space:nowrap;">✏️ Update</button>` : ''}
-          ${!isCancelled ? `<button class="js-cancel-booking" type="button" data-id="${esc(booking.id)}" data-name="${esc(booking.customer || booking.name)}" style="background:#ff9800; color:#000; border:none; padding:0.3rem 0.8rem; border-radius:0.5rem; cursor:pointer; font-size:0.8rem; font-weight:600; white-space:nowrap;">🚫 Cancel</button>` : ''}
-          <button class="js-delete-booking" type="button" data-id="${esc(booking.id)}" data-name="${esc(booking.customer || booking.name)}" style="background:#ff3b30; color:#fff; border:none; padding:0.3rem 0.8rem; border-radius:0.5rem; cursor:pointer; font-size:0.8rem; font-weight:600; white-space:nowrap;">🗑️ Delete</button>
+          ${!isCancelled && !isCompleted ? `<button class="btn ghost js-update-booking" type="button" data-id="${esc(booking.id)}" style="background:#00e5ff; color:#000; padding:0.65rem 1rem; min-height:44px; border-radius:0.5rem; font-size:0.85rem; white-space:nowrap;">✏️ Update</button>` : ''}
+          ${!isCancelled ? `<button class="js-cancel-booking" type="button" data-id="${esc(booking.id)}" data-name="${esc(booking.customer || booking.name)}" style="background:#ff9800; color:#000; border:none; padding:0.65rem 1rem; min-height:44px; border-radius:0.5rem; cursor:pointer; font-size:0.85rem; font-weight:600; white-space:nowrap;">🚫 Cancel</button>` : ''}
+          <button class="js-delete-booking" type="button" data-id="${esc(booking.id)}" data-name="${esc(booking.customer || booking.name)}" style="background:#ff3b30; color:#fff; border:none; padding:0.65rem 1rem; min-height:44px; border-radius:0.5rem; cursor:pointer; font-size:0.85rem; font-weight:600; white-space:nowrap; margin-left:0.25rem;">🗑️ Delete</button>
         </div>
       </div>
       <div style="margin:0.5rem 0;">
