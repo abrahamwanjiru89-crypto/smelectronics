@@ -1777,7 +1777,21 @@ html[data-theme="light"] .nl-form input { background: rgba(255,255,255,.5); bord
   .section-head { margin-bottom: 1.5rem; }
   .container { width: min(100% - 1.5rem, 1280px); }
   .hero { min-height: auto; padding: 2rem 0; }
-  .flash-grid, .products { grid-template-columns: 1fr; }
+  .flash-grid, .products { grid-template-columns: repeat(2, 1fr); gap: .65rem; }
+  .card-body { padding: .65rem .65rem .75rem; gap: .28rem; }
+  .card-cat { font-size: .58rem; letter-spacing: .1em; }
+  .card-title { font-size: .78rem; line-height: 1.25; }
+  .card-rating { font-size: .66rem; gap: .2rem; }
+  .card-foot { flex-wrap: wrap; gap: .35rem; padding-top: .45rem; }
+  .price { font-size: .82rem; }
+  .price s { font-size: .62rem; margin-right: .25rem; }
+  .add { padding: .4rem .55rem; font-size: .64rem; }
+  .card-badges { top: .5rem; left: .5rem; gap: .25rem; }
+  .b { font-size: .54rem; padding: .16rem .4rem; }
+  .card-actions { top: .5rem; right: .5rem; gap: .3rem; }
+  .act { width: 28px; height: 28px; border-radius: 8px; }
+  .act svg { width: 13px; height: 13px; }
+  .stock { padding: 0 .65rem .65rem; }
   .chips { flex-wrap: nowrap; overflow-x: auto; }
   .rv-nav { display: none; }
   .nl-form { flex-direction: column; min-width: auto; width: 100%; }
