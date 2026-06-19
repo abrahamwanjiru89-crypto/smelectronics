@@ -1568,6 +1568,7 @@ html[data-theme="light"] .nl-form input { background: rgba(255,255,255,.5); bord
 
 .status { display: inline-flex; margin-top: .3rem; padding: .22rem .55rem; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); font-size: .68rem; color: var(--text); font-family: var(--font-display); letter-spacing: .08em; text-transform: uppercase; }
 .status.delivered { color: var(--success); border-color: color-mix(in srgb, var(--success) 50%, var(--border)); box-shadow: 0 0 10px rgba(0,255,179,.2); }
+.status.cancelled { color: #ff4d6d; border-color: rgba(255,77,109,.5); box-shadow: 0 0 10px rgba(255,77,109,.15); }
 .status-select { margin-top: .4rem; padding: .5rem .65rem; font-size: .76rem; }
 
 .dash-form { display: grid; gap: .7rem; }
