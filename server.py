@@ -14,6 +14,8 @@ from http import cookies
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
 from urllib.parse import unquote, urlparse, parse_qs
+import urllib.request
+import urllib.error
 from contextlib import contextmanager
 import logging
 
@@ -33,6 +35,10 @@ SHOP_DIR.mkdir(parents=True, exist_ok=True)
 
 DATA_DIR = Path(os.environ.get("DATA_DIR", str(ROOT)))
 DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+if not ANTHROPIC_API_KEY:
+    logger.warning("ANTHROPIC_API_KEY is not set — AI Concierge endpoint will return a fallback response.")
 
 logger.info(f"ROOT path: {ROOT}")
 logger.info(f"UPLOAD_DIR path: {UPLOAD_DIR}")
@@ -1439,6 +1445,103 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         path = urlparse(self.path).path.rstrip("/")
         
+        if path == "/api/ai/concierge":
+            data = self.read_json()
+            query = (data.get("query") or "").strip()
+            if not query:
+                self.send_json({"error": "Please describe what you're looking for."}, 400)
+                return
+            if len(query) > 500:
+                query = query[:500]
+
+            with db() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT * FROM products WHERE in_stock = %s" if USE_POSTGRES else "SELECT * FROM products WHERE in_stock = ?", (True if USE_POSTGRES else 1,))
+                rows = cursor.fetchall()
+                catalog = [row_product(r) for r in rows]
+
+            if not catalog:
+                self.send_json({"answer": "We don't have any items in stock right now — please check back soon!", "productId": None})
+                return
+
+            if not ANTHROPIC_API_KEY:
+                # Graceful fallback if no API key configured
+                self.send_json({
+                    "answer": "Our AI concierge is temporarily unavailable. Please browse our catalog below or contact support for help finding the right product.",
+                    "productId": None
+                })
+                return
+
+            catalog_for_prompt = [
+                {"id": p["id"], "name": p["name"], "category": p["cat"], "price": p["price"], "description": p["desc"]}
+                for p in catalog
+            ]
+
+            system_prompt = (
+                "You are the AI shopping concierge for S.M Dynamics Electronics, a Kenyan electronics storefront. "
+                "A customer will describe what they need. Recommend exactly ONE product from the JSON catalog provided. "
+                "Only recommend products that are in the catalog — never invent products or IDs. "
+                "If nothing in the catalog is a good match, set productId to null and explain that briefly in your answer. "
+                "Respond ONLY with a JSON object, no preamble, no markdown formatting, no code fences. "
+                "Format: {\"productId\": \"<id or null>\", \"answer\": \"<1-2 sentence friendly recommendation or explanation, mentioning the product name and price if applicable>\"}"
+            )
+            user_prompt = (
+                f"Customer request: {query}\n\n"
+                f"Catalog (JSON array of in-stock products):\n{json.dumps(catalog_for_prompt)}"
+            )
+
+            try:
+                req_body = json.dumps({
+                    "model": "claude-sonnet-4-6",
+                    "max_tokens": 300,
+                    "system": system_prompt,
+                    "messages": [{"role": "user", "content": user_prompt}]
+                }).encode()
+                req = urllib.request.Request(
+                    "https://api.anthropic.com/v1/messages",
+                    data=req_body,
+                    headers={
+                        "Content-Type": "application/json",
+                        "x-api-key": ANTHROPIC_API_KEY,
+                        "anthropic-version": "2023-06-01"
+                    },
+                    method="POST"
+                )
+                with urllib.request.urlopen(req, timeout=20) as resp:
+                    result = json.loads(resp.read().decode())
+
+                text_blocks = [b.get("text", "") for b in result.get("content", []) if b.get("type") == "text"]
+                raw_text = "".join(text_blocks).strip()
+                # Strip accidental code fences just in case
+                raw_text = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw_text.strip())
+                parsed = json.loads(raw_text)
+
+                product_id = parsed.get("productId")
+                answer = parsed.get("answer", "")
+
+                # Validate the recommended product actually exists and is in stock
+                valid_ids = {p["id"] for p in catalog}
+                if product_id not in valid_ids:
+                    product_id = None
+
+                self.send_json({"answer": answer, "productId": product_id})
+                return
+
+            except urllib.error.HTTPError as e:
+                logger.error(f"AI Concierge API error: {e.code} {e.read()[:300]}")
+                self.send_json({
+                    "answer": "Our AI concierge is having trouble right now. Please browse our catalog below or try again shortly.",
+                    "productId": None
+                })
+                return
+            except Exception as e:
+                logger.error(f"AI Concierge error: {e}")
+                self.send_json({
+                    "answer": "Sorry, I couldn't process that request. Please try rephrasing, or browse our catalog below.",
+                    "productId": None
+                })
+                return
+
         if path == "/api/auth/management-login":
             data = self.read_json()
             email = data.get("email", "").strip().lower()
