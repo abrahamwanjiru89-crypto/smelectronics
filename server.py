@@ -1089,6 +1089,25 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"counties": [{"id": r["id"], "name": r["name"]} for r in rows]})
             return
 
+        if path == "/api/locations/sublocations":
+            county_id = (query.get("countyId") or query.get("county_id") or [None])[0]
+            if not county_id:
+                self.send_json({"error": "countyId is required"}, 400)
+                return
+            with db() as conn:
+                cursor = conn.cursor()
+                cursor.execute(
+                    "SELECT id, name, county_id, delivery_zone_id FROM sub_locations WHERE county_id = %s ORDER BY name" if USE_POSTGRES
+                    else "SELECT id, name, county_id, delivery_zone_id FROM sub_locations WHERE county_id = ? ORDER BY name",
+                    (county_id,)
+                )
+                rows = cursor.fetchall()
+                self.send_json({"subLocations": [
+                    {"id": r["id"], "name": r["name"], "countyId": r["county_id"], "deliveryZoneId": r["delivery_zone_id"]}
+                    for r in rows
+                ]})
+            return
+
         # ============================================
         # FIXED: ANALYTICS ENDPOINT - PostgreSQL compatible
         # ============================================
