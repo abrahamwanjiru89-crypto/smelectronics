@@ -499,6 +499,7 @@ html[data-theme="light"] #themeBtn .i-moon { display: none; }
 .search-results .sr-item small { color: var(--muted); font-size: .72rem; }
 
 /* mobile menu - FIXED */
+/* mobile menu - FIXED */
 .mobile-menu {
   position: fixed; 
   top: var(--nav-h); 
@@ -552,6 +553,7 @@ html[data-theme="light"] #themeBtn .i-moon { display: none; }
 @media (max-width: 880px) {
   .nav-links { display: none; }
   .menu-toggle { display: flex; }
+  /* No need to set display:flex for .mobile-menu here since it's already flex */
 }
 
 /* ============== HERO ============== */
