@@ -551,26 +551,26 @@
 
 <header class="nav" id="nav">
   <div class="nav-inner">
-    <a href="index.html" class="brand">
+    <a href="index.html" class="brand" aria-label="S.M Dynamics home">
       <img src="shop/brand-logo.png" alt="S.M Dynamics" style="height:28px;">
       <span class="brand-name">S.M Dynamics Electronics</span>
     </a>
-    <nav class="nav-links">
+    <nav class="nav-links" aria-label="Primary">
       <a href="index.html">Home</a>
       <a href="index.html#categories">Shop</a>
       <a href="repair.html">Mobile Repair</a>
       <a href="index.html#featured">Featured</a>
     </nav>
     <div class="nav-tools">
-      <button class="icon-btn" id="themeBtn">🌓</button>
-      <button class="icon-btn" id="cartBtn">🛒<span class="badge" id="cartCount">0</span></button>
-      <button class="account-btn" id="accountBtn">Login</button>
-      <button class="icon-btn menu-toggle" id="menuToggle">☰</button>
+      <button class="icon-btn" id="themeBtn" aria-label="Toggle theme">🌓</button>
+      <button class="icon-btn" id="cartBtn" aria-label="Cart">🛒<span class="badge" id="cartCount">0</span></button>
+      <button class="account-btn" id="accountBtn" aria-label="Account">Login</button>
+      <button class="icon-btn menu-toggle" id="menuToggle" aria-label="Menu"><span></span><span></span><span></span></button>
     </div>
   </div>
 </header>
 
-<aside class="mobile-menu" id="mobileMenu">
+<aside class="mobile-menu" id="mobileMenu" aria-hidden="true">
   <a href="index.html">Home</a>
   <a href="index.html#categories">Shop</a>
   <a href="repair.html">Mobile Repair</a>
@@ -1129,14 +1129,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const saved = localStorage.getItem('nova_theme') || 'dark';
     html.setAttribute('data-theme', saved);
 
-    // Mobile menu
-    const toggle = document.getElementById('menuToggle');
-    const mobile = document.getElementById('mobileMenu');
-    toggle?.addEventListener('click', () => {
-        toggle.classList.toggle('open');
-        mobile?.classList.toggle('open');
-    });
-    
+    // Mobile menu, sticky-scroll, and active-link behavior are handled by
+    // the shared shop/nav.js controller.
+
     console.log('✅ Repair page initialized');
 });
 
@@ -1145,5 +1140,6 @@ window.addToCart = addToCart;
 window.openBooking = openBooking;
 window.refreshSpareParts = refreshSpareParts;
 </script>
+<script src="shop/nav.js" defer></script>
 </body>
 </html>
