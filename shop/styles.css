@@ -503,7 +503,7 @@ html[data-theme="light"] #themeBtn .i-moon { display: none; }
   position: fixed; top: var(--nav-h); left: 0; right: 0; bottom: auto;
   max-height: calc(100vh - var(--nav-h));
   overflow-y: auto;
-  overscroll-behavior: contain; /* stop the menu's own scroll from chaining into the page behind it */
+  overscroll-behavior: contain;
   background: color-mix(in srgb, var(--bg) 90%, transparent);
   backdrop-filter: blur(24px);
   border-bottom: 1px solid var(--border);
@@ -1255,7 +1255,6 @@ html[data-theme="light"] .nl-form input { background: rgba(255,255,255,.5); bord
 /* ── Cart Items ── */
 .cart-items {
   display: flex; flex-direction: column; gap: .65rem;
-  flex: 1 1 0; overflow-y: auto; min-height: 0;
   padding-right: .2rem;
 }
 .cart-empty {
