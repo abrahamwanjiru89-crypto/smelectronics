@@ -14,7 +14,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="SM Dynamics Electronics">
-  <link rel="apple-touch-icon" href="shop/brand logo.png">
+  <link rel="apple-touch-icon" href="shop/brand-logo.png">
   <style>
     /* Contact Page Specific Styles */
     .contact-hero {
@@ -311,7 +311,7 @@
   <header class="nav" id="nav">
     <div class="nav-inner">
       <a href="index.html" class="brand" aria-label="S.M Dynamics home">
-        <img src="shop/brand logo.png" alt="S.M Dynamics Electronics" class="brand-logo">
+        <img src="shop/brand-logo.png" alt="S.M Dynamics Electronics" class="brand-logo">
         <span class="brand-name">S.M Dynamics Electronics</span>
       </a>
       <nav class="nav-links" aria-label="Primary">
@@ -496,7 +496,7 @@
     <div class="container foot-grid">
       <div>
         <a href="index.html" class="brand">
-          <img src="shop/brand logo.png" alt="S.M Dynamics Electronics" class="brand-logo-sm">
+          <img src="shop/brand-logo.png" alt="S.M Dynamics Electronics" class="brand-logo-sm">
           <span class="brand-name">S.M Dynamics Electronics</span>
         </a>
         <p class="muted">Premium electronics and repair services across Kenya.</p>
@@ -586,17 +586,16 @@
       setTimeout(() => messageDiv.innerHTML = '', 5000);
     });
 
-    // Mobile menu toggle
-    document.getElementById('menuToggle')?.addEventListener('click', () => {
-      const menu = document.getElementById('mobileMenu');
-      if (menu) menu.classList.toggle('open');
-    });
+    // Mobile menu, sticky-scroll, and active-link behavior are handled by
+    // the shared shop/nav.js controller (loaded below).
 
     // Cart button
     document.getElementById('cartBtn')?.addEventListener('click', () => {
       window.location.href = 'index.html#cart';
     });
   </script>
+
+  <script src="shop/nav.js" defer></script>
 
   <!-- Mobile Menu -->
   <aside class="mobile-menu" id="mobileMenu" aria-hidden="true">
