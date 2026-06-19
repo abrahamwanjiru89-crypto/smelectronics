@@ -1,18 +1,5 @@
-/* =========================================================
-   S.M Dynamics Electronics — Premium electronics storefront (vanilla JS)
-   UPDATED: Partial Payment System - Pay delivery fee only upfront
-   UPDATED: Spare parts integration from repair page
-   FIXED: Cache busting and persistence
-   FIXED: Orders persist after login/logout
-========================================================= */
 
-// ----- PRODUCT DATA -----
-// No default products — all products are loaded from the server/admin management page
 let PRODUCTS = [];
-
-// ============================================
-// SPARE PARTS INTEGRATION - For repair page cart items
-// ============================================
 
 function getProductWithSpares(productId) {
     // First check regular products
@@ -380,7 +367,6 @@ async function loadCounties() {
   const changeHandler = async () => {
     const subEl = $('#subLocation');
     const datalist = $('#sublocationsList');
-    const countyName = el.options[el.selectedIndex]?.text || '';
     const selectedCountyId = el.value;
     
     if (!selectedCountyId) {
@@ -391,28 +377,33 @@ async function loadCounties() {
       return;
     }
     
-    const fallbackSubLocationsData = {
-      'Nairobi': ['CBD', 'Westlands', 'Kilimani', 'Karen', 'Langata', 'Eastleigh'],
-      'Mombasa': ['Nyali', 'Bamburi', 'Mtwapa', 'Likoni', 'Changamwe'],
-      'Kisumu': ['Milimani', 'Kondele', 'Nyalenda', 'Kibos'],
-      'Nakuru': ['CBD', 'Milimani', 'Lanet', 'Rhoda', 'Kaptembwo'],
-    };
+    if (subEl) {
+      subEl.placeholder = 'Loading areas...';
+      subEl.value = '';
+    }
     
-    const locations = fallbackSubLocationsData[countyName] || 
-      ['Town Centre', 'Estate', 'Central', 'North', 'South'];
-    
-    countySubLocations = locations.map((loc, index) => ({
-      id: `sl-${selectedCountyId}-${index}`,
-      name: loc,
-      countyId: selectedCountyId
-    }));
+    try {
+      const data = await api(`/api/locations/sublocations?countyId=${encodeURIComponent(selectedCountyId)}`);
+      countySubLocations = (data.subLocations || []).map(sl => ({
+        id: sl.id,
+        name: sl.name,
+        countyId: sl.countyId
+      }));
+    } catch (err) {
+      console.error('Failed to load sub-locations from server:', err);
+      countySubLocations = [];
+      toast('Could not load areas for this county. Please try again.', 'error');
+    }
     
     if (datalist) {
-      datalist.innerHTML = locations.map(loc => `<option value="${loc}"></option>`).join('');
+      datalist.innerHTML = countySubLocations.map(sl => `<option value="${esc(sl.name)}"></option>`).join('');
     }
     
     if (subEl) {
-      subEl.placeholder = `Type area in ${countyName}...`;
+      const countyName = el.options[el.selectedIndex]?.text || '';
+      subEl.placeholder = countySubLocations.length
+        ? `Type area in ${countyName}...`
+        : `No listed areas for ${countyName} — enter manually`;
       subEl.value = '';
     }
     
