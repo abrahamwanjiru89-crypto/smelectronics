@@ -1,5 +1,18 @@
+/* =========================================================
+   S.M Dynamics Electronics — Premium electronics storefront (vanilla JS)
+   UPDATED: Partial Payment System - Pay delivery fee only upfront
+   UPDATED: Spare parts integration from repair page
+   FIXED: Cache busting and persistence
+   FIXED: Orders persist after login/logout
+========================================================= */
 
+// ----- PRODUCT DATA -----
+// No default products — all products are loaded from the server/admin management page
 let PRODUCTS = [];
+
+// ============================================
+// SPARE PARTS INTEGRATION - For repair page cart items
+// ============================================
 
 function getProductWithSpares(productId) {
     // First check regular products
@@ -970,7 +983,7 @@ function renderOrderList(orders, mode = 'user') {
       : '';
     const canCancel = mode === 'user' && !['delivered', 'cancelled', 'shipped'].includes(statusLower);
     const cancelBtn = canCancel
-      ? `<button class="btn-cancel-my-order" data-id="${esc(order.id)}" style="margin-top:0.5rem; background:transparent; border:1px solid #ff3b30; color:#ff3b30; padding:0.4rem 0.9rem; border-radius:0.5rem; cursor:pointer; font-size:0.78rem; font-weight:600;">🚫 Cancel Order</button>`
+      ? `<button class="btn-cancel-my-order" data-id="${esc(order.id)}" style="margin-top:0.5rem; background:transparent; border:1px solid #ff3b30; color:#ff3b30; padding:0.65rem 1.1rem; min-height:44px; border-radius:0.5rem; cursor:pointer; font-size:0.82rem; font-weight:600;">🚫 Cancel Order</button>`
       : '';
     return `
     <article class="order-row">
