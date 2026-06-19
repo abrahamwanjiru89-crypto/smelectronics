@@ -970,11 +970,16 @@ async function login(email, password, successMessage = 'Login successful') {
 function renderOrderList(orders, mode = 'user') {
   if (!orders.length) return '<div class="dash-empty">No orders yet.</div>';
   return orders.map(order => {
+    const statusLower = (order.status || '').toLowerCase();
     const dfStatus = order.deliveryFeeSet
       ? `<span style="color:#00c853;">🚚 Delivery Fee: ${fmt(order.deliveryFee)}</span>`
       : `<span style="color:#ffb300;">⏳ Delivery fee pending — our team will contact you</span>`;
     const latestNotif = order.notifications && order.notifications.length
       ? `<div class="order-meta" style="margin-top:0.35rem; background:rgba(0,229,255,0.07); border-radius:0.5rem; padding:0.4rem 0.6rem;"><small>📬 ${esc(order.notifications[0].message)}</small></div>`
+      : '';
+    const canCancel = mode === 'user' && !['delivered', 'cancelled', 'shipped'].includes(statusLower);
+    const cancelBtn = canCancel
+      ? `<button class="btn-cancel-my-order" data-id="${esc(order.id)}" style="margin-top:0.5rem; background:transparent; border:1px solid #ff3b30; color:#ff3b30; padding:0.4rem 0.9rem; border-radius:0.5rem; cursor:pointer; font-size:0.78rem; font-weight:600;">🚫 Cancel Order</button>`
       : '';
     return `
     <article class="order-row">
@@ -990,9 +995,24 @@ function renderOrderList(orders, mode = 'user') {
         <div class="order-meta" style="margin-top:0.25rem;">${dfStatus}</div>
         ${latestNotif}
       </div>
-      <div><b>${fmt(order.total)}</b><span class="status ${order.status.toLowerCase()}">${esc(order.status)}</span></div>
+      <div style="display:flex; flex-direction:column; align-items:flex-end; gap:0.25rem;">
+        <b>${fmt(order.total)}</b>
+        <span class="status ${esc(statusLower)}">${esc(order.status)}</span>
+        ${cancelBtn}
+      </div>
     </article>`;
   }).join('');
+}
+
+async function cancelMyOrder(orderId) {
+  if (!confirm(`🚫 Cancel order ${orderId}?\n\nThis cannot be undone. You'll need to place a new order if you change your mind.`)) return;
+  try {
+    await api(`/api/orders/${encodeURIComponent(orderId)}/cancel`, { method: 'PUT', body: JSON.stringify({}) });
+    toast('✓ Order cancelled', 'success');
+    await refreshOrders();
+  } catch (err) {
+    toast(err.message || 'Failed to cancel order', 'error');
+  }
 }
 function renderDashboard() {
   const user = currentUser();
@@ -1001,6 +1021,7 @@ function renderDashboard() {
   $('#dashTitle').textContent = 'Track Your Orders';
   const customerOrders = state.orders.filter(o => o.userId === user.id);
   $('#dashGrid').innerHTML = `<div class="dash-panel wide"><h3>Your Orders</h3>${renderOrderList(customerOrders)}</div>`;
+  $$('.btn-cancel-my-order').forEach(btn => btn.addEventListener('click', () => cancelMyOrder(btn.dataset.id)));
 }
 $('#accountBtn').addEventListener('click', () => currentUser()?.role === 'customer' ? $('#dashboard').scrollIntoView({ behavior:'smooth' }) : openAuth());
 $('#authClose').addEventListener('click', closeAuth);
