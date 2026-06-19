@@ -278,14 +278,10 @@ async function handleCheckout() {
     toast('Please fill in your delivery location', 'error');
     return;
   }
-  if (countySubLocations.length > 0 && !subLocation) {
-    toast('Please select a valid area from the list', 'error');
+  if (!subLocation) {
+    toast('Please choose a listed sub-location for the selected county', 'error');
     return;
   }
-
-  // If the county has no predefined areas (or the API failed to load them),
-  // fall back to whatever the customer typed in manually.
-  const constituencyName = subLocation ? subLocation.name : subLocationText;
 
   const productTotal = state.cart.reduce((s, c) => {
     const p = getProductWithSpares(c.id);
@@ -299,7 +295,7 @@ async function handleCheckout() {
         body: JSON.stringify({
           items: state.cart,
           county: $('#county option:checked')?.textContent || '',
-          constituency: constituencyName,
+          constituency: subLocation.name,
           street,
           depositAmount: productTotal,
           depositMpesa: "MPESA-" + Date.now(),
@@ -409,7 +405,7 @@ async function loadCounties() {
     } catch (err) {
       console.error('Failed to load sub-locations from server:', err);
       countySubLocations = [];
-      toast('Could not load predefined areas. You can still enter your area manually.', 'error');
+      toast('Could not load areas for this county. Please try again.', 'error');
     }
     
     if (datalist) {
@@ -420,11 +416,8 @@ async function loadCounties() {
       const countyName = el.options[el.selectedIndex]?.text || '';
       subEl.placeholder = countySubLocations.length
         ? `Type area in ${countyName}...`
-        : `Enter your area in ${countyName} manually...`;
+        : `No listed areas for ${countyName} — enter manually`;
       subEl.value = '';
-      if (!countySubLocations.length) {
-        toast('No predefined areas found for this county. Please enter your area manually.', 'info');
-      }
     }
     
     updateCartTotals();
@@ -522,10 +515,11 @@ window.addEventListener('load', () => {
   setTimeout(() => $('#loader')?.classList.add('hide'), 600);
 });
 
-// ----- NAV scroll + MOBILE MENU -----
-// Handled by shop/nav.js — a single rAF-throttled scroll listener and a
-// unified mobile-menu controller (scroll lock, ARIA, gestures, active-link
-// highlighting) shared across every page instead of being duplicated here.
+// ----- NAV scroll -----
+addEventListener('scroll', () => {
+  $('#nav').classList.toggle('scrolled', scrollY > 20);
+  $('#toTop').classList.toggle('show', scrollY > 600);
+}, { passive: true });
 
 // ----- THEME -----
 const savedTheme = localStorage.getItem('nova_theme') || 'dark';
@@ -536,6 +530,16 @@ $('#themeBtn').addEventListener('click', () => {
   localStorage.setItem('nova_theme', next);
   toast(`Switched to ${next} mode`, 'info');
 });
+
+// ----- MOBILE MENU -----
+$('#menuToggle').addEventListener('click', e => {
+  e.currentTarget.classList.toggle('open');
+  $('#mobileMenu').classList.toggle('open');
+});
+$$('#mobileMenu a').forEach(a => a.addEventListener('click', () => {
+  $('#menuToggle').classList.remove('open');
+  $('#mobileMenu').classList.remove('open');
+}));
 
 // ----- SEARCH -----
 const searchPanel = $('#searchPanel');
@@ -873,22 +877,28 @@ $('.rv-nav.next').addEventListener('click', () => $('#rvTrack').scrollBy({ left:
 $('#nlForm').addEventListener('submit', e => { e.preventDefault(); e.target.reset(); toast('Subscribed! Welcome ✨', 'success'); });
 
 // ----- AI -----
-$('#aiForm').addEventListener('submit', e => {
+$('#aiForm').addEventListener('submit', async e => {
   e.preventDefault();
-  const q = $('#aiInput').value.toLowerCase();
-  const ans = $('#aiAnswer'); ans.className = 'ai-answer show'; ans.textContent = 'Thinking…';
-  setTimeout(() => {
-    let pick;
-    if (q.includes('laptop') || q.includes('edit') || q.includes('work')) pick = PRODUCTS.find(p => p.id === 'p3');
-    else if (q.includes('phone') || q.includes('camera') && q.includes('pocket')) pick = PRODUCTS.find(p => p.id === 'p1');
-    else if (q.includes('audio') || q.includes('headphone') || q.includes('music')) pick = PRODUCTS.find(p => p.id === 'p2');
-    else if (q.includes('game') || q.includes('vr')) pick = PRODUCTS.find(p => p.id === 'p5');
-    else if (q.includes('camera') || q.includes('photo')) pick = PRODUCTS.find(p => p.id === 'p7');
-    else if (q.includes('watch') || q.includes('fitness')) pick = PRODUCTS.find(p => p.id === 'p4');
-    else pick = PRODUCTS[Math.floor(Math.random() * PRODUCTS.length)];
-    ans.innerHTML = `Based on your needs, I recommend the <b>${pick.name}</b> (${fmt(pick.price)}). ${pick.desc} <a href="#" data-id="${pick.id}" style="color:var(--primary)">View product →</a>`;
-    ans.querySelector('a').addEventListener('click', ev => { ev.preventDefault(); openModal(pick.id); });
-  }, 700);
+  const q = $('#aiInput').value.trim();
+  if (!q) return;
+  const ans = $('#aiAnswer');
+  ans.className = 'ai-answer show';
+  ans.textContent = 'Thinking…';
+  try {
+    const data = await api('/api/ai/concierge', {
+      method: 'POST',
+      body: JSON.stringify({ query: q })
+    });
+    const pick = data.productId ? PRODUCTS.find(p => p.id === data.productId) : null;
+    if (pick) {
+      ans.innerHTML = `${esc(data.answer)} <a href="#" data-id="${pick.id}" style="color:var(--primary)">View product →</a>`;
+      ans.querySelector('a').addEventListener('click', ev => { ev.preventDefault(); openModal(pick.id); });
+    } else {
+      ans.innerHTML = esc(data.answer || "I couldn't find a perfect match — try browsing our catalog below.");
+    }
+  } catch (err) {
+    ans.textContent = 'Sorry, our AI concierge is unavailable right now. Please browse our catalog below or try again shortly.';
+  }
 });
 
 // ----- CHAT -----
