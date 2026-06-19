@@ -1831,6 +1831,57 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json({"ok": True})
             return
 
+        _status_match = _re.match(r"^/api/admin/orders/([^/]+)/status$", path)
+        if _status_match:
+            if not self.require({"admin"}):
+                return
+            order_id = _status_match.group(1)
+            data = self.read_json()
+            new_status = (data.get("status") or "").strip()
+            if not new_status:
+                self.send_json({"error": "Status is required"}, 400)
+                return
+            with db() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT * FROM orders WHERE id = %s" if USE_POSTGRES else "SELECT * FROM orders WHERE id = ?", (order_id,))
+                order = cursor.fetchone()
+                if not order:
+                    self.send_json({"error": "Order not found"}, 404)
+                    return
+                cursor.execute("UPDATE orders SET status = %s WHERE id = %s" if USE_POSTGRES else "UPDATE orders SET status = ? WHERE id = ?", (new_status, order_id))
+                if new_status.lower() == "cancelled":
+                    notif_id = "n-" + secrets.token_hex(8)
+                    msg = f"Your order {order_id} has been cancelled. Please contact us if you have any questions."
+                    cursor.execute("INSERT INTO order_notifications (id,order_id,message,is_read,created_at) VALUES (%s,%s,%s,%s,%s)" if USE_POSTGRES else "INSERT INTO order_notifications (id,order_id,message,is_read,created_at) VALUES (?,?,?,?,?)", 
+                        (notif_id, order_id, msg, 0, datetime.now(timezone.utc).isoformat()))
+                conn.commit()
+                logger.info(f"Order {order_id} status set to {new_status}")
+            self.send_json({"ok": True})
+            return
+
+        _booking_status_match = _re.match(r"^/api/management/repair-bookings/([^/]+)$", path)
+        if _booking_status_match:
+            if not self.require({"admin", "staff"}):
+                return
+            booking_id = _booking_status_match.group(1)
+            data = self.read_json()
+            new_status = (data.get("status") or "").strip()
+            if not new_status:
+                self.send_json({"error": "Status is required"}, 400)
+                return
+            with db() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT id FROM repair_bookings WHERE id = %s" if USE_POSTGRES else "SELECT id FROM repair_bookings WHERE id = ?", (booking_id,))
+                booking = cursor.fetchone()
+                if not booking:
+                    self.send_json({"error": "Booking not found"}, 404)
+                    return
+                cursor.execute("UPDATE repair_bookings SET status = %s WHERE id = %s" if USE_POSTGRES else "UPDATE repair_bookings SET status = ? WHERE id = ?", (new_status, booking_id))
+                conn.commit()
+                logger.info(f"Repair booking {booking_id} status set to {new_status}")
+            self.send_json({"ok": True})
+            return
+
         if path.startswith("/api/admin/products/"):
             if not self.require({"admin"}):
                 return
@@ -2002,20 +2053,34 @@ class Handler(BaseHTTPRequestHandler):
             order_id = _order_del_match.group(1)
             with db() as conn:
                 cursor = conn.cursor()
-                # Only allow deleting delivered orders
                 cursor.execute("SELECT status FROM orders WHERE id = %s" if USE_POSTGRES else "SELECT status FROM orders WHERE id = ?", (order_id,))
                 order = cursor.fetchone()
                 if not order:
                     self.send_json({"error": "Order not found"}, 404)
                     return
-                if (order["status"] or "").lower() != "delivered":
-                    self.send_json({"error": "Only delivered orders can be deleted"}, 400)
-                    return
                 cursor.execute("DELETE FROM order_notifications WHERE order_id = %s" if USE_POSTGRES else "DELETE FROM order_notifications WHERE order_id = ?", (order_id,))
                 cursor.execute("DELETE FROM order_items WHERE order_id = %s" if USE_POSTGRES else "DELETE FROM order_items WHERE order_id = ?", (order_id,))
                 cursor.execute("DELETE FROM orders WHERE id = %s" if USE_POSTGRES else "DELETE FROM orders WHERE id = ?", (order_id,))
                 conn.commit()
-                logger.info(f"Delivered order {order_id} deleted by admin")
+                logger.info(f"Order {order_id} deleted by admin")
+            self.send_json({"ok": True})
+            return
+
+        _booking_del_match = _re2.match(r"^/api/management/repair-bookings/([^/]+)$", path)
+        if _booking_del_match:
+            if not self.require({"admin", "staff"}):
+                return
+            booking_id = _booking_del_match.group(1)
+            with db() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT id FROM repair_bookings WHERE id = %s" if USE_POSTGRES else "SELECT id FROM repair_bookings WHERE id = ?", (booking_id,))
+                booking = cursor.fetchone()
+                if not booking:
+                    self.send_json({"error": "Booking not found"}, 404)
+                    return
+                cursor.execute("DELETE FROM repair_bookings WHERE id = %s" if USE_POSTGRES else "DELETE FROM repair_bookings WHERE id = ?", (booking_id,))
+                conn.commit()
+                logger.info(f"Repair booking {booking_id} deleted")
             self.send_json({"ok": True})
             return
         
