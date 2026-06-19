@@ -1882,6 +1882,33 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json({"ok": True})
             return
 
+        _my_order_cancel_match = _re.match(r"^/api/orders/([^/]+)/cancel$", path)
+        if _my_order_cancel_match:
+            user = self.require({"customer"})
+            if not user:
+                return
+            order_id = _my_order_cancel_match.group(1)
+            with db() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT * FROM orders WHERE id = %s AND user_id = %s" if USE_POSTGRES else "SELECT * FROM orders WHERE id = ? AND user_id = ?", (order_id, user["id"]))
+                order = cursor.fetchone()
+                if not order:
+                    self.send_json({"error": "Order not found"}, 404)
+                    return
+                current_status = (order["status"] or "").lower()
+                if current_status in ("delivered", "cancelled", "shipped"):
+                    self.send_json({"error": f"Orders that are {order['status']} can no longer be cancelled. Please contact support."}, 400)
+                    return
+                cursor.execute("UPDATE orders SET status = %s WHERE id = %s" if USE_POSTGRES else "UPDATE orders SET status = ? WHERE id = ?", ("Cancelled", order_id))
+                notif_id = "n-" + secrets.token_hex(8)
+                msg = f"Order {order_id} was cancelled by the customer."
+                cursor.execute("INSERT INTO order_notifications (id,order_id,message,is_read,created_at) VALUES (%s,%s,%s,%s,%s)" if USE_POSTGRES else "INSERT INTO order_notifications (id,order_id,message,is_read,created_at) VALUES (?,?,?,?,?)", 
+                    (notif_id, order_id, msg, 0, datetime.now(timezone.utc).isoformat()))
+                conn.commit()
+                logger.info(f"Order {order_id} cancelled by customer {user['id']}")
+            self.send_json({"ok": True})
+            return
+
         if path.startswith("/api/admin/products/"):
             if not self.require({"admin"}):
                 return
