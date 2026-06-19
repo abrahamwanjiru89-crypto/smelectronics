@@ -209,11 +209,11 @@ function showOrderSuccessModal(order) {
 }
 
 async function updateCartTotals() {
-  const subtotal = state.cart.reduce((s, c) => {
-    const p = getProductWithSpares(c.id);
-    return s + (p?.price || 0) * c.qty;
-  }, 0);
-  updateCartFooter(subtotal);
+  // Re-render the full cart (items + footer) instead of just the footer.
+  // Previously this only recalculated the total, which could leave the
+  // item list blank/stale (e.g. if it first rendered before products had
+  // loaded) while still showing a correct-looking total underneath.
+  renderCart();
 }
 
 function updateCartFooter(subtotal) {
@@ -755,8 +755,14 @@ function setQty(id, q) {
 
 function renderCart() {
   const box = $('#cartItems');
-  if (!state.cart.length) { 
-    box.innerHTML = '<div class="cart-empty"><div style="font-size:3rem">🛒</div><p>Your cart is empty</p></div>'; 
+  if (!state.cart.length) {
+    box.innerHTML = '<div class="cart-empty"><div style="font-size:3rem">🛒</div><p>Your cart is empty</p></div>';
+  } else if (!PRODUCTS.length) {
+    // Cart has items but the product catalog hasn't loaded from the
+    // server yet — show a loading state instead of leaving the cart
+    // looking empty. renderCart() runs again once refreshProducts()
+    // (or any future updateCartTotals() call) completes.
+    box.innerHTML = '<div class="cart-empty"><div style="font-size:2rem">⏳</div><p>Loading your items…</p></div>';
   } else {
     box.innerHTML = state.cart.map(c => {
       const p = getProductWithSpares(c.id);
