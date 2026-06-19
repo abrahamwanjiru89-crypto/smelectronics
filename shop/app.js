@@ -4,6 +4,7 @@
    UPDATED: Spare parts integration from repair page
    FIXED: Cache busting and persistence
    FIXED: Orders persist after login/logout
+   FIXED: Mobile menu toggle
 ========================================================= */
 
 // ----- PRODUCT DATA -----
@@ -531,15 +532,49 @@ $('#themeBtn').addEventListener('click', () => {
   toast(`Switched to ${next} mode`, 'info');
 });
 
-// ----- MOBILE MENU -----
-$('#menuToggle').addEventListener('click', e => {
-  e.currentTarget.classList.toggle('open');
-  $('#mobileMenu').classList.toggle('open');
-});
-$$('#mobileMenu a').forEach(a => a.addEventListener('click', () => {
-  $('#menuToggle').classList.remove('open');
-  $('#mobileMenu').classList.remove('open');
-}));
+// ============================================
+// FIXED: MOBILE MENU - Complete rewrite for reliability
+// ============================================
+const menuToggle = document.getElementById('menuToggle');
+const mobileMenu = document.getElementById('mobileMenu');
+
+if (menuToggle && mobileMenu) {
+  // Toggle menu when hamburger is clicked
+  menuToggle.addEventListener('click', function(e) {
+    e.stopPropagation();
+    this.classList.toggle('open');
+    mobileMenu.classList.toggle('open');
+    
+    // Prevent body scroll when menu is open
+    if (mobileMenu.classList.contains('open')) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+  });
+
+  // Close menu when a link is clicked
+  mobileMenu.querySelectorAll('a').forEach(function(link) {
+    link.addEventListener('click', function() {
+      menuToggle.classList.remove('open');
+      mobileMenu.classList.remove('open');
+      document.body.style.overflow = '';
+    });
+  });
+
+  // Close menu when clicking outside
+  document.addEventListener('click', function(e) {
+    if (mobileMenu.classList.contains('open') && 
+        !mobileMenu.contains(e.target) && 
+        !menuToggle.contains(e.target)) {
+      menuToggle.classList.remove('open');
+      mobileMenu.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+  });
+} else {
+  console.warn('⚠️ Mobile menu elements not found in DOM');
+}
 
 // ----- SEARCH -----
 const searchPanel = $('#searchPanel');
