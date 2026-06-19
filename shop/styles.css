@@ -438,31 +438,22 @@ select, option { color: var(--text); background: var(--bg-2); }
 #themeBtn .i-sun { display: none; }
 html[data-theme="light"] #themeBtn .i-sun { display: block; }
 html[data-theme="light"] #themeBtn .i-moon { display: none; }
-.mobile-menu {
-  position: fixed; 
-  top: var(--nav-h); 
-  left: 0; 
-  right: 0; 
-  bottom: auto;
-  max-height: calc(100vh - var(--nav-h));
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  background: color-mix(in srgb, var(--bg) 90%, transparent);
-  backdrop-filter: blur(24px);
-  border-bottom: 1px solid var(--border);
-  flex-direction: column; 
-  padding: 1rem 5%;
-  z-index: 99;
-  transform: translateY(-100%);
-  transition: transform .35s ease;
-  will-change: transform;
-  
-  /* Remove display: none */
-  display: flex;  /* Change from none to flex */
+
+.menu-toggle {
+  display: none; flex-direction: column; align-items: center; justify-content: center;
+  gap: 5px; width: 44px; height: 44px; padding: 0;
 }
-.mobile-menu.open {
-  transform: translateY(0);
+.menu-toggle span {
+  width: 18px; height: 1.5px;
+  background: var(--primary);
+  border-radius: 2px;
+  transition: transform .3s, opacity .3s;
+  box-shadow: 0 0 6px var(--primary);
+  will-change: transform, opacity;
 }
+.menu-toggle.open span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+.menu-toggle.open span:nth-child(2) { opacity: 0; }
+.menu-toggle.open span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
 
 /* search */
 .search-panel {
@@ -516,15 +507,13 @@ html[data-theme="light"] #themeBtn .i-moon { display: none; }
   background: color-mix(in srgb, var(--bg) 90%, transparent);
   backdrop-filter: blur(24px);
   border-bottom: 1px solid var(--border);
-  display: flex; flex-direction: column; padding: 1rem 5%;
+  flex-direction: column; padding: 1rem 5%;  /* ← display: none removed */
   z-index: 99;
   transform: translateY(-100%);
-  visibility: hidden;
-  pointer-events: none;
-  transition: transform .35s ease, visibility .35s;
+  transition: transform .35s ease;
   will-change: transform;
 }
-.mobile-menu.open { transform: translateY(0); visibility: visible; pointer-events: auto; }
+.mobile-menu.open { transform: translateY(0); }
 .mobile-menu a {
   padding: .9rem 0;
   border-bottom: 1px solid var(--border);
@@ -540,6 +529,7 @@ html[data-theme="light"] #themeBtn .i-moon { display: none; }
 @media (max-width: 880px) {
   .nav-links { display: none; }
   .menu-toggle { display: flex; }
+  .mobile-menu { display: flex; }
 }
 
 /* ============== HERO ============== */
@@ -1264,6 +1254,7 @@ html[data-theme="light"] .nl-form input { background: rgba(255,255,255,.5); bord
 /* ── Cart Items ── */
 .cart-items {
   display: flex; flex-direction: column; gap: .65rem;
+  max-height: 36vh; overflow-y: auto;
   padding-right: .2rem;
 }
 .cart-empty {
