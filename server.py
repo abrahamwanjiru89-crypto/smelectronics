@@ -117,6 +117,170 @@ KENYA_COUNTY_AREAS = {
         "constituencies": ["Molo", "Njoro", "Naivasha", "Gilgil", "Kuresoi South", "Kuresoi North", "Subukia", "Rongai", "Bahati", "Nakuru West", "Nakuru East"],
         "locations": ["Bondeni", "Kivumbini", "Flamingo", "Menengai", "Free Area", "Kaptembwo", "Rhonda", "Shabab", "London", "Kapkures", "Mai Mahiu", "Karagita", "Lake View", "Olkaria", "Hells Gate", "Elburgon", "Mariashoni", "Turi", "Molo Town", "Mau Narok", "Mauche", "Nessuit", "Lare", "Solai", "Soin", "Mosop", "Visoi"],
     },
+    "Elgeyo-Marakwet": {
+        "constituencies": ["Keiyo North", "Keiyo South", "Marakwet East", "Marakwet West"],
+        "locations": ["Iten", "Kapsowar", "Chebiemit", "Tambach"],
+    },
+    "Embu": {
+        "constituencies": ["Manyatta", "Runyenjes", "Mbeere North", "Mbeere South"],
+        "locations": ["Embu Town", "Siakago", "Kiritiri", "Karurumo"],
+    },
+    "Garissa": {
+        "constituencies": ["Garissa Township", "Balambala", "Lagdera", "Dadaab", "Fafi", "Ijara"],
+        "locations": ["Garissa Town", "Dadaab Town", "Modogashe", "Bura"],
+    },
+    "Homa Bay": {
+        "constituencies": ["Kasipul", "Kabondo Kasipul", "Karachuonyo", "Rangwe", "Homa Bay Town", "Ndhiwa", "Mbita", "Suba"],
+        "locations": ["Homa Bay Town", "Oyugis", "Ndhiwa Town", "Mbita Town"],
+    },
+    "Isiolo": {
+        "constituencies": ["Isiolo North", "Isiolo South"],
+        "locations": ["Isiolo Town", "Garbatulla", "Kinna"],
+    },
+    "Kajiado": {
+        "constituencies": ["Kajiado North", "Kajiado Central", "Kajiado East", "Kajiado West", "Kajiado South"],
+        "locations": ["Kajiado Town", "Ngong", "Kitengela", "Ongata Rongai", "Namanga", "Isinya"],
+    },
+    "Kakamega": {
+        "constituencies": ["Lugari", "Likuyani", "Malava", "Lurambi", "Navakholo", "Mumias West", "Mumias East", "Matungu", "Butere", "Khwisero", "Shinyalu", "Ikolomani"],
+        "locations": ["Kakamega Town", "Mumias Town", "Malava Town", "Khayega"],
+    },
+    "Kericho": {
+        "constituencies": ["Kipkelion East", "Kipkelion West", "Ainamoi", "Bureti", "Belgut", "Sigowet-Soin"],
+        "locations": ["Kericho Town", "Litein", "Londiani", "Sosiot"],
+    },
+    "Kiambu": {
+        "constituencies": ["Gatundu South", "Gatundu North", "Juja", "Thika Town", "Ruiru", "Githunguri", "Kiambu", "Kiambaa", "Kabete", "Kikuyu", "Limuru", "Lari"],
+        "locations": ["Thika Town", "Ruiru Town", "Kiambu Town", "Kikuyu Town", "Limuru Town", "Juja Town"],
+    },
+    "Kilifi": {
+        "constituencies": ["Kilifi North", "Kilifi South", "Kaloleni", "Rabai", "Ganze", "Malindi", "Magarini"],
+        "locations": ["Kilifi Town", "Malindi Town", "Mtwapa", "Watamu"],
+    },
+    "Kirinyaga": {
+        "constituencies": ["Mwea", "Gichugu", "Ndia", "Kirinyaga Central"],
+        "locations": ["Kerugoya", "Kutus", "Sagana", "Wanguru"],
+    },
+    "Kisii": {
+        "constituencies": ["Bonchari", "South Mugirango", "Bomachoge Borabu", "Bobasi", "Bomachoge Chache", "Nyaribari Masaba", "Nyaribari Chache", "Kitutu Chache North", "Kitutu Chache South"],
+        "locations": ["Kisii Town", "Suneka", "Ogembo", "Keroka"],
+    },
+    "Kisumu": {
+        "constituencies": ["Kisumu East", "Kisumu West", "Kisumu Central", "Seme", "Nyando", "Muhoroni", "Nyakach"],
+        "locations": ["Kisumu Town", "Ahero", "Muhoroni Town", "Maseno", "Kondele", "Milimani"],
+    },
+    "Kitui": {
+        "constituencies": ["Mwingi North", "Mwingi West", "Mwingi Central", "Kitui West", "Kitui Rural", "Kitui Central", "Kitui East", "Kitui South"],
+        "locations": ["Kitui Town", "Mwingi Town", "Mutomo", "Mutito"],
+    },
+    "Kwale": {
+        "constituencies": ["Msambweni", "Lunga Lunga", "Matuga", "Kinango"],
+        "locations": ["Kwale Town", "Ukunda", "Diani", "Kinango Town"],
+    },
+    "Laikipia": {
+        "constituencies": ["Laikipia West", "Laikipia East", "Laikipia North"],
+        "locations": ["Nanyuki", "Nyahururu Border", "Rumuruti", "Doldol"],
+    },
+    "Lamu": {
+        "constituencies": ["Lamu East", "Lamu West"],
+        "locations": ["Lamu Town", "Mokowe", "Witu", "Mpeketoni"],
+    },
+    "Machakos": {
+        "constituencies": ["Masinga", "Yatta", "Kangundo", "Matungulu", "Kathiani", "Mavoko", "Machakos Town", "Mwala"],
+        "locations": ["Machakos Town", "Athi River", "Kangundo Town", "Tala", "Mwala Town"],
+    },
+    "Makueni": {
+        "constituencies": ["Mbooni", "Kilome", "Kaiti", "Kibwezi West", "Kibwezi East", "Makueni", "Kilungu"],
+        "locations": ["Wote", "Sultan Hamud", "Emali", "Kibwezi Town"],
+    },
+    "Mandera": {
+        "constituencies": ["Mandera West", "Banissa", "Mandera North", "Mandera South", "Mandera East", "Lafey"],
+        "locations": ["Mandera Town", "Rhamu", "El Wak", "Takaba"],
+    },
+    "Marsabit": {
+        "constituencies": ["Moyale", "North Horr", "Saku", "Laisamis"],
+        "locations": ["Marsabit Town", "Moyale Town", "Loiyangalani", "Sololo"],
+    },
+    "Meru": {
+        "constituencies": ["Igembe South", "Igembe Central", "Igembe North", "Tigania West", "Tigania East", "North Imenti", "Buuri", "Central Imenti", "South Imenti"],
+        "locations": ["Meru Town", "Maua", "Nkubu", "Timau"],
+    },
+    "Migori": {
+        "constituencies": ["Rongo", "Awendo", "Suna East", "Suna West", "Uriri", "Nyatike", "Kuria West", "Kuria East"],
+        "locations": ["Migori Town", "Rongo Town", "Awendo Town", "Isebania"],
+    },
+    "Mombasa": {
+        "constituencies": ["Changamwe", "Jomvu", "Kisauni", "Nyali", "Likoni", "Mvita"],
+        "locations": ["Mombasa Island", "Nyali", "Bamburi", "Likoni", "Tudor", "Mtongwe"],
+    },
+    "Murang'a": {
+        "constituencies": ["Kangema", "Mathioya", "Kiharu", "Kigumo", "Maragwa", "Kandara", "Gatanga"],
+        "locations": ["Murang'a Town", "Kenol", "Kandara Town", "Maragua Town"],
+    },
+    "Nandi": {
+        "constituencies": ["Tinderet", "Aldai", "Nandi Hills", "Chesumei", "Emgwen", "Mosop"],
+        "locations": ["Kapsabet", "Nandi Hills Town", "Kobujoi", "Mosoriot"],
+    },
+    "Narok": {
+        "constituencies": ["Kilgoris", "Emurua Dikirr", "Narok North", "Narok East", "Narok South", "Narok West"],
+        "locations": ["Narok Town", "Kilgoris Town", "Suswa", "Ololulunga"],
+    },
+    "Nyamira": {
+        "constituencies": ["Kitutu Masaba", "West Mugirango", "North Mugirango", "Borabu"],
+        "locations": ["Nyamira Town", "Keroka Border", "Ekerenyo", "Manga"],
+    },
+    "Nyandarua": {
+        "constituencies": ["Kinangop", "Kipipiri", "Ol Kalou", "Ol Jorok", "Ndaragwa"],
+        "locations": ["Ol Kalou Town", "Engineer", "Njabini", "Ndaragwa Town"],
+    },
+    "Nyeri": {
+        "constituencies": ["Tetu", "Kieni", "Mathira", "Othaya", "Mukurweini", "Nyeri Town"],
+        "locations": ["Nyeri Town", "Karatina", "Othaya Town", "Mukurweini Town"],
+    },
+    "Samburu": {
+        "constituencies": ["Samburu West", "Samburu North", "Samburu East"],
+        "locations": ["Maralal", "Baragoi", "Archers Post", "Wamba"],
+    },
+    "Siaya": {
+        "constituencies": ["Ugenya", "Ugunja", "Alego Usonga", "Gem", "Bondo", "Rarieda"],
+        "locations": ["Siaya Town", "Bondo Town", "Ugunja Town", "Yala"],
+    },
+    "Taita-Taveta": {
+        "constituencies": ["Taveta", "Wundanyi", "Mwatate", "Voi"],
+        "locations": ["Voi Town", "Wundanyi Town", "Taveta Town", "Mwatate Town"],
+    },
+    "Tana River": {
+        "constituencies": ["Garsen", "Galole", "Bura"],
+        "locations": ["Hola", "Garsen Town", "Bura Town"],
+    },
+    "Tharaka-Nithi": {
+        "constituencies": ["Maara", "Chuka/Igambang'ombe", "Tharaka"],
+        "locations": ["Chuka Town", "Marimanti", "Kathwana"],
+    },
+    "Trans Nzoia": {
+        "constituencies": ["Kwanza", "Endebess", "Saboti", "Kiminini", "Cherangany"],
+        "locations": ["Kitale Town", "Endebess Town", "Kiminini Town"],
+    },
+    "Turkana": {
+        "constituencies": ["Turkana North", "Turkana West", "Turkana Central", "Loima", "Turkana South", "Turkana East"],
+        "locations": ["Lodwar", "Kakuma", "Lokichogio", "Kalokol"],
+    },
+    "Uasin Gishu": {
+        "constituencies": ["Soy", "Turbo", "Moiben", "Ainabkoi", "Kapseret", "Kesses"],
+        "locations": ["Eldoret Town", "Burnt Forest", "Turbo Town", "Moiben Town"],
+    },
+    "Vihiga": {
+        "constituencies": ["Vihiga", "Sabatia", "Hamisi", "Luanda", "Emuhaya"],
+        "locations": ["Mbale", "Luanda Town", "Majengo", "Chavakali"],
+    },
+    "Wajir": {
+        "constituencies": ["Wajir North", "Wajir East", "Tarbaj", "Wajir West", "Eldas", "Wajir South"],
+        "locations": ["Wajir Town", "Habaswein", "Griftu", "Eldas Town"],
+    },
+    "West Pokot": {
+        "constituencies": ["Kapenguria", "Sigor", "Kacheliba", "Pokot South"],
+        "locations": ["Kapenguria Town", "Makutano", "Chepareria", "Kacheliba Town"],
+    },
 }
 
 DEFAULT_SPARE_PARTS = []  # Empty - no default spare parts
