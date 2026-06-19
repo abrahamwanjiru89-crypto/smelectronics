@@ -515,11 +515,10 @@ window.addEventListener('load', () => {
   setTimeout(() => $('#loader')?.classList.add('hide'), 600);
 });
 
-// ----- NAV scroll -----
-addEventListener('scroll', () => {
-  $('#nav').classList.toggle('scrolled', scrollY > 20);
-  $('#toTop').classList.toggle('show', scrollY > 600);
-}, { passive: true });
+// ----- NAV scroll + MOBILE MENU -----
+// Handled by shop/nav.js — a single rAF-throttled scroll listener and a
+// unified mobile-menu controller (scroll lock, ARIA, gestures, active-link
+// highlighting) shared across every page instead of being duplicated here.
 
 // ----- THEME -----
 const savedTheme = localStorage.getItem('nova_theme') || 'dark';
@@ -530,16 +529,6 @@ $('#themeBtn').addEventListener('click', () => {
   localStorage.setItem('nova_theme', next);
   toast(`Switched to ${next} mode`, 'info');
 });
-
-// ----- MOBILE MENU -----
-$('#menuToggle').addEventListener('click', e => {
-  e.currentTarget.classList.toggle('open');
-  $('#mobileMenu').classList.toggle('open');
-});
-$$('#mobileMenu a').forEach(a => a.addEventListener('click', () => {
-  $('#menuToggle').classList.remove('open');
-  $('#mobileMenu').classList.remove('open');
-}));
 
 // ----- SEARCH -----
 const searchPanel = $('#searchPanel');
