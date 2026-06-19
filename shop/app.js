@@ -278,10 +278,14 @@ async function handleCheckout() {
     toast('Please fill in your delivery location', 'error');
     return;
   }
-  if (!subLocation) {
-    toast('Please choose a listed sub-location for the selected county', 'error');
+  if (countySubLocations.length > 0 && !subLocation) {
+    toast('Please select a valid area from the list', 'error');
     return;
   }
+
+  // If the county has no predefined areas (or the API failed to load them),
+  // fall back to whatever the customer typed in manually.
+  const constituencyName = subLocation ? subLocation.name : subLocationText;
 
   const productTotal = state.cart.reduce((s, c) => {
     const p = getProductWithSpares(c.id);
@@ -295,7 +299,7 @@ async function handleCheckout() {
         body: JSON.stringify({
           items: state.cart,
           county: $('#county option:checked')?.textContent || '',
-          constituency: subLocation.name,
+          constituency: constituencyName,
           street,
           depositAmount: productTotal,
           depositMpesa: "MPESA-" + Date.now(),
@@ -405,7 +409,7 @@ async function loadCounties() {
     } catch (err) {
       console.error('Failed to load sub-locations from server:', err);
       countySubLocations = [];
-      toast('Could not load areas for this county. Please try again.', 'error');
+      toast('Could not load predefined areas. You can still enter your area manually.', 'error');
     }
     
     if (datalist) {
@@ -416,8 +420,11 @@ async function loadCounties() {
       const countyName = el.options[el.selectedIndex]?.text || '';
       subEl.placeholder = countySubLocations.length
         ? `Type area in ${countyName}...`
-        : `No listed areas for ${countyName} — enter manually`;
+        : `Enter your area in ${countyName} manually...`;
       subEl.value = '';
+      if (!countySubLocations.length) {
+        toast('No predefined areas found for this county. Please enter your area manually.', 'info');
+      }
     }
     
     updateCartTotals();
